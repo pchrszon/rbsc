@@ -1,0 +1,44 @@
+name: roles
+version: 0.1.0.0
+author: Philipp Chrszon
+maintainer: philipp.chrszon@tu-dresden.de
+copyright: ! 'Copyright: (c) 2017 Philipp Chrszon'
+license: BSD3
+synopsis: Modeling and analysis of role-based systems
+description:
+  This tool provides a language for modeling the operational behavior of
+  role-based systems. A model can then be analyzed by translating it to the
+  input language of the probabilistic model checker PRISM.
+
+category: Language
+
+dependencies:
+  - base >=4.7 && <5
+
+ghc-options:
+  - -Wall
+
+library:
+  source-dirs: src
+  dependencies:
+
+executables:
+  rbsc:
+    source-dirs: app
+    main: Main.hs
+    dependencies:
+      - roles
+
+tests:
+  lang-prism-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - base
+      - roles
+      - hspec
+      - QuickCheck

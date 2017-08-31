@@ -1,0 +1,21 @@
+# Haskell files
+dist
+*.o
+*.hi
+*.prof
+.stack-work/
+*.cabal
+
+# MacOS files
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# tmux
+tmux.conf
