@@ -15,6 +15,12 @@ Syntax
 - normal form: all instantiations and bindings are on the top level,
   compartments only reference instance names
 
+Restrictions
+------------
+
+- each role can only be bound once
+- role binding must not be cyclic
+
 Example role model
 ------------------
 

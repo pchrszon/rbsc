@@ -21,6 +21,10 @@ ghc-options:
 library:
   source-dirs: src
   dependencies:
+    - containers >=0.5
+    - lens >=4.15
+    - mtl >=2.2
+    - text >=1.2
 
 executables:
   rbsc:
