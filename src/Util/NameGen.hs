@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 
 -- | Generator for unique names.
@@ -22,8 +22,10 @@ import           Data.Map   (Map)
 import qualified Data.Map   as Map
 import           Data.Maybe (fromMaybe)
 import           Data.Set   (Set, member)
-import           Data.Text  (Text, append, pack)
+import           Data.Text  (Text)
 import qualified Data.Text  as T
+
+import Util (appendIndex)
 
 
 -- | A state @t@ that is an instance of 'HasNameGen' carries a 'NameGen'.
@@ -91,8 +93,3 @@ findUnusedIndex ts base i
     | otherwise = i
   where
     name = appendIndex base i
-
-
--- | Append an 'Integer' to a 'Text'.
-appendIndex :: Text -> Integer -> Text
-appendIndex base i = base `append` pack (show i)

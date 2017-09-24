@@ -5,6 +5,12 @@ System Instantiation
 - system is constructed by creating instances of these types
 - under-specified instantiations should generate all possible instantiations
 
+Open Questions
+--------------
+
+- If a role plays another role, must both roles be in the same compartment?
+- Keep role instances that are not contained in any compartment?
+
 Syntax
 ------
 
@@ -102,17 +108,3 @@ CompartmentX {
 - definition of the compartment here is equivalent to definition above (but
   without explicit instance names)
 
-### Incomplete instantiations
-
-```
-cb1: ComponentB,
-
-cx: CompartmentX { cb1 }
-```
-
-- no role instances are given within definition of `cx`
-- since player `cb1` is referenced, it must be used in each instance
-- what happens if referenced player cannot be used by any role?
-- possible instantiations of `cx`:
-    - `cb1 <- (Role1, Role2)`
-    - `cx 
