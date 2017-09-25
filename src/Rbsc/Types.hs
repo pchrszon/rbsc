@@ -7,18 +7,14 @@
 -- Haskell type system.
 module Rbsc.Types
     (
-    -- * Identifiers and names
-      Ident
+    -- * Instance names and type names
+      Name
+    , RoleName
     , TypeName(..)
 
     -- * User-defined component types
     , ComponentTypes
-
     , ComponentType(..)
-    , ctyName
-    , ctyInfo
-
-    , ComponentTypeInfo(..)
 
     -- * Components
     , Component(..)
@@ -34,14 +30,18 @@ module Rbsc.Types
 
 import Control.Lens
 
-import qualified Data.Map.Lazy   as L
-import qualified Data.Map.Strict as S
-import           Data.Set        (Set)
-import           Data.Text
+import Data.Map.Strict           (Map)
+import Data.Set                  (Set)
+import Data.Text
+import Data.Text.Prettyprint.Doc (Pretty (..))
 
 
--- | An identifier.
-type Ident = Text
+-- | An instance name.
+type Name = Text
+
+
+-- | A 'Name' that is intended to be a role instance name.
+type RoleName = Name
 
 
 -- | The name of a user-defined component type, role type or compartment type.
@@ -49,35 +49,34 @@ newtype TypeName = TypeName
     { getTypeName :: Text
     } deriving (Eq, Ord, Show)
 
+instance Pretty TypeName where
+    pretty = pretty . getTypeName
+
 
 -- | User-defined component types indexed by their name.
-type ComponentTypes = L.Map TypeName ComponentType
+type ComponentTypes = Map TypeName ComponentType
 
 
 -- | Represents a user-defined component type.
-data ComponentType = ComponentType
-    { _ctyName :: !TypeName
-    , _ctyInfo :: !ComponentTypeInfo
-    } deriving (Show)
-
-
--- | Additional information about a user-defined component type.
-data ComponentTypeInfo
+data ComponentType
       -- | A natural type.
     = NaturalType
       -- | A role type with its set of possible player types.
-    | RoleType (Set ComponentType)
+    | RoleType (Set TypeName)
       -- | A compartment type with its list of required role types.
-    | CompartmentType [ComponentType]
+    | CompartmentType [TypeName]
     deriving (Show)
 
 
 -- | A component instance (either a natural, a role or a compartment).
 data Component = Component
     { _compTypeName    :: !TypeName
-    , _compBoundTo     :: Maybe TypeName
-    , _compContainedIn :: Maybe TypeName
+    , _compBoundTo     :: Maybe Name
+    , _compContainedIn :: Maybe Name
     } deriving (Show)
+
+
+makeLenses ''Component
 
 
 -- | Value-level representation of types.
@@ -86,7 +85,7 @@ data Type t where
     TyInt       :: Type Integer
     TyDouble    :: Type Double
     TyArray     :: Type t -> Type [t]
-    TyComponent :: TypeName -> S.Map Ident AType -> Type Component
+    TyComponent :: TypeName -> Map Name AType -> Type Component
 
 deriving instance Show (Type t)
 
@@ -96,7 +95,3 @@ data AType where
     AType :: Type t -> AType
 
 deriving instance Show AType
-
-
-makeLenses ''ComponentType
-makeLenses ''Component

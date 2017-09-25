@@ -9,17 +9,8 @@
 -- | Generation of minimal complete system instances.
 module Rbsc.Instantiation
     (
-    -- * Types
-      Types
-    , TypeName(..)
-    , Type(..)
-
-    -- * Instances
-    , InstanceName(..)
-    , RoleInstanceName
-
     -- * System Instances
-    , System(..)
+      System(..)
     , instances
     , boundTo
     , containedIn
@@ -46,6 +37,7 @@ import           Data.Map                  (Map, assocs)
 import qualified Data.Map                  as Map
 import           Data.Maybe                (isNothing)
 import           Data.Monoid
+import Data.Set (Set)
 import qualified Data.Set                  as Set
 import           Data.Text                 (Text)
 import qualified Data.Text                 as T
@@ -53,41 +45,7 @@ import           Data.Text.Prettyprint.Doc hiding ((<>))
 
 import Rbsc.Util
 import Rbsc.Util.NameGen
-
-
--- | A collection of (named) types.
-type Types = Map TypeName Type
-
-
--- | The name of a user-defined component type, role type or compartment type.
-newtype TypeName = TypeName
-    { getTypeName :: Text
-    } deriving (Eq, Ord, Show)
-
-instance Pretty TypeName where
-    pretty = pretty . getTypeName
-
-
--- | A type.
-data Type
-    = TypeComponent
-    | TypeCompartment [TypeName]
-    | TypeRole [TypeName]
-    deriving (Show)
-
-
-
--- | The name of a component instance, role instance or compartment instance.
-newtype InstanceName = InstanceName
-    { getInstanceName :: Text
-    } deriving (Eq, Ord, Show)
-
-instance Pretty InstanceName where
-    pretty = pretty . getInstanceName
-
-
--- | An 'InstanceName' that is intended to be a role instance name.
-type RoleInstanceName = InstanceName
+import Rbsc.Types
 
 
 -- | A system instance that assigns a type to each component, role and
@@ -96,9 +54,9 @@ type RoleInstanceName = InstanceName
 -- A system instance may be incomplete, i.e., roles may be unbound and
 -- compartments may be missing certain role instances.
 data System = System
-    { _instances   :: Map InstanceName TypeName
-    , _boundTo     :: Map RoleInstanceName InstanceName
-    , _containedIn :: Map RoleInstanceName InstanceName
+    { _instances   :: Map Name TypeName
+    , _boundTo     :: Map RoleName Name
+    , _containedIn :: Map RoleName Name
     } deriving (Show)
 
 makeLenses ''System
@@ -114,7 +72,7 @@ instance Pretty System where
             fmap (\i -> (i, boundRoles i sys)) .
             view (instances.to Map.keys) $ sys
 
-prettyInstance :: System -> (InstanceName, TypeName) -> Doc ann
+prettyInstance :: System -> (Name, TypeName) -> Doc ann
 prettyInstance sys (name, tyName) =
     pretty name <+>
     colon <+>
@@ -125,7 +83,7 @@ prettyInstance sys (name, tyName) =
   where
     contained = containedRoles name sys
 
-prettyBinding :: (InstanceName, [RoleInstanceName]) -> Doc ann
+prettyBinding :: (Name, [RoleName]) -> Doc ann
 prettyBinding (name, roleNames) =
     pretty name <+> "boundto" <+> hang 0 (parens (commaSep roleNames))
 
@@ -134,17 +92,17 @@ commaSep = sep . punctuate comma . fmap pretty
 
 
 -- | Get all instances that have the given type.
-instancesOfType :: TypeName -> System -> [InstanceName]
+instancesOfType :: TypeName -> System -> [Name]
 instancesOfType tyName = inverseLookup tyName . view instances
 
 
 -- | Get all roles that are bound to a given player.
-boundRoles :: InstanceName -> System -> [RoleInstanceName]
+boundRoles :: Name -> System -> [RoleName]
 boundRoles name = inverseLookup name . view boundTo
 
 
 -- | Get all roles contained in a given compartment.
-containedRoles :: InstanceName -> System -> [RoleInstanceName]
+containedRoles :: Name -> System -> [RoleName]
 containedRoles name = inverseLookup name . view containedIn
 
 
@@ -178,7 +136,7 @@ runCompleter m sys =
     in over (traverse._Right) (view system) results
   where
     gen = mkNameGen deriveFromTypeIdent taken
-    taken = Set.map getInstanceName (sys ^. instances . to Map.keysSet)
+    taken = view (instances.to Map.keysSet) sys
 
 
 -- | Lift a nondeterministic choice into the 'Completer' monad.
@@ -194,7 +152,7 @@ liftList = lift . lift . lift
 --
 -- Some instantiations may lead to a cycle (e.g., a role played by
 -- a compartment is contained within the compartment).
-completeSystem :: Types -> System -> [Either Cycle System]
+completeSystem :: ComponentTypes -> System -> [Either Cycle System]
 completeSystem types sys = runCompleter completeAll sys
   where
     completeAll =
@@ -205,25 +163,25 @@ completeSystem types sys = runCompleter completeAll sys
 
 
 -- | Complete the given instance.
-completeInstance :: Types -> InstanceName -> TypeName -> Completer ()
+completeInstance :: ComponentTypes -> Name -> TypeName -> Completer ()
 completeInstance types name tyName = unlessVisited tyName $
     case Map.lookup tyName types of
-        Just TypeComponent -> return ()
-        Just (TypeRole playerTyNames) ->
+        Just NaturalType -> return ()
+        Just (RoleType playerTyNames) ->
             completeRoleInstance types name playerTyNames
-        Just (TypeCompartment roleTyNames) ->
+        Just (CompartmentType roleTyNames) ->
             completeCompartmentInstance types name roleTyNames
         -- non-existing type names are handled by semantic check
         Nothing -> return ()
 
 
 -- | Complete a role by binding it to a player if necessary.
-completeRoleInstance :: Types -> InstanceName -> [TypeName] -> Completer ()
+completeRoleInstance :: ComponentTypes -> Name -> Set TypeName -> Completer ()
 completeRoleInstance types name playerTyNames =
     use (system.boundTo.at name) >>= \case
         Just _ -> return () -- the role is already bound
         Nothing -> do
-            playerTyName <- liftList playerTyNames
+            playerTyName <- liftList (Set.toList playerTyNames)
             player <- getOrCreateInstance types playerTyName
             system.boundTo.at name .= Just player
 
@@ -231,7 +189,7 @@ completeRoleInstance types name playerTyNames =
 -- | Complete a compartment instance by adding a role instance for each
 -- required role type.
 completeCompartmentInstance ::
-       Types -> InstanceName -> [TypeName] -> Completer ()
+       ComponentTypes -> Name -> [TypeName] -> Completer ()
 completeCompartmentInstance types name roleTyNames = do
     sys <- use system
     let missing = missingRoles (containedRoles name sys) roleTyNames sys
@@ -247,7 +205,7 @@ completeCompartmentInstance types name roleTyNames = do
 
 
 -- | Create a new instance for the given type or create a new one.
-getOrCreateInstance :: Types -> TypeName -> Completer InstanceName
+getOrCreateInstance :: ComponentTypes -> TypeName -> Completer Name
 getOrCreateInstance types tyName = do
     create <- liftList [True, False]
     if create
@@ -257,16 +215,16 @@ getOrCreateInstance types tyName = do
 
 -- | Create a new instance of the given type and add it to the system. The
 -- returned instance is already complete.
-createInstance :: Types -> TypeName -> Completer InstanceName
+createInstance :: ComponentTypes -> TypeName -> Completer Name
 createInstance types tyName = do
-    name <- InstanceName <$> newNameFrom (getTypeName tyName)
+    name <- newNameFrom (getTypeName tyName)
     completeInstance types name tyName
     system.instances.at name .= Just tyName
     return name
 
 
 -- | Get an existing instance for the given type name.
-getInstance :: TypeName -> Completer InstanceName
+getInstance :: TypeName -> Completer Name
 getInstance tyName = liftList =<< use (system.to (instancesOfType tyName))
 
 
@@ -284,7 +242,7 @@ unlessVisited typeName m = do
 
 -- | Given a list of role instances and a list of required role types, get
 -- a list of all role types that have no corresponding instance.
-missingRoles :: [RoleInstanceName] -> [TypeName] -> System -> [TypeName]
+missingRoles :: [RoleName] -> [TypeName] -> System -> [TypeName]
 missingRoles contained required sys =
     evalState (filterM (fmap not . hasInstance) required) contained
   where
@@ -299,7 +257,7 @@ missingRoles contained required sys =
 
 
 -- | Get the first cycle induced by the 'boundTo' relation if it exists.
-getCycle :: System -> Maybe [InstanceName]
+getCycle :: System -> Maybe [Name]
 getCycle sys =
     getFirst (mconcat (fmap (go []) (view (instances.to Map.keys) sys)))
   where

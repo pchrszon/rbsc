@@ -19,6 +19,7 @@ import Test.QuickCheck
 
 import Rbsc.Instantiation
 import Rbsc.Util
+import Rbsc.Types
 
 
 spec :: Spec
@@ -31,38 +32,38 @@ spec = describe "system instance completion" $ do
               (completeSystem types sys)
 
 
-rolesAreBound :: Types -> System -> Bool
+rolesAreBound :: ComponentTypes -> System -> Bool
 rolesAreBound types sys =
     Set.filter (isRole types sys) (Map.keysSet (view instances sys)) ==
     Map.keysSet (view boundTo sys)
 
 
-isRole :: Types -> System -> InstanceName -> Bool
+isRole :: ComponentTypes -> System -> Name -> Bool
 isRole types sys name = case view (instances.at name) sys of
     Just tyName -> case Map.lookup tyName types of
-        Just (TypeRole _) -> True
+        Just (RoleType _) -> True
         _                 -> False
     _ -> False
 
 
-compartmentsAreFilled :: Types -> System -> Bool
+compartmentsAreFilled :: ComponentTypes -> System -> Bool
 compartmentsAreFilled types sys =
-    all isFilled (view (instances . to Map.assocs) sys)
+    all isFilled (view (instances.to Map.assocs) sys)
   where
     isFilled (name, tyName) =
         case Map.lookup tyName types of
-            Just (TypeCompartment rTys) ->
+            Just (CompartmentType rTys) ->
                 let cs = containedRoles name sys
                     cTys = fmap (`Map.lookup` (sys^.instances)) cs
                 in sort cTys == sort (fmap Just rTys)
             _ -> True
 
 
-data Model = Model Types System deriving (Show)
+data Model = Model ComponentTypes System deriving (Show)
 
 instance Arbitrary Model where
     arbitrary = do
-        types <- genTypes
+        types <- genComponentTypes
         is <- genInstances types
         bt <- genBindings types is
 
@@ -75,25 +76,25 @@ instance Arbitrary Model where
         return (Model types sys)
 
 
-genInstances :: Types -> Gen (Map InstanceName TypeName)
+genInstances :: ComponentTypes -> Gen (Map Name TypeName)
 genInstances =
     fmap (Map.fromList . fmap mkInstance) . nonEmptySublistOf . Map.keys
   where
     mkInstance tyName = (mkInstanceName tyName, tyName)
 
 
-genBindings :: Types
-            -> Map InstanceName TypeName
-            -> Gen (Map RoleInstanceName InstanceName)
+genBindings :: ComponentTypes
+            -> Map Name TypeName
+            -> Gen (Map RoleName Name)
 genBindings types is = do
     is' <- sublistOf (Map.assocs is)
     Map.unions <$> traverse (uncurry genBinding) is'
   where
     genBinding name tyName =
         case Map.lookup tyName types of
-            Just (TypeRole playerTyNames) -> do
+            Just (RoleType playerTyNames) -> do
                 let playerNames =
-                        Set.fromList (fmap mkInstanceName playerTyNames)
+                        Set.map mkInstanceName playerTyNames
                     possiblePlayers =
                         Set.intersection (Map.keysSet is) playerNames
                 if null possiblePlayers
@@ -103,32 +104,41 @@ genBindings types is = do
             _ -> return Map.empty
 
 
-genTypes :: Gen Types
-genTypes = scale (min 1) $ do
-    componentTyNames <- typeNames "A"
+genComponentTypes :: Gen ComponentTypes
+genComponentTypes = scale (min 1) $ do
+    naturalTyNames <- typeNames "N"
     roleTyNames <- typeNames "R"
     compartmentTyNames <- typeNames "C"
 
     -- intentionally left out roles as players since instantiation often
     -- leads to exponential blow-up
-    let playerTyNames = componentTyNames ++ compartmentTyNames
+    let playerTyNames = naturalTyNames ++ compartmentTyNames
 
-    atys <- componentTypes componentTyNames
-    rtys <- compositeTypes TypeRole roleTyNames playerTyNames
-    ctys <- compositeTypes TypeCompartment compartmentTyNames roleTyNames
+    ntys <- naturalTypes naturalTyNames
+    rtys <- roleTypes roleTyNames playerTyNames
+    ctys <- compartmentTypes compartmentTyNames roleTyNames
 
-    return (Map.unions [atys, rtys, ctys])
-
-
-componentTypes :: [TypeName] -> Gen Types
-componentTypes = pure . Map.fromList . fmap (, TypeComponent)
+    return (Map.unions [ntys, rtys, ctys])
 
 
-compositeTypes :: ([TypeName] -> Type) -> [TypeName] -> [TypeName] -> Gen Types
-compositeTypes tyCon tyNames innerTyNames =
-    Map.fromList <$> traverse compositeType tyNames
+naturalTypes :: [TypeName] -> Gen ComponentTypes
+naturalTypes = pure . Map.fromList . fmap (, NaturalType)
+
+
+roleTypes :: [TypeName] -> [TypeName] -> Gen ComponentTypes
+roleTypes roleTyNames playerTyNames =
+    Map.fromList <$> traverse roleType roleTyNames
   where
-    compositeType n = (,) n . tyCon <$> nonEmptySublistOf innerTyNames
+    roleType n =
+        (,) n . RoleType . Set.fromList <$> nonEmptySublistOf playerTyNames
+
+
+compartmentTypes :: [TypeName] -> [TypeName] -> Gen ComponentTypes
+compartmentTypes compartmentTyNames roleTyNames =
+    Map.fromList <$> traverse compartmentType compartmentTyNames
+  where
+    compartmentType n =
+        (,) n . CompartmentType <$> nonEmptySublistOf roleTyNames
 
 
 typeNames :: Text -> Gen [TypeName]
@@ -141,8 +151,8 @@ mkTypeName :: Text -> Integer -> TypeName
 mkTypeName n i = TypeName (appendIndex n i)
 
 
-mkInstanceName :: TypeName -> InstanceName
-mkInstanceName = InstanceName . toLower . getTypeName
+mkInstanceName :: TypeName -> Name
+mkInstanceName = toLower . getTypeName
 
 
 nonEmptySublistOf :: [a] -> Gen [a]
