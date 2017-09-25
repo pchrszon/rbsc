@@ -1,5 +1,5 @@
 -- | Various utility functions.
-module Util
+module Rbsc.Util
     ( inverseLookup
     , appendIndex
     ) where

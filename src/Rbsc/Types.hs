@@ -5,7 +5,7 @@
 
 -- | The type system of the modeling language and its embedding into the
 -- Haskell type system.
-module Types
+module Rbsc.Types
     (
     -- * Identifiers and names
       Ident

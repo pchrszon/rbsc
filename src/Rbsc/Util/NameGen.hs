@@ -3,7 +3,7 @@
 
 
 -- | Generator for unique names.
-module Util.NameGen
+module Rbsc.Util.NameGen
     ( HasNameGen(..)
 
     , NameGen
@@ -25,7 +25,7 @@ import           Data.Set   (Set, member)
 import           Data.Text  (Text)
 import qualified Data.Text  as T
 
-import Util (appendIndex)
+import Rbsc.Util (appendIndex)
 
 
 -- | A state @t@ that is an instance of 'HasNameGen' carries a 'NameGen'.

@@ -7,7 +7,7 @@
 
 
 -- | Generation of minimal complete system instances.
-module Instantiation
+module Rbsc.Instantiation
     (
     -- * Types
       Types
@@ -51,8 +51,8 @@ import           Data.Text                 (Text)
 import qualified Data.Text                 as T
 import           Data.Text.Prettyprint.Doc hiding ((<>))
 
-import Util
-import Util.NameGen
+import Rbsc.Util
+import Rbsc.Util.NameGen
 
 
 -- | A collection of (named) types.
