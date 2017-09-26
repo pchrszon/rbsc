@@ -1,6 +1,7 @@
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE TypeOperators      #-}
 
 
 -- | The type system of the modeling language and its embedding into the
@@ -25,6 +26,7 @@ module Rbsc.Types
     -- * Type system
     , Type(..)
     , AType(..)
+    , typeEq
     ) where
 
 
@@ -34,6 +36,7 @@ import Data.Map.Strict           (Map)
 import Data.Set                  (Set)
 import Data.Text
 import Data.Text.Prettyprint.Doc (Pretty (..))
+import Data.Type.Equality        ((:~:) (..))
 
 
 -- | An instance name.
@@ -95,3 +98,17 @@ data AType where
     AType :: Type t -> AType
 
 deriving instance Show AType
+
+
+-- | Check the equality of 'Type's.
+typeEq :: Type s -> Type t -> Maybe (s :~: t)
+typeEq TyBool      TyBool      = Just Refl
+typeEq TyInt       TyInt       = Just Refl
+typeEq TyDouble    TyDouble    = Just Refl
+typeEq (TyArray s) (TyArray t) = do
+    Refl <- typeEq s t
+    pure Refl
+-- we assume that component types of the same name also have the same local
+-- variables
+typeEq (TyComponent x _) (TyComponent y _) | x == y = Just Refl
+typeEq _ _ = Nothing
