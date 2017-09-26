@@ -2,7 +2,7 @@
 {-# LANGUAGE TupleSections     #-}
 
 
-module Rbsc.InstantiationSpec (spec) where
+module Rbsc.CompleterSpec (spec) where
 
 
 import Control.Lens hiding (elements)
@@ -17,7 +17,7 @@ import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
-import Rbsc.Instantiation
+import Rbsc.Completer
 import Rbsc.Util
 import Rbsc.Types
 

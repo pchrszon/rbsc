@@ -7,9 +7,9 @@
 
 
 -- | Generation of minimal complete system instances.
-module Rbsc.Instantiation
+module Rbsc.Completer
     (
-    -- * System Instances
+    -- * System instances
       System(..)
     , instances
     , boundTo
@@ -19,7 +19,7 @@ module Rbsc.Instantiation
     , boundRoles
     , containedRoles
 
-    -- * System Completion
+    -- * System completion
     , Cycle
     , completeSystem
     ) where
