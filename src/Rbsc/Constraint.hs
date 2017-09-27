@@ -9,12 +9,8 @@
 -- | Syntax and semantics of constraints.
 module Rbsc.Constraint
     (
-    -- * Values and constants
-      Value(..)
-    , Constants
-
     -- * Operators and quantifiers
-    , BoolBinOp(..)
+      BoolBinOp(..)
     , boolBinOp
     , Quantifier(..)
     , quantifier
@@ -31,22 +27,11 @@ module Rbsc.Constraint
 import Control.Lens
 import Control.Monad.Reader
 
-import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe      (mapMaybe)
 
 import Rbsc.Type
-
-
--- | A value tagged with its 'Type'.
-data Value where
-    Value :: Show t => Type t -> t -> Value
-
-deriving instance Show Value
-
-
--- | A constant has a 'Name' and a 'Value'.
-type Constants = Map Name Value
+import Rbsc.Value
 
 
 -- | Boolean binary operators.
