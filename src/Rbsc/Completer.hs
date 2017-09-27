@@ -8,19 +8,7 @@
 
 -- | Generation of minimal complete system instances.
 module Rbsc.Completer
-    (
-    -- * System instances
-      System(..)
-    , instances
-    , boundTo
-    , containedIn
-
-    , instancesOfType
-    , boundRoles
-    , containedRoles
-
-    -- * System completion
-    , Cycle
+    ( Cycle
     , completeSystem
     ) where
 
@@ -30,80 +18,20 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 
-import           Data.Char                 (isUpper)
-import           Data.Foldable             (find, for_)
-import           Data.List                 (delete)
-import           Data.Map                  (Map, assocs)
-import qualified Data.Map                  as Map
-import           Data.Maybe                (isNothing)
+import           Data.Char       (isUpper)
+import           Data.Foldable   (find, for_)
+import           Data.List       (delete)
+import qualified Data.Map.Strict as Map
+import           Data.Maybe      (isNothing)
 import           Data.Monoid
-import Data.Set (Set)
-import qualified Data.Set                  as Set
-import           Data.Text                 (Text)
-import qualified Data.Text                 as T
-import           Data.Text.Prettyprint.Doc hiding ((<>))
+import           Data.Set        (Set)
+import qualified Data.Set        as Set
+import           Data.Text       (Text)
+import qualified Data.Text       as T
 
-import Rbsc.Util
-import Rbsc.Util.NameGen
+import Rbsc.System
 import Rbsc.Type
-
-
--- | A system instance that assigns a type to each component, role and
--- compartment. Also specifies role bindings and compartment membership.
---
--- A system instance may be incomplete, i.e., roles may be unbound and
--- compartments may be missing certain role instances.
-data System = System
-    { _instances   :: Map Name TypeName
-    , _boundTo     :: Map RoleName Name
-    , _containedIn :: Map RoleName Name
-    } deriving (Show)
-
-makeLenses ''System
-
-instance Pretty System where
-    pretty sys = sep (punctuate comma (instanceDocs ++ bindingDocs))
-      where
-        instanceDocs =
-            fmap (prettyInstance sys) (view (instances.to assocs) sys)
-        bindingDocs =
-            fmap prettyBinding .
-            filter (not . null . snd) .
-            fmap (\i -> (i, boundRoles i sys)) .
-            view (instances.to Map.keys) $ sys
-
-prettyInstance :: System -> (Name, TypeName) -> Doc ann
-prettyInstance sys (name, tyName) =
-    pretty name <+>
-    colon <+>
-    pretty tyName <>
-    if null contained
-        then emptyDoc
-        else space <> hang 0 (parens (commaSep contained))
-  where
-    contained = containedRoles name sys
-
-prettyBinding :: (Name, [RoleName]) -> Doc ann
-prettyBinding (name, roleNames) =
-    pretty name <+> "boundto" <+> hang 0 (parens (commaSep roleNames))
-
-commaSep :: Pretty a => [a] -> Doc ann
-commaSep = sep . punctuate comma . fmap pretty
-
-
--- | Get all instances that have the given type.
-instancesOfType :: TypeName -> System -> [Name]
-instancesOfType tyName = inverseLookup tyName . view instances
-
-
--- | Get all roles that are bound to a given player.
-boundRoles :: Name -> System -> [RoleName]
-boundRoles name = inverseLookup name . view boundTo
-
-
--- | Get all roles contained in a given compartment.
-containedRoles :: Name -> System -> [RoleName]
-containedRoles name = inverseLookup name . view containedIn
+import Rbsc.Util.NameGen
 
 
 -- | Completion of an instance can lead to cycles if the same type is

@@ -18,8 +18,9 @@ import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
 import Rbsc.Completer
-import Rbsc.Util
+import Rbsc.System
 import Rbsc.Type
+import Rbsc.Util
 
 
 spec :: Spec
