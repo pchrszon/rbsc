@@ -19,6 +19,7 @@ module Rbsc.Types
 
     -- * Components
     , Component(..)
+    , compName
     , compTypeName
     , compBoundTo
     , compContainedIn
@@ -27,6 +28,7 @@ module Rbsc.Types
     , Type(..)
     , AType(..)
     , typeEq
+    , (:~:)(..)
     ) where
 
 
@@ -73,7 +75,8 @@ data ComponentType
 
 -- | A component instance (either a natural, a role or a compartment).
 data Component = Component
-    { _compTypeName    :: !TypeName
+    { _compName        :: !Name
+    , _compTypeName    :: !TypeName
     , _compBoundTo     :: Maybe Name
     , _compContainedIn :: Maybe Name
     } deriving (Show)
