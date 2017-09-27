@@ -19,7 +19,7 @@ import Test.QuickCheck
 
 import Rbsc.Completer
 import Rbsc.Util
-import Rbsc.Types
+import Rbsc.Type
 
 
 spec :: Spec

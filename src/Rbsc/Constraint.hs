@@ -35,7 +35,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe      (mapMaybe)
 
-import Rbsc.Types
+import Rbsc.Type
 
 
 -- | A value tagged with its 'Type'.

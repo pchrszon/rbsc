@@ -45,7 +45,7 @@ import           Data.Text.Prettyprint.Doc hiding ((<>))
 
 import Rbsc.Util
 import Rbsc.Util.NameGen
-import Rbsc.Types
+import Rbsc.Type
 
 
 -- | A system instance that assigns a type to each component, role and
