@@ -38,14 +38,16 @@ import Rbsc.Value
 data BoolBinOp
     = And
     | Or
+    | Implies
     deriving (Show)
 
 
 -- | Semantics of a 'BoolBinOp'.
 boolBinOp :: BoolBinOp -> Bool -> Bool -> Bool
-boolBinOp = \case
-    And -> (&&)
-    Or  -> (||)
+boolBinOp binOp l r = case binOp of
+    And     -> l && r
+    Or      -> l || r
+    Implies -> not l || r
 
 
 -- | A quantifier.
