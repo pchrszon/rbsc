@@ -14,10 +14,9 @@ module Rbsc.System
     ) where
 
 
-import           Control.Lens
-import           Data.Map.Strict           (Map, assocs)
-import qualified Data.Map.Strict           as Map
-import           Data.Text.Prettyprint.Doc
+import Control.Lens
+import Data.Map.Strict           (Map, assocs)
+import Data.Text.Prettyprint.Doc
 
 import Rbsc.Type
 import Rbsc.Util
@@ -37,33 +36,24 @@ data System = System
 makeLenses ''System
 
 instance Pretty System where
-    pretty sys = sep (punctuate comma (instanceDocs ++ bindingDocs))
+    pretty sys =
+        sep (punctuate comma (instanceDocs ++ bindingDocs ++ containmentDocs))
       where
-        instanceDocs =
-            fmap (prettyInstance sys) (view (instances.to assocs) sys)
-        bindingDocs =
-            fmap prettyBinding .
-            filter (not . null . snd) .
-            fmap (\i -> (i, boundRoles i sys)) .
-            view (instances.to Map.keys) $ sys
+        instanceDocs = fmap prettyInstance (view (instances.to assocs) sys)
+        bindingDocs = fmap prettyBinding (view (boundTo.to assocs) sys)
+        containmentDocs =
+            fmap prettyContained (view (containedIn.to assocs) sys)
 
-prettyInstance :: System -> (Name, TypeName) -> Doc ann
-prettyInstance sys (name, tyName) =
-    pretty name <+>
-    colon <+>
-    pretty tyName <>
-    if null contained
-        then emptyDoc
-        else space <> hang 0 (parens (commaSep contained))
-  where
-    contained = containedRoles name sys
+prettyInstance :: (Name, TypeName) -> Doc ann
+prettyInstance (name, tyName) = pretty name <+> colon <+> pretty tyName
 
-prettyBinding :: (Name, [RoleName]) -> Doc ann
-prettyBinding (name, roleNames) =
-    pretty name <+> "boundto" <+> hang 0 (parens (commaSep roleNames))
+prettyBinding :: (RoleName, Name) -> Doc ann
+prettyBinding (roleName, playerName) =
+    pretty roleName <+> "boundto" <+> pretty playerName
 
-commaSep :: Pretty a => [a] -> Doc ann
-commaSep = sep . punctuate comma . fmap pretty
+prettyContained :: (RoleName, Name) -> Doc ann
+prettyContained (roleName, compartmentName) =
+    pretty roleName <+> "in" <+> pretty compartmentName
 
 
 -- | Get all instances that have the given type.
