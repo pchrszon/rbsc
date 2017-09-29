@@ -9,14 +9,8 @@
 -- | Syntax and semantics of constraints.
 module Rbsc.Constraint
     (
-    -- * Operators and quantifiers
-      BoolBinOp(..)
-    , boolBinOp
-    , Quantifier(..)
-    , quantifier
-
     -- * Constraints
-    , Constraint(..)
+      Constraint(..)
     , Scope(..)
 
     -- * Evaluation
@@ -30,38 +24,9 @@ import Control.Monad.Reader
 import qualified Data.Map.Strict as Map
 import           Data.Maybe      (mapMaybe)
 
+import Rbsc.Syntax.Operators
 import Rbsc.Type
 import Rbsc.Value
-
-
--- | Boolean binary operators.
-data BoolBinOp
-    = And
-    | Or
-    | Implies
-    deriving (Show)
-
-
--- | Semantics of a 'BoolBinOp'.
-boolBinOp :: BoolBinOp -> Bool -> Bool -> Bool
-boolBinOp binOp l r = case binOp of
-    And     -> l && r
-    Or      -> l || r
-    Implies -> not l || r
-
-
--- | A quantifier.
-data Quantifier
-    = Forall
-    | Exists
-    deriving (Show)
-
-
--- | Semantics of a 'Quantifier'.
-quantifier :: Foldable t => Quantifier -> t Bool -> Bool
-quantifier = \case
-    Forall -> and
-    Exists -> or
 
 
 -- | Typed abstract syntax of constraints.
