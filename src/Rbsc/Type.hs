@@ -36,6 +36,7 @@ import Control.Lens
 
 import Data.Map.Strict           (Map)
 import Data.Set                  (Set)
+import Data.String
 import Data.Text
 import Data.Text.Prettyprint.Doc (Pretty (..))
 import Data.Type.Equality        ((:~:) (..))
@@ -56,6 +57,9 @@ newtype TypeName = TypeName
 
 instance Pretty TypeName where
     pretty = pretty . getTypeName
+
+instance IsString TypeName where
+    fromString = TypeName . fromString
 
 
 -- | User-defined component types indexed by their name.
