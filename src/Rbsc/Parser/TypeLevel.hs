@@ -1,8 +1,6 @@
 -- | Parsers for user-defined natural types, role types and compartment types.
 module Rbsc.Parser.TypeLevel
-    ( naturalTypeDef
-    , roleTypeDef
-    , compartmentTypeDef
+    ( declType
     ) where
 
 
@@ -10,7 +8,17 @@ import Text.Megaparsec
 
 import Rbsc.Parser.Lexer
 import Rbsc.SourceSpan
+import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.TypeLevel
+
+
+-- | Parser for a top-level type declaration.
+declType :: ParserT m (Declaration SourceSpan)
+declType = choice
+    [ DeclNaturalType <$> naturalTypeDef
+    , DeclRoleType <$> roleTypeDef
+    , DeclCompartmentType <$> compartmentTypeDef
+    ]
 
 
 -- | Parser for a natural type definition.

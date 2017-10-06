@@ -8,6 +8,7 @@ module Rbsc.Parser.Lexer
     , reserved
     , identifier
     , parens
+    , stringLiteral
     , comma
     , semi
     , symbol
@@ -36,7 +37,8 @@ type ParserT m a = ParsecT Dec Text m a
 -- | List of reserved keywords.
 reservedWords :: [String]
 reservedWords =
-    [ "natural"
+    [ "include"
+    , "natural"
     , "role"
     , "compartment"
     , "type"
@@ -60,6 +62,11 @@ identifier = lexeme . try $ do
 -- | Parser for surrounding parentheses-
 parens :: ParserT m a -> ParserT m a
 parens = between (symbol "(") (symbol ")")
+
+
+-- | Parser for a string literal (in double quotes).
+stringLiteral :: IsString a => ParserT m a
+stringLiteral = fromString <$> (char '"' *> L.charLiteral `manyTill` char '"')
 
 
 -- | Parser for a comma.
