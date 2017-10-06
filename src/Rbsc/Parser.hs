@@ -11,24 +11,23 @@ import System.Directory
 
 import Text.Megaparsec
 
+import Rbsc.Parser.Declaration
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.TypeLevel
-import Rbsc.SourceSpan (SourceSpan)
-import Rbsc.Syntax.Declaration
 
 
-modelFile :: MonadIO m => ParserT m [Declaration SourceSpan]
+modelFile :: MonadIO m => ParserT m [ErrorOrDecl]
 modelFile =
     concat <$> between sc eof (many (include <|> fmap (: []) declaration))
 
 
-declaration :: ParserT m (Declaration SourceSpan)
+declaration :: ParserT m ErrorOrDecl
 declaration = choice
     [ declType
     ]
 
 
-include :: MonadIO m => ParserT m [Declaration SourceSpan]
+include :: MonadIO m => ParserT m [ErrorOrDecl]
 include = do
     reserved "include"
     path <- stringLiteral
@@ -39,7 +38,7 @@ include = do
         else parseIncludeFile path
 
 
-parseIncludeFile :: MonadIO m => FilePath -> ParserT m [Declaration SourceSpan]
+parseIncludeFile :: MonadIO m => FilePath -> ParserT m [ErrorOrDecl]
 parseIncludeFile path = do
     contents <- liftIO (TIO.readFile path)
 
