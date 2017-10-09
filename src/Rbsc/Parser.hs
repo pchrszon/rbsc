@@ -8,6 +8,7 @@ import Control.Monad.IO.Class
 import qualified Data.Text.IO as TIO
 
 import System.Directory
+import System.FilePath
 
 import Text.Megaparsec
 
@@ -30,7 +31,14 @@ declaration = choice
 include :: MonadIO m => ParserT m [ErrorOrDecl]
 include = do
     reserved "include"
-    path <- stringLiteral
+    includePath <- stringLiteral
+
+    -- includePath is relative to file containing the include keyword,
+    -- thus we need to make the path relative to our current working
+    -- directory
+    parentPath <- sourceName <$> getPosition
+    let parentDir = dropFileName parentPath
+        path = parentDir </> includePath
 
     exists <- liftIO (doesFileExist path)
     if not exists
