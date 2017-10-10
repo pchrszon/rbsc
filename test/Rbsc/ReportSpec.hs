@@ -14,7 +14,7 @@ import Rbsc.SourceSpan
 
 
 spec :: Spec
-spec = describe "renderReport" $ do
+spec = describe "render" $ do
     it "underlines the span" $
         let s = SourceSpan "test" (SourcePos 2 1) (SourcePos 2 7)
             msg = "test report message"
