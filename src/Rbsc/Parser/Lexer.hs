@@ -25,9 +25,9 @@ import Data.String
 import Data.Text   (Text)
 
 import           Text.Megaparsec
-import qualified Text.Megaparsec.Lexer as L
+import qualified Text.Megaparsec.Lexer as Lexer
 
-import qualified Rbsc.SourceSpan as S
+import qualified Rbsc.Report.Region as Region
 
 
 -- | Parser monad transformer with stream type 'Text'.
@@ -66,7 +66,8 @@ parens = between (symbol "(") (symbol ")")
 
 -- | Parser for a string literal (in double quotes).
 stringLiteral :: IsString a => ParserT m a
-stringLiteral = fromString <$> (char '"' *> L.charLiteral `manyTill` char '"')
+stringLiteral =
+    fromString <$> (char '"' *> Lexer.charLiteral `manyTill` char '"')
 
 
 -- | Parser for a comma.
@@ -81,26 +82,27 @@ semi = void (symbol ";")
 
 -- | Parser for a symbol.
 symbol :: String -> ParserT m String
-symbol = L.symbol sc
+symbol = Lexer.symbol sc
 
 
 -- | Parse the given lexeme and skip any following white space.
 lexeme :: ParserT m a -> ParserT m a
-lexeme = L.lexeme sc
+lexeme = Lexer.lexeme sc
 
 
 -- | Parser for non-empty white space (including newlines).
 sc :: ParserT m ()
-sc = L.space (void spaceChar) (L.skipLineComment "//") empty
+sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty
 
 
--- | Annotate a parsed value with its 'SourceSpan' in the source.
-loc :: ParserT m (S.SourceSpan -> a) -> ParserT m a
+-- | Annotate a parsed value with its 'Region' in the source.
+loc :: ParserT m (Region.Region -> a) -> ParserT m a
 loc p = do
-    from <- getPosition
-    x <- p
-    to <- getPosition
-    return (x (S.SourceSpan (sourceName from) (convert from) (convert to)))
+    start <- getPosition
+    f <- p
+    end <- getPosition
+    return (f (Region.Region (sourceName start) (convert start) (convert end)))
   where
-    convert (SourcePos _ line col) = S.SourcePos (fromPos line) (fromPos col)
+    convert (SourcePos _ line col) =
+        Region.Position (fromPos line) (fromPos col)
     fromPos = fromIntegral . unPos

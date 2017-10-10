@@ -10,13 +10,13 @@ import Data.Text (Text)
 import Test.Hspec
 
 import Rbsc.Report
-import Rbsc.SourceSpan
+import Rbsc.Report.Region
 
 
 spec :: Spec
 spec = describe "render" $ do
-    it "underlines the span" $
-        let s = SourceSpan "test" (SourcePos 2 1) (SourcePos 2 7)
+    it "underlines the region" $
+        let s = Region "test" (Position 2 1) (Position 2 7)
             msg = "test report message"
         in shouldBe (show (render source s msg)) $
             "test:2:1:\n" <>
@@ -24,8 +24,8 @@ spec = describe "render" $ do
             "  |\n" <>
             "2 | second line\n" <>
             "  | ^^^^^^\n"
-    it "handles multi-line spans" $
-        let s = SourceSpan "test" (SourcePos 1 7) (SourcePos 3 6)
+    it "handles multi-line regions" $
+        let s = Region "test" (Position 1 7) (Position 3 6)
             msg = "test report message"
         in shouldBe (show (render source s msg)) $
             "test:1:7:\n" <>

@@ -8,7 +8,7 @@ import Text.Megaparsec
 
 import Rbsc.Parser.Declaration
 import Rbsc.Parser.Lexer
-import Rbsc.SourceSpan
+import Rbsc.Report.Region (Region)
 import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.TypeLevel
 
@@ -23,14 +23,14 @@ declType = withRecovery onSemi . fmap Right . choice $
 
 
 -- | Parser for a natural type definition.
-naturalTypeDef :: ParserT m (NaturalTypeDef SourceSpan)
+naturalTypeDef :: ParserT m (NaturalTypeDef Region)
 naturalTypeDef = loc $ NaturalTypeDef <$> (keyword *> identifier <* semi)
   where
     keyword = reserved "natural" *> reserved "type"
 
 
 -- | Parser for a role type definition.
-roleTypeDef :: ParserT m (RoleTypeDef SourceSpan)
+roleTypeDef :: ParserT m (RoleTypeDef Region)
 roleTypeDef = loc $
     RoleTypeDef <$>
         (keyword *> identifier) <*>
@@ -40,7 +40,7 @@ roleTypeDef = loc $
 
 
 -- | Parser for a compartment type definition.
-compartmentTypeDef :: ParserT m (CompartmentTypeDef SourceSpan)
+compartmentTypeDef :: ParserT m (CompartmentTypeDef Region)
 compartmentTypeDef = loc $
     CompartmentTypeDef <$>
         (keyword *> identifier) <*>

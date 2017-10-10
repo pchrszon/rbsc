@@ -1,10 +1,9 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 
 module Rbsc.Report
     ( render
-    , sourceSpan
-    , sourcePos
     ) where
 
 
@@ -13,44 +12,50 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Text.Prettyprint.Doc
 
-import Rbsc.SourceSpan
+import Rbsc.Report.Region (Region(..), LineRegion(..), Position(..))
+import qualified Rbsc.Report.Region as Region
 
 
-render :: Text -> SourceSpan -> Text -> Doc ann
-render source srcSpan message =
-    sourcePos srcSpan <> hardline <>
+render :: Text -> Region -> Text -> Doc ann
+render source region message =
+    renderStartPosition region <> hardline <>
     pretty message <> hardline <>
     spaces marginWidth <+> pipe <> hardline <>
-    sourceSpan marginWidth source srcSpan <> hardline
+    renderRegion marginWidth source region <> hardline
   where
-    marginWidth = length (show (sourceLine (spanTo srcSpan)))
+    marginWidth = length (show (Region.line (Region.end region)))
 
 
-sourceSpan :: Int -> Text -> SourceSpan -> Doc ann
-sourceSpan marginWidth source srcSpan = mconcat (punctuate hardline lineSpans)
+renderRegion :: Int -> Text -> Region -> Doc ann
+renderRegion marginWidth source region =
+    mconcat (punctuate hardline lineRegions)
   where
-    lineSpans =
-        fmap (lineSpan marginWidth) (zip sourceLines (splitSourceSpan srcSpan))
-    sourceLines = take numLines (drop (firstLine - 1) (Text.lines source))
-    firstLine = sourceLine (spanFrom srcSpan)
-    lastLine = sourceLine (spanTo srcSpan)
+    lineRegions = fmap
+        (renderLineRegion marginWidth)
+        (zip relevantLines (Region.split region))
+
+    relevantLines = take numLines (drop (firstLine - 1) (Text.lines source))
+
+    firstLine = Region.line (Region.start region)
+    lastLine = Region.line (Region.end region)
     numLines = lastLine - firstLine + 1
 
 
-lineSpan :: Int -> (Text, LineSpan) -> Doc ann
-lineSpan marginWidth (sourceLineContent, LineSpan l colFrom mColTo) =
-    fill marginWidth (pretty l) <+>
+renderLineRegion :: Int -> (Text, LineRegion) -> Doc ann
+renderLineRegion marginWidth (sourceLine, LineRegion lrLine lrStart lrEnd) =
+    fill marginWidth (pretty lrLine) <+>
     pipe <+>
-    pretty sourceLineContent <> hardline <> spaces marginWidth <+>
+    pretty sourceLine <> hardline <> spaces marginWidth <+>
     pipe <+> underline
   where
-    underline = spaces (colFrom - 1) <> replicateDoc (colTo - colFrom) "^"
-    colTo = fromMaybe (Text.length sourceLineContent + 1) mColTo
+    underline = spaces (lrStart - 1) <> replicateDoc (lrEnd' - lrStart) "^"
+    lrEnd' = fromMaybe (Text.length sourceLine + 1) lrEnd
 
 
-sourcePos :: SourceSpan -> Doc ann
-sourcePos (SourceSpan path (SourcePos srcLine srcCol) _) =
-    pretty path <> colon <> pretty srcLine <> colon <> pretty srcCol <> colon
+renderStartPosition :: Region -> Doc ann
+renderStartPosition (Region path (Position startLine startColumn) _) =
+    pretty path <> colon <> pretty startLine <> colon <> pretty startColumn <>
+    colon
 
 
 spaces :: Int -> Doc ann
