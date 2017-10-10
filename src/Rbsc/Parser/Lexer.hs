@@ -97,10 +97,10 @@ sc = L.space (void spaceChar) (L.skipLineComment "//") empty
 -- | Annotate a parsed value with its 'SourceSpan' in the source.
 loc :: ParserT m (S.SourceSpan -> a) -> ParserT m a
 loc p = do
-    from <- convert <$> getPosition
+    from <- getPosition
     x <- p
-    to <- convert <$> getPosition
-    return (x (S.SourceSpan from to))
+    to <- getPosition
+    return (x (S.SourceSpan (sourceName from) (convert from) (convert to)))
   where
     convert (SourcePos _ line col) = S.SourcePos (fromPos line) (fromPos col)
     fromPos = fromIntegral . unPos
