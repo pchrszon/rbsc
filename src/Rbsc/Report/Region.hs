@@ -7,6 +7,9 @@ module Rbsc.Report.Region
     ) where
 
 
+import Data.Text (Text)
+
+
 -- | A position in a source file.
 data Position = Position
     { line   :: !Int
@@ -16,9 +19,10 @@ data Position = Position
 
 -- | A region within a source file.
 data Region = Region
-    { path  :: FilePath  -- ^ path of the source file
-    , start :: !Position -- ^ start of the region (inclusive)
-    , end   :: !Position -- ^ end of the region (exclusive)
+    { path   :: FilePath  -- ^ path of the source file
+    , source :: !Text     -- ^ content of the source file this region is referring to
+    , start  :: !Position -- ^ start of the region (inclusive)
+    , end    :: !Position -- ^ end of the region (exclusive)
     } deriving (Eq, Show)
 
 
@@ -32,7 +36,7 @@ data LineRegion = LineRegion
 
 -- | Split a 'Region' into 'LineRegion's.
 split :: Region -> [LineRegion]
-split (Region _ (Position startLine startCol) (Position endLine endCol))
+split (Region _ _ (Position startLine startCol) (Position endLine endCol))
     | startLine >= endLine = [LineRegion startLine startCol (Just endCol)]
     | otherwise =
         LineRegion startLine startCol Nothing :

@@ -16,25 +16,26 @@ import Rbsc.Report.Region (Region(..), LineRegion(..), Position(..))
 import qualified Rbsc.Report.Region as Region
 
 
-render :: Text -> Region -> Text -> Doc ann
-render source region message =
+render :: Region -> Text -> Doc ann
+render region message =
     renderStartPosition region <> hardline <>
     pretty message <> hardline <>
     spaces marginWidth <+> pipe <> hardline <>
-    renderRegion marginWidth source region <> hardline
+    renderRegion marginWidth region <> hardline
   where
     marginWidth = length (show (Region.line (Region.end region)))
 
 
-renderRegion :: Int -> Text -> Region -> Doc ann
-renderRegion marginWidth source region =
+renderRegion :: Int -> Region -> Doc ann
+renderRegion marginWidth region =
     mconcat (punctuate hardline lineRegions)
   where
     lineRegions = fmap
         (renderLineRegion marginWidth)
         (zip relevantLines (Region.split region))
 
-    relevantLines = take numLines (drop (firstLine - 1) (Text.lines source))
+    relevantLines =
+        take numLines (drop (firstLine - 1) (Text.lines (Region.source region)))
 
     firstLine = Region.line (Region.start region)
     lastLine = Region.line (Region.end region)
@@ -53,7 +54,7 @@ renderLineRegion marginWidth (sourceLine, LineRegion lrLine lrStart lrEnd) =
 
 
 renderStartPosition :: Region -> Doc ann
-renderStartPosition (Region path (Position startLine startColumn) _) =
+renderStartPosition (Region path _ (Position startLine startColumn) _) =
     pretty path <> colon <> pretty startLine <> colon <> pretty startColumn <>
     colon
 

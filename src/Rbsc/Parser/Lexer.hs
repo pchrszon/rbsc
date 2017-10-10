@@ -20,6 +20,7 @@ module Rbsc.Parser.Lexer
 
 import Control.Applicative
 import Control.Monad       (void)
+import Control.Monad.Reader
 
 import Data.String
 import Data.Text   (Text)
@@ -31,7 +32,7 @@ import qualified Rbsc.Report.Region as Region
 
 
 -- | Parser monad transformer with stream type 'Text'.
-type ParserT m a = ParsecT Dec Text m a
+type ParserT m a = ReaderT Text (ParsecT Dec Text m) a
 
 
 -- | List of reserved keywords.
@@ -98,10 +99,15 @@ sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty
 -- | Annotate a parsed value with its 'Region' in the source.
 loc :: ParserT m (Region.Region -> a) -> ParserT m a
 loc p = do
+    source <- ask
     start <- getPosition
     f <- p
     end <- getPosition
-    return (f (Region.Region (sourceName start) (convert start) (convert end)))
+
+    let rgn = Region.Region
+            (sourceName start) source (convert start) (convert end)
+
+    return (f rgn)
   where
     convert (SourcePos _ line col) =
         Region.Position (fromPos line) (fromPos col)

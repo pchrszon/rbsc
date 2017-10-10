@@ -4,6 +4,7 @@ module Rbsc.Parser
 
 
 import Control.Monad.IO.Class
+import Control.Monad.Reader
 
 import qualified Data.Text.IO as TIO
 
@@ -54,7 +55,8 @@ parseIncludeFile path = do
     pushPosition (initialPos path)
     setInput contents
 
-    result <- modelFile
+    -- set 'contents' as new source
+    result <- local (const contents) modelFile
 
     setInput input
     popPosition
