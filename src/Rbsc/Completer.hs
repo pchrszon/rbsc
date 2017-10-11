@@ -29,6 +29,7 @@ import qualified Data.Set        as Set
 import           Data.Text       (Text)
 import qualified Data.Text       as T
 
+import Rbsc.ComponentType
 import Rbsc.System
 import Rbsc.Type
 import Rbsc.Util.NameGen

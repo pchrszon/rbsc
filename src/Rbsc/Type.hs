@@ -13,10 +13,6 @@ module Rbsc.Type
     , RoleName
     , TypeName(..)
 
-    -- * User-defined component types
-    , ComponentTypes
-    , ComponentType(..)
-
     -- * Components
     , Component(..)
     , compName
@@ -35,7 +31,6 @@ module Rbsc.Type
 import Control.Lens
 
 import Data.Map.Strict           (Map)
-import Data.Set                  (Set)
 import Data.String
 import Data.Text
 import Data.Text.Prettyprint.Doc (Pretty (..))
@@ -60,21 +55,6 @@ instance Pretty TypeName where
 
 instance IsString TypeName where
     fromString = TypeName . fromString
-
-
--- | User-defined component types indexed by their name.
-type ComponentTypes = Map TypeName ComponentType
-
-
--- | Represents a user-defined component type.
-data ComponentType
-      -- | A natural type.
-    = NaturalType
-      -- | A role type with its set of possible player types.
-    | RoleType (Set TypeName)
-      -- | A compartment type with its list of required role types.
-    | CompartmentType [TypeName]
-    deriving (Show)
 
 
 -- | A component instance (either a natural, a role or a compartment).
