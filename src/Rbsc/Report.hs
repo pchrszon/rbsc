@@ -1,38 +1,69 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 
 module Rbsc.Report
-    ( render
+    ( Report(..)
+    , Part(..)
     ) where
 
 
-import Data.Maybe (fromMaybe)
-import Data.Text (Text)
-import qualified Data.Text as Text
-import Data.Text.Prettyprint.Doc
+import           Data.Maybe                (fromMaybe, isNothing)
+import           Data.Text                 (Text)
+import qualified Data.Text                 as Text
+import           Data.Text.Prettyprint.Doc
 
-import Rbsc.Report.Region (Region(..), LineRegion(..), Position(..))
+import           Rbsc.Report.Region (LineRegion (..), Position (..),
+                                     Region (..))
 import qualified Rbsc.Report.Region as Region
 
 
-render :: Region -> Text -> Doc ann
-render region message =
-    renderStartPosition region <> hardline <>
-    pretty message <> hardline <>
-    spaces marginWidth <+> pipe <> hardline <>
-    renderRegion marginWidth region <> hardline
-  where
-    marginWidth = length (show (Region.line (Region.end region)))
+data Report = Report
+    { title :: !Text
+    , parts :: [Part]
+    }
 
 
-renderRegion :: Int -> Region -> Doc ann
-renderRegion marginWidth region =
-    mconcat (punctuate hardline lineRegions)
+data Part = Part
+    { region  :: !Region
+    , message :: Maybe Text
+    }
+
+
+instance Pretty Report where
+    pretty = render
+
+
+render :: Report -> Doc ann
+render (Report title parts) =
+    pretty title <> hardline <>
+    mconcat (fmap (renderPart marginWidth) (zip parts prevPaths))
   where
+    -- File path of the previos report part. The first part does not have
+    -- a predecessor.
+    prevPaths = Nothing : fmap (Just . Region.path . region) parts
+
+    marginWidth = length (show maxLineNum)
+    maxLineNum = maximum (fmap (Region.line . Region.end . region) parts)
+
+
+renderPart :: Int -> (Part, Maybe FilePath) -> Doc ann
+renderPart marginWidth (Part region message, path) =
+    partPosition <> hardline <>
+    mconcat (punctuate hardline lineRegions) <> partMessage <> hardline
+  where
+    partPosition
+        | Just (Region.path region) == path = "..."
+        | otherwise =
+            (if isNothing path then emptyDoc else hardline) <>
+            "  --> " <> renderStartPosition region <> hardline <>
+            spaces marginWidth <+> pipe
+
     lineRegions = fmap
         (renderLineRegion marginWidth)
         (zip relevantLines (Region.split region))
+
+    partMessage = maybe emptyDoc ((space <>) . pretty) message
 
     relevantLines =
         take numLines (drop (firstLine - 1) (Text.lines (Region.source region)))
@@ -44,8 +75,7 @@ renderRegion marginWidth region =
 
 renderLineRegion :: Int -> (Text, LineRegion) -> Doc ann
 renderLineRegion marginWidth (sourceLine, LineRegion lrLine lrStart lrEnd) =
-    fill marginWidth (pretty lrLine) <+>
-    pipe <+>
+    fill marginWidth (pretty lrLine) <+> pipe <+>
     pretty sourceLine <> hardline <> spaces marginWidth <+>
     pipe <+> underline
   where
@@ -55,8 +85,7 @@ renderLineRegion marginWidth (sourceLine, LineRegion lrLine lrStart lrEnd) =
 
 renderStartPosition :: Region -> Doc ann
 renderStartPosition (Region path _ (Position startLine startColumn) _) =
-    pretty path <> colon <> pretty startLine <> colon <> pretty startColumn <>
-    colon
+    pretty path <> colon <> pretty startLine <> colon <> pretty startColumn
 
 
 spaces :: Int -> Doc ann

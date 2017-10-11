@@ -6,6 +6,7 @@ module Rbsc.ReportSpec (spec) where
 
 import Data.Monoid
 import Data.Text (Text)
+import Data.Text.Prettyprint.Doc (Pretty(..))
 
 import Test.Hspec
 
@@ -14,30 +15,61 @@ import Rbsc.Report.Region
 
 
 spec :: Spec
-spec = describe "render" $ do
-    it "underlines the region" $
-        let s = Region "test" testSource (Position 2 1) (Position 2 7)
-            msg = "test report message"
-        in shouldBe (show (render s msg)) $
-            "test:2:1:\n" <>
-            "test report message\n" <>
-            "  |\n" <>
-            "2 | second line\n" <>
-            "  | ^^^^^^\n"
-    it "handles multi-line regions" $
-        let s = Region "test" testSource (Position 1 7) (Position 3 6)
-            msg = "test report message"
-        in shouldBe (show (render s msg)) $
-            "test:1:7:\n" <>
-            "test report message\n" <>
-            "  |\n" <>
-            "1 | first line\n" <>
-            "  |       ^^^^\n" <>
-            "2 | second line\n" <>
-            "  | ^^^^^^^^^^^\n" <>
-            "3 | third line\n" <>
-            "  | ^^^^^\n"
-
+spec = describe "pretty" $ do
+    it "underlines the region" $ shouldRender
+        (Report "title" [Part (mkRegion (2, 1) (2, 7)) Nothing]) $
+        "title\n" <>
+        "  --> <test>:2:1\n" <>
+        "  |\n" <>
+        "2 | second line\n" <>
+        "  | ^^^^^^\n"
+    it "prints a message" $ shouldRender
+        (Report "title" [Part (mkRegion (2, 1) (2, 7)) (Just "message")]) $
+        "title\n" <>
+        "  --> <test>:2:1\n" <>
+        "  |\n" <>
+        "2 | second line\n" <>
+        "  | ^^^^^^ message\n"
+    it "handles multi-line regions" $ shouldRender
+        (Report "title" [Part (mkRegion (1, 7) (3, 6)) Nothing]) $
+        "title\n" <>
+        "  --> <test>:1:7\n" <>
+        "  |\n" <>
+        "1 | first line\n" <>
+        "  |       ^^^^\n" <>
+        "2 | second line\n" <>
+        "  | ^^^^^^^^^^^\n" <>
+        "3 | third line\n" <>
+        "  | ^^^^^\n"
+    it "prints multiple parts" $ shouldRender
+        (Report "title"
+            [ Part (mkRegion (1, 1) (1, 6)) (Just "first")
+            , Part (mkRegion (3, 1) (3, 6)) (Just "second")
+            ]) $
+        "title\n" <>
+        "  --> <test>:1:1\n" <>
+        "  |\n" <>
+        "1 | first line\n" <>
+        "  | ^^^^^ first\n" <>
+        "...\n" <>
+        "3 | third line\n" <>
+        "  | ^^^^^ second\n"
+    it "prints multiple parts from different sources" $ shouldRender
+        (Report "title"
+            [ Part (mkRegion (2, 1) (2, 7)) (Just "first")
+            , Part ((mkRegion (2, 7) (2, 13))
+                { path = "<other>", source = otherSource }) (Just "second")
+            ]) $
+        "title\n" <>
+        "  --> <test>:2:1\n" <>
+        "  |\n" <>
+        "2 | second line\n" <>
+        "  | ^^^^^^ first\n" <>
+        "\n" <>
+        "  --> <other>:2:7\n" <>
+        "  |\n" <>
+        "2 | other second line\n" <>
+        "  |       ^^^^^^ second\n"
 
 
 testSource :: Text
@@ -45,3 +77,21 @@ testSource =
     "first line\n" <>
     "second line\n" <>
     "third line\n"
+
+otherSource :: Text
+otherSource =
+    "other first line\n" <>
+    "other second line\n"
+
+
+mkRegion :: (Int, Int) -> (Int, Int) -> Region
+mkRegion (startLine, startColumn) (endLine, endColumn) =
+    Region
+        "<test>"
+        testSource
+        (Position startLine startColumn)
+        (Position endLine endColumn)
+
+
+shouldRender :: Pretty a => a -> String -> Expectation
+shouldRender = shouldBe . show . pretty
