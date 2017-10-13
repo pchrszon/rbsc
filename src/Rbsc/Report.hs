@@ -18,12 +18,14 @@ import           Rbsc.Report.Region (LineRegion (..), Position (..),
 import qualified Rbsc.Report.Region as Region
 
 
+-- | Represents information about the source code (e.g., an error or a warning).
 data Report = Report
     { title :: !Text
     , parts :: [Part]
     }
 
 
+-- | A reference to a code region with an optional description.
 data Part = Part
     { region  :: !Region
     , message :: Maybe Text
@@ -43,7 +45,10 @@ render (Report title parts) =
     -- a predecessor.
     prevPaths = Nothing : fmap (Just . Region.path . region) parts
 
-    marginWidth = length (show maxLineNum)
+    marginWidth
+        | null parts = 0
+        | otherwise  = length (show maxLineNum)
+
     maxLineNum = maximum (fmap (Region.line . Region.end . region) parts)
 
 

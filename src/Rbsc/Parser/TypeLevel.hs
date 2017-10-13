@@ -11,6 +11,7 @@ import Rbsc.Parser.Lexer
 import Rbsc.Report.Region (Region)
 import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.TypeLevel
+import Rbsc.Type
 
 
 -- | Parser for a top-level type declaration.
@@ -34,7 +35,7 @@ roleTypeDef :: ParserT m (RoleTypeDef Region)
 roleTypeDef = loc $
     RoleTypeDef <$>
         (keyword *> identifier) <*>
-        (parens (identifier `sepBy` comma) <* semi)
+        (parens (tyName `sepBy` comma) <* semi)
   where
     keyword = reserved "role" *> reserved "type"
 
@@ -44,9 +45,13 @@ compartmentTypeDef :: ParserT m (CompartmentTypeDef Region)
 compartmentTypeDef = loc $
     CompartmentTypeDef <$>
         (keyword *> identifier) <*>
-        (parens (identifier `sepBy` comma) <* semi)
+        (parens (tyName `sepBy` comma) <* semi)
   where
     keyword = reserved "compartment" *> reserved "type"
+
+
+tyName :: ParserT m (TypeName, Region)
+tyName = loc $ (,) <$> identifier
 
 
 -- | Parser that consumes anything until a semicolon.
