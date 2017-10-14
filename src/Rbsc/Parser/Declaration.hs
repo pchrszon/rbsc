@@ -5,8 +5,7 @@ module Rbsc.Parser.Declaration
 
 import Text.Megaparsec
 
-import Rbsc.Report.Region
 import Rbsc.Syntax.Declaration
 
 
-type ErrorOrDecl = Either (ParseError Char Dec) (Declaration Region)
+type ErrorOrDecl = Either (ParseError Char Dec) Declaration

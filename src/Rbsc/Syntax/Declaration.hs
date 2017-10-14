@@ -8,8 +8,8 @@ import Rbsc.Syntax.TypeLevel
 
 
 -- | Top-level declarations of a model.
-data Declaration l
-    = DeclNaturalType (NaturalTypeDef l)
-    | DeclRoleType (RoleTypeDef l)
-    | DeclCompartmentType (CompartmentTypeDef l)
+data Declaration
+    = DeclNaturalType NaturalTypeDef
+    | DeclRoleType RoleTypeDef
+    | DeclCompartmentType CompartmentTypeDef
     deriving (Show)

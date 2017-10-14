@@ -8,10 +8,8 @@ import Text.Megaparsec
 
 import Rbsc.Parser.Declaration
 import Rbsc.Parser.Lexer
-import Rbsc.Report.Region (Region)
 import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.TypeLevel
-import Rbsc.Type
 
 
 -- | Parser for a top-level type declaration.
@@ -24,34 +22,28 @@ declType = withRecovery onSemi . fmap Right . choice $
 
 
 -- | Parser for a natural type definition.
-naturalTypeDef :: ParserT m (NaturalTypeDef Region)
-naturalTypeDef = loc $ NaturalTypeDef <$> (keyword *> identifier <* semi)
+naturalTypeDef :: ParserT m NaturalTypeDef
+naturalTypeDef = NaturalTypeDef <$> (keyword *> identifier <* semi)
   where
     keyword = reserved "natural" *> reserved "type"
 
 
 -- | Parser for a role type definition.
-roleTypeDef :: ParserT m (RoleTypeDef Region)
-roleTypeDef = loc $
-    RoleTypeDef <$>
-        (keyword *> identifier) <*>
-        (parens (tyName `sepBy` comma) <* semi)
+roleTypeDef :: ParserT m RoleTypeDef
+roleTypeDef =
+    RoleTypeDef <$> (keyword *> identifier) <*>
+    (parens (identifier `sepBy` comma) <* semi)
   where
     keyword = reserved "role" *> reserved "type"
 
 
 -- | Parser for a compartment type definition.
-compartmentTypeDef :: ParserT m (CompartmentTypeDef Region)
-compartmentTypeDef = loc $
-    CompartmentTypeDef <$>
-        (keyword *> identifier) <*>
-        (parens (tyName `sepBy` comma) <* semi)
+compartmentTypeDef :: ParserT m CompartmentTypeDef
+compartmentTypeDef =
+    CompartmentTypeDef <$> (keyword *> identifier) <*>
+    (parens (identifier `sepBy` comma) <* semi)
   where
     keyword = reserved "compartment" *> reserved "type"
-
-
-tyName :: ParserT m (TypeName, Region)
-tyName = loc $ (,) <$> identifier
 
 
 -- | Parser that consumes anything until a semicolon.

@@ -14,7 +14,6 @@ module Rbsc.Parser.Lexer
     , symbol
     , lexeme
     , sc
-    , loc
     ) where
 
 
@@ -28,6 +27,7 @@ import Data.Text   (Text)
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as Lexer
 
+import Rbsc.Report.Region (Region, Ann(..))
 import qualified Rbsc.Report.Region as Region
 
 
@@ -47,62 +47,55 @@ reservedWords =
 
 
 -- | Parser for a reserved word.
-reserved :: String -> ParserT m ()
-reserved s = lexeme (string s *> notFollowedBy alphaNumChar)
+reserved :: String -> ParserT m Region
+reserved s =
+    getAnn <$> lexeme ((Ann <$> string s) <* notFollowedBy alphaNumChar)
 
 
 -- | Parser for an identifier.
-identifier :: IsString a => ParserT m a
+identifier :: IsString a => ParserT m (Ann a Region)
 identifier = lexeme . try $ do
     ident <- (:) <$> letterChar <*> many alphaNumChar
     if ident `elem` reservedWords
         then fail ("unexpected reserved word " ++ ident)
-        else return (fromString ident)
+        else return (Ann (fromString ident))
 
 
--- | Parser for surrounding parentheses-
+-- | Parser for surrounding parentheses.
 parens :: ParserT m a -> ParserT m a
 parens = between (symbol "(") (symbol ")")
 
 
 -- | Parser for a string literal (in double quotes).
-stringLiteral :: IsString a => ParserT m a
-stringLiteral =
-    fromString <$> (char '"' *> Lexer.charLiteral `manyTill` char '"')
+stringLiteral :: IsString a => ParserT m (Ann a Region)
+stringLiteral = lexeme $
+    Ann . fromString <$> (char '"' *> Lexer.charLiteral `manyTill` char '"')
 
 
 -- | Parser for a comma.
-comma :: ParserT m ()
-comma = void (symbol ",")
+comma :: ParserT m Region
+comma = symbol ","
 
 
 -- | Parser for a semicolon.
-semi :: ParserT m ()
-semi = void (symbol ";")
+semi :: ParserT m Region
+semi = symbol ";"
 
 
 -- | Parser for a symbol.
-symbol :: String -> ParserT m String
-symbol = Lexer.symbol sc
+symbol :: String -> ParserT m Region
+symbol s = getAnn <$> lexeme (Ann <$> string s)
 
 
--- | Parse the given lexeme and skip any following white space.
-lexeme :: ParserT m a -> ParserT m a
-lexeme = Lexer.lexeme sc
-
-
--- | Parser for non-empty white space (including newlines).
-sc :: ParserT m ()
-sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty
-
-
--- | Annotate a parsed value with its 'Region' in the source.
-loc :: ParserT m (Region.Region -> a) -> ParserT m a
-loc p = do
+-- | Annotate a parsed value with its 'Region' in the source and skip
+-- trailing white space.
+lexeme :: ParserT m (Region -> a) -> ParserT m a
+lexeme p = do
     source <- ask
     start <- getPosition
     f <- p
     end <- getPosition
+    sc
 
     let rgn = Region.Region
             (sourceName start) source (convert start) (convert end)
@@ -112,3 +105,8 @@ loc p = do
     convert (SourcePos _ line col) =
         Region.Position (fromPos line) (fromPos col)
     fromPos = fromIntegral . unPos
+
+
+-- | Parser for non-empty white space (including newlines).
+sc :: ParserT m ()
+sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty

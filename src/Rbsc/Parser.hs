@@ -16,6 +16,7 @@ import Text.Megaparsec
 import Rbsc.Parser.Declaration
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.TypeLevel
+import Rbsc.Report.Region (Ann(..))
 
 
 modelFile :: MonadIO m => ParserT m [ErrorOrDecl]
@@ -31,8 +32,8 @@ declaration = choice
 
 include :: MonadIO m => ParserT m [ErrorOrDecl]
 include = do
-    reserved "include"
-    includePath <- stringLiteral
+    void (reserved "include")
+    includePath <- unAnn <$> stringLiteral
 
     -- includePath is relative to file containing the include keyword,
     -- thus we need to make the path relative to our current working

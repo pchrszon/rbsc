@@ -43,7 +43,7 @@ data ComponentType
 
 
 -- | Extract 'ComponentTypes' from a list of 'Declaration's.
-fromDeclarations :: [Declaration Region] -> Either [Syntax.Error] ComponentTypes
+fromDeclarations :: [Declaration] -> Either [Syntax.Error] ComponentTypes
 fromDeclarations decls =
     let (types, errors) = convert decls
         moreErrors = validate types decls
@@ -53,18 +53,18 @@ fromDeclarations decls =
            else Left allErrors
 
 
-convert :: [Declaration Region] -> (ComponentTypes, [Syntax.Error])
+convert :: [Declaration] -> (ComponentTypes, [Syntax.Error])
 convert decls =
     over _1 (fmap fst) . flip execState (Map.empty, []) . for_ decls $ \case
-        DeclNaturalType (NaturalTypeDef name rgn) ->
+        DeclNaturalType (NaturalTypeDef (Ann name rgn)) ->
             insertType name NaturalType rgn
-        DeclRoleType (RoleTypeDef name playerTyNames rgn) ->
+        DeclRoleType (RoleTypeDef (Ann name rgn) playerTyNames) ->
             insertType
                 name
-                (RoleType (Set.fromList (fmap fst playerTyNames)))
+                (RoleType (Set.fromList (fmap unAnn playerTyNames)))
                 rgn
-        DeclCompartmentType (CompartmentTypeDef name roleTyNames rgn) ->
-            insertType name (CompartmentType (fmap fst roleTyNames)) rgn
+        DeclCompartmentType (CompartmentTypeDef (Ann name rgn) roleTyNames) ->
+            insertType name (CompartmentType (fmap unAnn roleTyNames)) rgn
   where
     insertType ::
            TypeName
@@ -79,21 +79,21 @@ convert decls =
     throw e = modifying _2 (++ [e])
 
 
-validate :: ComponentTypes -> [Declaration Region] -> [Syntax.Error]
-validate types decls = concatMap validateDecl decls
+validate :: ComponentTypes -> [Declaration] -> [Syntax.Error]
+validate types = concatMap validateDecl
   where
     validateDecl = \case
         DeclNaturalType _ -> []
-        DeclRoleType (RoleTypeDef _ playerTyNames _) ->
+        DeclRoleType (RoleTypeDef _ playerTyNames) ->
             mapMaybe exists playerTyNames
-        DeclCompartmentType (CompartmentTypeDef _ roleTyNames _) ->
+        DeclCompartmentType (CompartmentTypeDef _ roleTyNames) ->
             mapMaybe isRoleType roleTyNames
 
-    exists (tyName, rgn)
+    exists (Ann tyName rgn)
         | Map.member tyName types = Nothing
         | otherwise = Just (Syntax.UndefinedType rgn)
 
-    isRoleType (tyName, rgn) = case Map.lookup tyName types of
+    isRoleType (Ann tyName rgn) = case Map.lookup tyName types of
         Just (RoleType _) -> Nothing
         Just _            -> Just (Syntax.NonRoleInCompartment rgn)
         Nothing           -> Just (Syntax.UndefinedType rgn)
