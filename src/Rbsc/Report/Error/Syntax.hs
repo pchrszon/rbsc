@@ -28,7 +28,7 @@ toReport = \case
 
     DuplicateType second first ->
         Report "duplicate type definition"
-            [ Part second (Just "a type of the same name was defined already")
+            [ Part second (Just "a type of the same name already exists")
             , Part first (Just "first definition was here")
             ]
 

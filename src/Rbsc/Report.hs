@@ -5,13 +5,16 @@
 module Rbsc.Report
     ( Report(..)
     , Part(..)
+    , render
     ) where
 
 
-import           Data.Maybe                (fromMaybe, isNothing)
-import           Data.Text                 (Text)
-import qualified Data.Text                 as Text
+import           Data.Maybe                                (fromMaybe,
+                                                            isNothing)
+import           Data.Text                                 (Text)
+import qualified Data.Text                                 as Text
 import           Data.Text.Prettyprint.Doc
+import           Data.Text.Prettyprint.Doc.Render.Terminal
 
 import           Rbsc.Report.Region (LineRegion (..), Position (..),
                                      Region (..))
@@ -33,12 +36,28 @@ data Part = Part
 
 
 instance Pretty Report where
-    pretty = render
+    pretty = unAnnotate . render
 
 
-render :: Report -> Doc ann
+errorTitleStyle :: AnsiStyle
+errorTitleStyle = color Red <> bold
+
+
+errorUnderlineStyle :: AnsiStyle
+errorUnderlineStyle = color Red
+
+
+errorMessageStyle :: AnsiStyle
+errorMessageStyle = color Red <> italicized
+
+
+lineNumberStyle :: AnsiStyle
+lineNumberStyle = colorDull Blue
+
+
+render :: Report -> Doc AnsiStyle
 render (Report title parts) =
-    pretty title <> hardline <>
+    annotate errorTitleStyle (pretty title) <> hardline <>
     mconcat (fmap (renderPart marginWidth) (zip parts prevPaths))
   where
     -- File path of the previos report part. The first part does not have
@@ -52,7 +71,7 @@ render (Report title parts) =
     maxLineNum = maximum (fmap (Region.line . Region.end . region) parts)
 
 
-renderPart :: Int -> (Part, Maybe FilePath) -> Doc ann
+renderPart :: Int -> (Part, Maybe FilePath) -> Doc AnsiStyle
 renderPart marginWidth (Part region message, path) =
     partPosition <> hardline <>
     mconcat (punctuate hardline lineRegions) <> partMessage <> hardline
@@ -62,13 +81,14 @@ renderPart marginWidth (Part region message, path) =
         | otherwise =
             (if isNothing path then emptyDoc else hardline) <>
             "  --> " <> renderStartPosition region <> hardline <>
-            spaces marginWidth <+> pipe
+            spaces marginWidth <+> annotate lineNumberStyle pipe
 
     lineRegions = fmap
         (renderLineRegion marginWidth)
         (zip relevantLines (Region.split region))
 
-    partMessage = maybe emptyDoc ((space <>) . pretty) message
+    partMessage = maybe emptyDoc
+        ((space <>) . annotate errorMessageStyle . pretty) message
 
     relevantLines =
         take numLines (drop (firstLine - 1) (Text.lines (Region.source region)))
@@ -78,13 +98,14 @@ renderPart marginWidth (Part region message, path) =
     numLines = lastLine - firstLine + 1
 
 
-renderLineRegion :: Int -> (Text, LineRegion) -> Doc ann
+renderLineRegion :: Int -> (Text, LineRegion) -> Doc AnsiStyle
 renderLineRegion marginWidth (sourceLine, LineRegion lrLine lrStart lrEnd) =
-    fill marginWidth (pretty lrLine) <+> pipe <+>
+    annotate lineNumberStyle (fill marginWidth (pretty lrLine) <+> pipe) <+>
     pretty sourceLine <> hardline <> spaces marginWidth <+>
-    pipe <+> underline
+    annotate lineNumberStyle pipe <+> underline
   where
-    underline = spaces (lrStart - 1) <> replicateDoc (lrEnd' - lrStart) "^"
+    underline = spaces (lrStart - 1) <>
+        annotate errorUnderlineStyle (replicateDoc (lrEnd' - lrStart) "^")
     lrEnd' = fromMaybe (Text.length sourceLine + 1) lrEnd
 
 
