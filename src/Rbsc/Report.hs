@@ -4,7 +4,9 @@
 
 module Rbsc.Report
     ( Report(..)
-    , Part(..)
+    , Part
+    , errorPart
+    , hintPart
     , render
     ) where
 
@@ -30,9 +32,26 @@ data Report = Report
 
 -- | A reference to a code region with an optional description.
 data Part = Part
-    { region  :: !Region
-    , message :: Maybe Text
+    { _type :: !PartType
+    , _region   :: !Region
+    , _message  :: Maybe Text
     }
+
+
+-- | A 'Part' can either point to an error or give a hint.
+data PartType
+    = Error
+    | Hint
+
+
+-- | Create a 'Part' referencing an error.
+errorPart :: Region -> Maybe Text -> Part
+errorPart = Part Error
+
+
+-- | Create a 'Part' showing a hint.
+hintPart :: Region -> Maybe Text -> Part
+hintPart = Part Hint
 
 
 instance Pretty Report where
@@ -47,8 +66,16 @@ errorUnderlineStyle :: AnsiStyle
 errorUnderlineStyle = color Red
 
 
+hintUnderlineStyle :: AnsiStyle
+hintUnderlineStyle = color Blue
+
+
 errorMessageStyle :: AnsiStyle
 errorMessageStyle = color Red <> italicized
+
+
+hintMessageStyle :: AnsiStyle
+hintMessageStyle = color Blue <> italicized
 
 
 lineNumberStyle :: AnsiStyle
@@ -62,17 +89,17 @@ render (Report title parts) =
   where
     -- File path of the previos report part. The first part does not have
     -- a predecessor.
-    prevPaths = Nothing : fmap (Just . Region.path . region) parts
+    prevPaths = Nothing : fmap (Just . Region.path . _region) parts
 
     marginWidth
         | null parts = 0
         | otherwise  = length (show maxLineNum)
 
-    maxLineNum = maximum (fmap (Region.line . Region.end . region) parts)
+    maxLineNum = maximum (fmap (Region.line . Region.end . _region) parts)
 
 
 renderPart :: Int -> (Part, Maybe FilePath) -> Doc AnsiStyle
-renderPart marginWidth (Part region message, path) =
+renderPart marginWidth (Part partType region message, path) =
     partPosition <> hardline <>
     mconcat (punctuate hardline lineRegions) <> partMessage <> hardline
   where
@@ -84,11 +111,16 @@ renderPart marginWidth (Part region message, path) =
             spaces marginWidth <+> annotate lineNumberStyle pipe
 
     lineRegions = fmap
-        (renderLineRegion marginWidth)
+        (renderLineRegion marginWidth partType)
         (zip relevantLines (Region.split region))
 
     partMessage = maybe emptyDoc
-        ((space <>) . annotate errorMessageStyle . pretty) message
+        ((space <>) . annotate messageStyle . pretty) message
+
+    messageStyle =
+        case partType of
+            Error -> errorMessageStyle
+            Hint  -> hintMessageStyle
 
     relevantLines =
         take numLines (drop (firstLine - 1) (Text.lines (Region.source region)))
@@ -98,14 +130,25 @@ renderPart marginWidth (Part region message, path) =
     numLines = lastLine - firstLine + 1
 
 
-renderLineRegion :: Int -> (Text, LineRegion) -> Doc AnsiStyle
-renderLineRegion marginWidth (sourceLine, LineRegion lrLine lrStart lrEnd) =
+renderLineRegion :: Int -> PartType -> (Text, LineRegion) -> Doc AnsiStyle
+renderLineRegion marginWidth partType (sourceLine, LineRegion lrLine lrStart lrEnd) =
     annotate lineNumberStyle (fill marginWidth (pretty lrLine) <+> pipe) <+>
     pretty sourceLine <> hardline <> spaces marginWidth <+>
     annotate lineNumberStyle pipe <+> underline
   where
     underline = spaces (lrStart - 1) <>
-        annotate errorUnderlineStyle (replicateDoc (lrEnd' - lrStart) "^")
+        annotate ulStyle (replicateDoc (lrEnd' - lrStart) ulChar)
+
+    ulStyle =
+        case partType of
+            Error -> errorUnderlineStyle
+            Hint  -> hintUnderlineStyle
+
+    ulChar =
+        case partType of
+            Error -> "^"
+            Hint  -> "-"
+
     lrEnd' = fromMaybe (Text.length sourceLine + 1) lrEnd
 
 

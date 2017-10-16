@@ -17,21 +17,21 @@ import Rbsc.Report.Region
 spec :: Spec
 spec = describe "pretty" $ do
     it "underlines the region" $ shouldRender
-        (Report "title" [Part (mkRegion (2, 1) (2, 7)) Nothing]) $
+        (Report "title" [errorPart (mkRegion (2, 1) (2, 7)) Nothing]) $
         "title\n" <>
         "  --> <test>:2:1\n" <>
         "  |\n" <>
         "2 | second line\n" <>
         "  | ^^^^^^\n"
     it "prints a message" $ shouldRender
-        (Report "title" [Part (mkRegion (2, 1) (2, 7)) (Just "message")]) $
+        (Report "title" [errorPart (mkRegion (2, 1) (2, 7)) (Just "message")]) $
         "title\n" <>
         "  --> <test>:2:1\n" <>
         "  |\n" <>
         "2 | second line\n" <>
         "  | ^^^^^^ message\n"
     it "handles multi-line regions" $ shouldRender
-        (Report "title" [Part (mkRegion (1, 7) (3, 6)) Nothing]) $
+        (Report "title" [errorPart (mkRegion (1, 7) (3, 6)) Nothing]) $
         "title\n" <>
         "  --> <test>:1:7\n" <>
         "  |\n" <>
@@ -43,8 +43,8 @@ spec = describe "pretty" $ do
         "  | ^^^^^\n"
     it "prints multiple parts" $ shouldRender
         (Report "title"
-            [ Part (mkRegion (1, 1) (1, 6)) (Just "first")
-            , Part (mkRegion (3, 1) (3, 6)) (Just "second")
+            [ errorPart (mkRegion (1, 1) (1, 6)) (Just "first")
+            , hintPart (mkRegion (3, 1) (3, 6)) (Just "second")
             ]) $
         "title\n" <>
         "  --> <test>:1:1\n" <>
@@ -53,11 +53,11 @@ spec = describe "pretty" $ do
         "  | ^^^^^ first\n" <>
         "...\n" <>
         "3 | third line\n" <>
-        "  | ^^^^^ second\n"
+        "  | ----- second\n"
     it "prints multiple parts from different sources" $ shouldRender
         (Report "title"
-            [ Part (mkRegion (2, 1) (2, 7)) (Just "first")
-            , Part ((mkRegion (2, 7) (2, 13))
+            [ errorPart (mkRegion (2, 1) (2, 7)) (Just "first")
+            , hintPart ((mkRegion (2, 7) (2, 13))
                 { path = "<other>", source = otherSource }) (Just "second")
             ]) $
         "title\n" <>
@@ -69,7 +69,7 @@ spec = describe "pretty" $ do
         "  --> <other>:2:7\n" <>
         "  |\n" <>
         "2 | other second line\n" <>
-        "  |       ^^^^^^ second\n"
+        "  |       ------ second\n"
 
 
 testSource :: Text
