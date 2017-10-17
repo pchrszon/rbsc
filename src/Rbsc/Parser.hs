@@ -4,41 +4,43 @@ module Rbsc.Parser
 
 
 import Control.Lens
-import Control.Monad.IO.Class
-import Control.Monad.Reader
+import Control.Monad.State
 
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.String
-import qualified Data.Text as Text
-import qualified Data.Text.IO as TIO
+import qualified Data.Map.Strict    as Map
+import           Data.Maybe         (fromMaybe)
+import           Data.String
+import qualified Data.Text          as Text
+import qualified Data.Text.IO       as Text
 
 import System.Directory
 import System.FilePath
 
-import Text.Megaparsec hiding (parse)
+import Text.Megaparsec       hiding (parse)
 import Text.Megaparsec.Error (parseErrorTextPretty)
 
-import Rbsc.Parser.Declaration
-import Rbsc.Parser.Lexer
-import Rbsc.Parser.TypeLevel
+import           Rbsc.Parser.Declaration
+import           Rbsc.Parser.Lexer
+import           Rbsc.Parser.TypeLevel
 import qualified Rbsc.Report.Error.Syntax as Syntax
-import qualified Rbsc.Report.Region as Region
-import Rbsc.Syntax.Declaration
+import qualified Rbsc.Report.Region       as Region
+import           Rbsc.Syntax.Declaration
 
 
 -- | Parse a source file.
 parse :: MonadIO m => FilePath -> m (Either [Syntax.Error] [Declaration])
 parse path = do
-    content <- liftIO (TIO.readFile path)
-    result <- runParserT (runReaderT modelFile content) path content
-    case result of
-        Left err -> Left . (: []) <$> fromParseError err
+    content <- liftIO (Text.readFile path)
+    (result, sourceMap) <- run modelFile path content
+
+    return $ case result of
+        Left err -> Left [fromParseError sourceMap err]
         Right errorOrDecls ->
             let errors = toListOf (traverse._Left) errorOrDecls
                 decls  = toListOf (traverse._Right) errorOrDecls
             in if null errors
-                   then return (Right decls)
-                   else Left <$> traverse fromParseError errors
+                   then Right decls
+                   else Left (fmap (fromParseError sourceMap) errors)
 
 
 modelFile :: MonadIO m => ParserT m [ErrorOrDecl]
@@ -46,7 +48,7 @@ modelFile =
     concat <$> between sc eof (many (include <|> fmap (: []) declaration))
 
 
-declaration :: ParserT m ErrorOrDecl
+declaration :: Parser ErrorOrDecl
 declaration = choice
     [ declType
     ]
@@ -72,15 +74,23 @@ include = do
 
 parseIncludeFile :: MonadIO m => FilePath -> ParserT m [ErrorOrDecl]
 parseIncludeFile path = do
-    content <- liftIO (TIO.readFile path)
+    content <- liftIO (Text.readFile path)
+    sources.at path .= Just content
 
+    -- save current parser state
     input <- getInput
+    source <- use currentSource
+
+    -- switch to include file
     pushPosition (initialPos path)
     setInput content
+    currentSource .= content
 
-    -- set 'contents' as new source
-    result <- local (const content) modelFile
+    -- parse include file
+    result <- modelFile
 
+    -- switch back to current file
+    currentSource .= source
     setInput input
     popPosition
 
@@ -88,22 +98,18 @@ parseIncludeFile path = do
 
 
 fromParseError ::
-       (Ord t, ShowToken t, ShowErrorComponent e, MonadIO m)
-    => ParseError t e
-    -> m Syntax.Error
-fromParseError err = do
-    exists <- liftIO (doesFileExist path)
-    content <-
-        if exists
-            then liftIO (TIO.readFile path)
-            else return Text.empty
-
-    let rgn = Region.Region path content start end
-        msg = fromString (parseErrorTextPretty err)
-
-    return (Syntax.ParseError rgn msg)
+       (Ord t, ShowToken t, ShowErrorComponent e)
+    => SourceMap
+    -> ParseError t e
+    -> Syntax.Error
+fromParseError sourceMap err = Syntax.ParseError rgn msg
   where
-    pos   = NonEmpty.head (errorPos err)
+    rgn = Region.Region path content start end
+    msg = fromString (parseErrorTextPretty err)
+
+    path    = sourceName pos
+    content = fromMaybe Text.empty (Map.lookup path sourceMap)
+
     start = fromSourcePos pos
     end   = start { Region.column = Region.column start + 1 }
-    path = sourceName pos
+    pos   = NonEmpty.head (errorPos err)
