@@ -57,7 +57,7 @@ declaration = choice
 include :: MonadIO m => ParserT m [ErrorOrDecl]
 include = do
     void (reserved "include")
-    includePath <- Region.unAnn <$> stringLiteral
+    includePath <- Region.unLoc <$> stringLiteral
 
     -- includePath is relative to file containing the include keyword,
     -- thus we need to make the path relative to our current working

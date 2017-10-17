@@ -56,15 +56,15 @@ fromDeclarations decls =
 convert :: [Declaration] -> (ComponentTypes, [Syntax.Error])
 convert decls =
     over _1 (fmap fst) . flip execState (Map.empty, []) . for_ decls $ \case
-        DeclNaturalType (NaturalTypeDef (Ann name rgn)) ->
+        DeclNaturalType (NaturalTypeDef (Loc name rgn)) ->
             insertType name NaturalType rgn
-        DeclRoleType (RoleTypeDef (Ann name rgn) playerTyNames) ->
+        DeclRoleType (RoleTypeDef (Loc name rgn) playerTyNames) ->
             insertType
                 name
-                (RoleType (Set.fromList (fmap unAnn playerTyNames)))
+                (RoleType (Set.fromList (fmap unLoc playerTyNames)))
                 rgn
-        DeclCompartmentType (CompartmentTypeDef (Ann name rgn) roleTyNames) ->
-            insertType name (CompartmentType (fmap unAnn roleTyNames)) rgn
+        DeclCompartmentType (CompartmentTypeDef (Loc name rgn) roleTyNames) ->
+            insertType name (CompartmentType (fmap unLoc roleTyNames)) rgn
   where
     insertType ::
            TypeName
@@ -89,11 +89,11 @@ validate types = concatMap validateDecl
         DeclCompartmentType (CompartmentTypeDef _ roleTyNames) ->
             mapMaybe isRoleType roleTyNames
 
-    exists (Ann tyName rgn)
+    exists (Loc tyName rgn)
         | Map.member tyName types = Nothing
         | otherwise = Just (Syntax.UndefinedType rgn)
 
-    isRoleType (Ann tyName rgn) = case Map.lookup tyName types of
+    isRoleType (Loc tyName rgn) = case Map.lookup tyName types of
         Just (RoleType _) -> Nothing
         Just _            -> Just (Syntax.NonRoleInCompartment rgn)
         Nothing           -> Just (Syntax.UndefinedType rgn)

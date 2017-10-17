@@ -12,19 +12,19 @@ import Rbsc.Type
 
 -- | A definition of a natural type.
 newtype NaturalTypeDef = NaturalTypeDef
-    { ntdName  :: Ann TypeName Region
+    { ntdName  :: Loc TypeName
     } deriving (Show)
 
 
 -- | A definition of a role type.
 data RoleTypeDef = RoleTypeDef
-    { rtdName    :: Ann TypeName Region
-    , rtdPlayers :: [Ann TypeName Region]
+    { rtdName    :: Loc TypeName
+    , rtdPlayers :: [Loc TypeName]
     } deriving (Show)
 
 
 -- | A definition of a compartment type.
 data CompartmentTypeDef = CompartmentTypeDef
-    { ctdName  :: Ann TypeName Region
-    , ctdRoles :: [Ann TypeName Region]
+    { ctdName  :: Loc TypeName
+    , ctdRoles :: [Loc TypeName]
     } deriving (Show)

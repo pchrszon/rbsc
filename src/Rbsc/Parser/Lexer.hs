@@ -43,7 +43,7 @@ import           Data.Text       (Text)
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as Lexer
 
-import           Rbsc.Report.Region (Ann (..), Region)
+import           Rbsc.Report.Region (Loc (..), Region)
 import qualified Rbsc.Report.Region as Region
 
 
@@ -104,16 +104,16 @@ reservedWords =
 -- | Parser for a reserved word.
 reserved :: String -> Parser Region
 reserved s =
-    getAnn <$> lexeme ((Ann <$> string s) <* notFollowedBy alphaNumChar)
+    getLoc <$> lexeme ((Loc <$> string s) <* notFollowedBy alphaNumChar)
 
 
 -- | Parser for an identifier.
-identifier :: IsString a => Parser (Ann a Region)
+identifier :: IsString a => Parser (Loc a)
 identifier = lexeme . try $ do
     ident <- (:) <$> letterChar <*> many alphaNumChar
     if ident `elem` reservedWords
         then fail ("unexpected reserved word " ++ ident)
-        else return (Ann (fromString ident))
+        else return (Loc (fromString ident))
 
 
 -- | Parser for surrounding parentheses.
@@ -122,9 +122,9 @@ parens = between (symbol "(") (symbol ")")
 
 
 -- | Parser for a string literal (in double quotes).
-stringLiteral :: IsString a => Parser (Ann a Region)
+stringLiteral :: IsString a => Parser (Loc a)
 stringLiteral = lexeme $
-    Ann . fromString <$> (char '"' *> Lexer.charLiteral `manyTill` char '"')
+    Loc . fromString <$> (char '"' *> Lexer.charLiteral `manyTill` char '"')
 
 
 -- | Parser for a comma.
@@ -139,7 +139,7 @@ semi = symbol ";"
 
 -- | Parser for a symbol.
 symbol :: String -> Parser Region
-symbol s = getAnn <$> lexeme (Ann <$> string s)
+symbol s = getLoc <$> lexeme (Loc <$> string s)
 
 
 -- | Annotate a parsed value with its 'Region' in the source and skip

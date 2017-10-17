@@ -3,7 +3,7 @@ module Rbsc.Report.Region
     ( Position(..)
     , Region(..)
     , LineRegion(..)
-    , Ann(..)
+    , Loc(..)
     , split
     ) where
 
@@ -49,10 +49,10 @@ data LineRegion = LineRegion
     } deriving (Eq, Show)
 
 
--- | A value with an annotation.
-data Ann t a = Ann
-    { unAnn  :: t
-    , getAnn :: a
+-- | A value annotated with a 'Region'.
+data Loc a = Loc
+    { unLoc  :: a
+    , getLoc :: !Region
     } deriving (Eq, Show)
 
 
