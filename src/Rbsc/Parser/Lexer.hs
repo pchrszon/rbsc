@@ -14,6 +14,7 @@ module Rbsc.Parser.Lexer
     , symbol
     , lexeme
     , sc
+    , fromSourcePos
     ) where
 
 
@@ -98,15 +99,19 @@ lexeme p = do
     sc
 
     let rgn = Region.Region
-            (sourceName start) source (convert start) (convert end)
+            (sourceName start) source (fromSourcePos start) (fromSourcePos end)
 
     return (f rgn)
-  where
-    convert (SourcePos _ line col) =
-        Region.Position (fromPos line) (fromPos col)
-    fromPos = fromIntegral . unPos
 
 
 -- | Parser for non-empty white space (including newlines).
 sc :: ParserT m ()
 sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty
+
+
+-- | Convert a 'SourcePos' to a 'Region.Position'.
+fromSourcePos :: SourcePos -> Region.Position
+fromSourcePos (SourcePos _ line col) =
+        Region.Position (fromPos line) (fromPos col)
+  where
+    fromPos = fromIntegral . unPos

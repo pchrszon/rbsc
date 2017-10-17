@@ -115,7 +115,7 @@ renderPart marginWidth (Part partType region message, path) =
         (zip relevantLines (Region.split region))
 
     partMessage = maybe emptyDoc
-        ((space <>) . annotate messageStyle . pretty) message
+        ((space <>) . annotate messageStyle . hang 0 . pretty) message
 
     messageStyle =
         case partType of

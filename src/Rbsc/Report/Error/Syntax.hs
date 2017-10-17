@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 
@@ -9,13 +9,16 @@ module Rbsc.Report.Error.Syntax
     ) where
 
 
+import Data.Text (Text)
+
 import Rbsc.Report
 import Rbsc.Report.Region
 
 
 -- | Represents a syntax-related error.
 data Error
-    = UndefinedType !Region
+    = ParseError !Region !Text
+    | UndefinedType !Region
     | DuplicateType !Region !Region
     | NonRoleInCompartment !Region
     deriving (Show)
@@ -23,6 +26,9 @@ data Error
 
 toReport :: Error -> Report
 toReport = \case
+    ParseError rgn desc ->
+        Report "parse error" [errorPart rgn (Just desc)]
+
     UndefinedType rgn ->
         Report "undefined type" [errorPart rgn Nothing]
 
