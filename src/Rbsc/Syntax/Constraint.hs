@@ -12,7 +12,7 @@ data Constraint
     | Variable !Name
     | Not (Loc Constraint)
     | BoolBinOp !BoolBinOp (Loc Constraint) (Loc Constraint)
-    | HasType (Loc Constraint) !TypeName
+    | HasType (Loc Constraint) (Loc TypeName)
     | BoundTo (Loc Constraint) (Loc Constraint)
     | Element (Loc Constraint) (Loc Constraint)
     | Quantified !Quantifier !Name (Maybe TypeName) (Loc Constraint)

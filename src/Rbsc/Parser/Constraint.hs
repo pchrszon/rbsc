@@ -89,8 +89,8 @@ hasType :: Monad m => ConstraintOp m
 hasType =
     Postfix $ do
         void (op ":")
-        Loc tyName rgn <- identifier
-        return (\c -> Loc (HasType c tyName) (getLoc c <> rgn))
+        tyName <- identifier
+        return (\c -> Loc (HasType c tyName) (getLoc c <> getLoc tyName))
 
 
 -- | @binary assoc c p@ creates a binary infix 'Operator' with associativity

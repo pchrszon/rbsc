@@ -21,6 +21,7 @@ data Error
     | UndefinedType !Region
     | DuplicateType !Region !Region
     | NonRoleInCompartment !Region
+    | DuplicateIdentifier !Region !Region
     deriving (Show)
 
 
@@ -41,4 +42,11 @@ toReport = \case
     NonRoleInCompartment rgn ->
         Report "only roles can be contained in compartments"
             [ errorPart rgn (Just "this is not a role type")
+            ]
+
+    DuplicateIdentifier second first ->
+        Report "duplicate definition"
+            [ errorPart second
+                (Just "an identifier with this name already exists")
+            , hintPart first (Just "first definition was here")
             ]
