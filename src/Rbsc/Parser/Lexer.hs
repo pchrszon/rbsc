@@ -8,6 +8,7 @@ module Rbsc.Parser.Lexer
     ( Parser
     , ParserT
     , run
+    , testRun
 
     , ParserState(..)
     , currentSource
@@ -21,8 +22,10 @@ module Rbsc.Parser.Lexer
     , identifier
     , parens
     , stringLiteral
+    , dot
     , comma
     , semi
+    , colon
     , symbol
     , lexeme
     , sc
@@ -73,6 +76,13 @@ run p path content = do
     return (result, _sources parserState)
 
 
+-- | @testRun@ applies a parser to a given input and shows the results.
+testRun :: Show a => ParserT IO a -> Text -> IO (Either String a)
+testRun p content = do
+    (result, _) <- run p "" content
+    return (over _Left parseErrorPretty result)
+
+
 -- | The @ParserState@ keeps track of source file contents so that they can
 -- be referenced by errors or warnings.
 data ParserState = ParserState
@@ -98,6 +108,12 @@ reservedWords =
     , "role"
     , "compartment"
     , "type"
+    , "true"
+    , "false"
+    , "forall"
+    , "exists"
+    , "boundto"
+    , "in"
     ]
 
 
@@ -127,6 +143,11 @@ stringLiteral = lexeme $
     Loc . fromString <$> (char '"' *> Lexer.charLiteral `manyTill` char '"')
 
 
+-- | Parser for a dot.
+dot :: Parser Region
+dot = symbol "."
+
+
 -- | Parser for a comma.
 comma :: Parser Region
 comma = symbol ","
@@ -135,6 +156,11 @@ comma = symbol ","
 -- | Parser for a semicolon.
 semi :: Parser Region
 semi = symbol ";"
+
+
+-- | Parser for a colon.
+colon :: Parser Region
+colon = symbol ":"
 
 
 -- | Parser for a symbol.

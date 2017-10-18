@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveFunctor #-}
+
+
 -- | Positions and regions in source files.
 module Rbsc.Report.Region
     ( Position(..)
@@ -51,9 +54,9 @@ data LineRegion = LineRegion
 
 -- | A value annotated with a 'Region'.
 data Loc a = Loc
-    { unLoc  :: a
+    { unLoc  :: !a
     , getLoc :: !Region
-    } deriving (Eq, Show)
+    } deriving (Eq, Functor, Show)
 
 
 -- | Split a 'Region' into 'LineRegion's.

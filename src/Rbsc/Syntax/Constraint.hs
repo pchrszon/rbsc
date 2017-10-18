@@ -1,21 +1,19 @@
-{-# LANGUAGE DeriveFunctor #-}
-
-
 module Rbsc.Syntax.Constraint where
 
 
+import Rbsc.Report.Region
 import Rbsc.Syntax.Operators
 import Rbsc.Type
 
 
 -- | A constraint expression.
-data Constraint l
-    = LitBool !Bool !l
-    | Variable !Name !l
-    | Not (Constraint l) !l
-    | BoolBinOp !BoolBinOp (Constraint l) (Constraint l) !l
-    | HasType (Constraint l) !TypeName !l
-    | BoundTo (Constraint l) (Constraint l) !l
-    | Element (Constraint l) (Constraint l) !l
-    | Quantifier !Name (Maybe TypeName) (Constraint l) !l
-    deriving (Functor, Show)
+data Constraint
+    = LitBool !Bool
+    | Variable !Name
+    | Not (Loc Constraint)
+    | BoolBinOp !BoolBinOp (Loc Constraint) (Loc Constraint)
+    | HasType (Loc Constraint) !TypeName
+    | BoundTo (Loc Constraint) (Loc Constraint)
+    | Element (Loc Constraint) (Loc Constraint)
+    | Quantified !Quantifier !Name (Maybe TypeName) (Loc Constraint)
+    deriving (Show)
