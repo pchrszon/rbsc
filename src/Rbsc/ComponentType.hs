@@ -65,6 +65,7 @@ convert decls =
                 rgn
         DeclCompartmentType (CompartmentTypeDef (Loc name rgn) roleTyNames) ->
             insertType name (CompartmentType (fmap unLoc roleTyNames)) rgn
+        _ -> return ()
   where
     insertType ::
            TypeName
@@ -88,6 +89,7 @@ validate types = concatMap validateDecl
             mapMaybe exists playerTyNames
         DeclCompartmentType (CompartmentTypeDef _ roleTyNames) ->
             mapMaybe isRoleType roleTyNames
+        _ -> []
 
     exists (Loc tyName rgn)
         | Map.member tyName types = Nothing

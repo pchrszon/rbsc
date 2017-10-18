@@ -17,7 +17,6 @@ import Text.Megaparsec
 import Text.Megaparsec.Expr
 
 import           Rbsc.Parser.Lexer
-import           Rbsc.Report.Region     (Loc (..), Region)
 import           Rbsc.Syntax.Constraint
 import qualified Rbsc.Syntax.Operators  as Ops
 
@@ -71,7 +70,7 @@ type ConstraintOp m
 table :: Monad m => [[ConstraintOp m]]
 table =
     [ [ boolNot ]
-    , [ binary InfixN BoundTo (reserved "boundTo")
+    , [ binary InfixN BoundTo (reserved "boundto")
       , binary InfixN Element (reserved "in")
       , hasType
       ]

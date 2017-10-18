@@ -19,12 +19,15 @@ import System.FilePath
 import Text.Megaparsec       hiding (parse)
 import Text.Megaparsec.Error (parseErrorTextPretty)
 
-import           Rbsc.Parser.Declaration
-import           Rbsc.Parser.Lexer
-import           Rbsc.Parser.TypeLevel
+import Rbsc.Parser.Declaration
+import Rbsc.Parser.Lexer
+import Rbsc.Parser.System
+import Rbsc.Parser.TypeLevel
+
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import qualified Rbsc.Report.Region       as Region
-import           Rbsc.Syntax.Declaration
+
+import Rbsc.Syntax.Declaration
 
 
 -- | Parse a source file.
@@ -49,15 +52,16 @@ modelFile =
 
 
 declaration :: Parser ErrorOrDecl
-declaration = choice
+declaration = withRecoveryOn (semi <|> symbol "}") . choice $
     [ declType
+    , declSystem
     ]
 
 
 include :: MonadIO m => ParserT m [ErrorOrDecl]
 include = do
     void (reserved "include")
-    includePath <- Region.unLoc <$> stringLiteral
+    includePath <- unLoc <$> stringLiteral
 
     -- includePath is relative to file containing the include keyword,
     -- thus we need to make the path relative to our current working

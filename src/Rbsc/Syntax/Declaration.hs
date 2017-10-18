@@ -4,6 +4,9 @@ module Rbsc.Syntax.Declaration
     ) where
 
 
+import Rbsc.Report.Region (Loc)
+
+import Rbsc.Syntax.Constraint
 import Rbsc.Syntax.TypeLevel
 
 
@@ -12,4 +15,5 @@ data Declaration
     = DeclNaturalType NaturalTypeDef
     | DeclRoleType RoleTypeDef
     | DeclCompartmentType CompartmentTypeDef
+    | DeclSystem [Loc Constraint]
     deriving (Show)

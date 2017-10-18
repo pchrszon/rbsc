@@ -5,7 +5,8 @@
 
 -- | Parsers for tokens.
 module Rbsc.Parser.Lexer
-    ( Parser
+    ( -- * Parser monad
+      Parser
     , ParserT
     , run
     , testRun
@@ -17,10 +18,13 @@ module Rbsc.Parser.Lexer
 
     , SourceMap
 
+      -- * Token parsers
     , reservedWords
     , reserved
     , identifier
+    , block
     , parens
+    , braces
     , stringLiteral
     , dot
     , comma
@@ -29,6 +33,13 @@ module Rbsc.Parser.Lexer
     , symbol
     , lexeme
     , sc
+
+      -- * Parse error recovery
+    , withRecoveryOn
+
+      -- * Source location annotation
+    , Loc(..)
+    , Region
     , fromSourcePos
     ) where
 
@@ -114,6 +125,7 @@ reservedWords =
     , "exists"
     , "boundto"
     , "in"
+    , "system"
     ]
 
 
@@ -132,9 +144,20 @@ identifier = lexeme . try $ do
         else return (Loc (fromString ident))
 
 
+-- | @block name p@ is a parser for named blocks. A block starts with
+-- @name@ followed by @p@ surrounded by braces.
+block :: Monad m => String -> ParserT m a -> ParserT m a
+block name p = reserved name *> braces p
+
+
 -- | Parser for surrounding parentheses.
 parens :: Monad m => ParserT m a -> ParserT m a
 parens = between (symbol "(") (symbol ")")
+
+
+-- | Parser for surrounding braces.
+braces :: Monad m => ParserT m a -> ParserT m a
+braces = between (symbol "{") (symbol "}")
 
 
 -- | Parser for a string literal (in double quotes).
@@ -187,6 +210,17 @@ lexeme p = do
 -- | Parser for non-empty white space (including newlines).
 sc :: ParserT m ()
 sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty
+
+
+-- | @withRecoveryOn end p@ runs parser @p@. In case @p@ fails, the input
+-- is skipped until @end@ is parsed successfully.
+withRecoveryOn ::
+       Monad m
+    => ParserT m b
+    -> ParserT m a
+    -> ParserT m (Either (ParseError Char Dec) a)
+withRecoveryOn end =
+    withRecovery (\err -> Left err <$ anyChar `manyTill` end) . fmap Right
 
 
 -- | Convert a 'SourcePos' to a 'Region.Position'.

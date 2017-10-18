@@ -9,15 +9,14 @@ module Rbsc.Parser.TypeLevel
 
 import Text.Megaparsec
 
-import Rbsc.Parser.Declaration
 import Rbsc.Parser.Lexer
 import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.TypeLevel
 
 
 -- | Parser for a top-level type declaration.
-declType :: Parser ErrorOrDecl
-declType = withRecovery onSemi . fmap Right . choice $
+declType :: Parser Declaration
+declType = choice
     [ DeclNaturalType <$> naturalTypeDef
     , DeclRoleType <$> roleTypeDef
     , DeclCompartmentType <$> compartmentTypeDef
@@ -47,8 +46,3 @@ compartmentTypeDef =
     (parens (identifier `sepBy` comma) <* semi)
   where
     keyword = reserved "compartment" *> reserved "type"
-
-
--- | Parser that consumes anything until a semicolon.
-onSemi :: ParseError Char Dec -> Parser (Either (ParseError Char Dec) a)
-onSemi err = Left err <$ anyChar `manyTill` semi
