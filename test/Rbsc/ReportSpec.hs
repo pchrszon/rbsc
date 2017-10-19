@@ -23,6 +23,7 @@ spec = describe "pretty" $ do
         "  |\n" <>
         "2 | second line\n" <>
         "  | ^^^^^^\n"
+
     it "prints a message" $ shouldRender
         (Report "title" [errorPart (mkRegion (2, 1) (2, 7)) (Just "message")]) $
         "title\n" <>
@@ -30,6 +31,7 @@ spec = describe "pretty" $ do
         "  |\n" <>
         "2 | second line\n" <>
         "  | ^^^^^^ message\n"
+
     it "handles multi-line regions" $ shouldRender
         (Report "title" [errorPart (mkRegion (1, 7) (3, 6)) Nothing]) $
         "title\n" <>
@@ -41,6 +43,7 @@ spec = describe "pretty" $ do
         "  | ^^^^^^^^^^^\n" <>
         "3 | third line\n" <>
         "  | ^^^^^\n"
+
     it "prints multiple parts" $ shouldRender
         (Report "title"
             [ errorPart (mkRegion (1, 1) (1, 6)) (Just "first")
@@ -54,6 +57,7 @@ spec = describe "pretty" $ do
         "...\n" <>
         "3 | third line\n" <>
         "  | ----- second\n"
+
     it "prints multiple parts from different sources" $ shouldRender
         (Report "title"
             [ errorPart (mkRegion (2, 1) (2, 7)) (Just "first")

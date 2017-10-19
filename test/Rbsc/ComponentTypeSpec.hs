@@ -8,8 +8,6 @@ module Rbsc.ComponentTypeSpec (spec) where
 
 import Control.Lens
 
-import qualified Data.Map.Strict as Map
-
 import Test.Hspec
 
 import Rbsc.ComponentType
@@ -27,15 +25,17 @@ spec = describe "fromDeclarations" $ do
                 compartment type C(R);
             |]
         `shouldBe`
-        Right (Map.fromList
-             [ ("N", NaturalType)
-             , ("R", RoleType ["N"])
-             , ("C", CompartmentType ["R"])
-             ])
+        Right
+            [ ("N", NaturalType)
+            , ("R", RoleType ["N"])
+            , ("C", CompartmentType ["R"])
+            ]
+
     it "detects undefined types" $
         fromDeclarations [model| role type R(Undefined); |]
         `shouldSatisfy`
         has (_Left.traverse.Syntax._UndefinedType)
+
     it "detects duplicate type definitions" $
         fromDeclarations
             [model|
@@ -44,6 +44,7 @@ spec = describe "fromDeclarations" $ do
             |]
         `shouldSatisfy`
         has (_Left.traverse.Syntax._DuplicateType)
+
     it "detects non-role types in compartments" $
         fromDeclarations
             [model|

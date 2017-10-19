@@ -77,12 +77,20 @@ data Type t where
     TyArray     :: Type t -> Type [t]
     TyComponent :: TypeName -> Map Name AType -> Type Component
 
+deriving instance Eq (Type t)
 deriving instance Show (Type t)
 
 
 -- | Existentially quantified 'Type'.
 data AType where
     AType :: Type t -> AType
+
+
+instance Eq AType where
+    (AType x) == (AType y) =
+        case typeEq x y of
+            Just Refl -> True
+            Nothing -> False
 
 deriving instance Show AType
 

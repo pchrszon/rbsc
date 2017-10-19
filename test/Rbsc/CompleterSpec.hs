@@ -28,6 +28,7 @@ spec :: Spec
 spec = describe "completeSystem" $ do
     prop "binds all roles" $ \(Model types sys) ->
         allOf (traverse._Right) (rolesAreBound types) (completeSystem types sys)
+
     prop "fills all compartments" $ \(Model types sys) ->
         allOf (traverse._Right)
               (compartmentsAreFilled types)
