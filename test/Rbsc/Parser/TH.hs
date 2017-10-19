@@ -1,0 +1,84 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
+
+
+module Rbsc.Parser.TH
+    ( model
+    ) where
+
+
+import Control.Exception
+
+import           Data.Data
+import           Data.Generics
+import           Data.Text     (Text)
+import qualified Data.Text     as Text
+
+import Language.Haskell.TH       hiding (Loc)
+import Language.Haskell.TH.Quote
+
+import Rbsc.Parser
+
+import           Rbsc.Report
+import qualified Rbsc.Report.Error.Syntax as Error
+import           Rbsc.Report.Region
+
+import Rbsc.Syntax.Constraint
+import Rbsc.Syntax.Declaration
+import Rbsc.Syntax.Operators
+import Rbsc.Syntax.TypeLevel
+
+import Rbsc.Type
+
+
+-- | Quasi quoter that parses the given string into a list of
+-- 'Declaration's.
+model :: QuasiQuoter
+model = QuasiQuoter
+    { quoteExp = \str -> do
+        decls <- runIO (parseIO str)
+        dataToExpQ (const Nothing `extQ` handleText) decls
+    , quotePat = undefined
+    , quoteType = undefined
+    , quoteDec = undefined
+    }
+
+
+-- | Convert 'Text' to a string literal and apply 'Text.pack'.
+--
+-- see <https://stackoverflow.com/q/12788181>
+handleText :: Text -> Maybe ExpQ
+handleText = Just . appE (varE 'Text.pack) . litE . StringL . Text.unpack
+
+
+parseIO :: String -> IO [Declaration]
+parseIO str = do
+    result <- parse "splice" (Text.pack str)
+    case result of
+        Left errors -> throwIO (userError (unlines (printErrors errors)))
+        Right decls -> return decls
+
+
+printErrors :: [Error.Error] -> [String]
+printErrors = fmap (show . render . Error.toReport)
+
+
+deriving instance Data Declaration
+
+deriving instance Data NaturalTypeDef
+deriving instance Data RoleTypeDef
+deriving instance Data CompartmentTypeDef
+
+deriving instance Data Constraint
+deriving instance Data BoolBinOp
+deriving instance Data Quantifier
+
+deriving instance Data Position
+deriving instance Data Region
+deriving instance Data a => Data (Loc a)
+
+deriving instance Data TypeName

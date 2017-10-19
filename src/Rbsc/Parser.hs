@@ -10,6 +10,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict    as Map
 import           Data.Maybe         (fromMaybe)
 import           Data.String
+import           Data.Text          (Text)
 import qualified Data.Text          as Text
 import qualified Data.Text.IO       as Text
 
@@ -31,9 +32,9 @@ import Rbsc.Syntax.Declaration
 
 
 -- | Parse a source file.
-parse :: MonadIO m => FilePath -> m (Either [Syntax.Error] [Declaration])
-parse path = do
-    content <- liftIO (Text.readFile path)
+parse ::
+       MonadIO m => FilePath -> Text -> m (Either [Syntax.Error] [Declaration])
+parse path content = do
     (result, sourceMap) <- run modelFile path content
 
     return $ case result of

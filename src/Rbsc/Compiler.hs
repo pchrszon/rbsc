@@ -10,11 +10,13 @@ import qualified Rbsc.SymbolTable as SymbolTable
 import Rbsc.Parser
 import Rbsc.Report
 import qualified Rbsc.Report.Error.Syntax as Error
+import qualified Data.Text.IO as Text
 
 
 compile :: FilePath -> IO ()
 compile path = do
-    parseResult <- parse path
+    content <- Text.readFile path
+    parseResult <- parse path content
     case parseResult of
         Left errors -> printErrors errors
         Right decls -> case CompTy.fromDeclarations decls of

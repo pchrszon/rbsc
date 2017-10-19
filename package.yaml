@@ -51,3 +51,5 @@ tests:
       - roles
       - hspec
       - QuickCheck
+      - syb
+      - template-haskell

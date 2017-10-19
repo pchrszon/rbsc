@@ -39,7 +39,7 @@ data ComponentType
     | RoleType (Set TypeName)
       -- | A compartment type with its list of required role types.
     | CompartmentType [TypeName]
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 -- | Extract 'ComponentTypes' from a list of 'Declaration's.

@@ -1,13 +1,22 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 
 -- | Syntax-related errors.
 module Rbsc.Report.Error.Syntax
     ( Error(..)
     , toReport
+
+    , _ParseError
+    , _UndefinedType
+    , _DuplicateType
+    , _NonRoleInCompartment
+    , _DuplicateIdentifier
     ) where
 
+
+import Control.Lens
 
 import Data.Text (Text)
 
@@ -22,7 +31,7 @@ data Error
     | DuplicateType !Region !Region
     | NonRoleInCompartment !Region
     | DuplicateIdentifier !Region !Region
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 toReport :: Error -> Report
@@ -50,3 +59,6 @@ toReport = \case
                 (Just "an identifier with this name already exists")
             , hintPart first (Just "first definition was here")
             ]
+
+
+makePrisms ''Error
