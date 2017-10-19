@@ -40,7 +40,7 @@ import Rbsc.Util.NameGen
 type Cycle = [TypeName]
 
 
--- | A 'Completer' can nondeterministically select from different
+-- | A 'Completer' can nondeterministically choose between different
 -- alternatives to generate all possible system instances. A call stack is
 -- used to detect cycles when creating new instances.
 type Completer a = ReaderT Stack (StateT CompletionState (ExceptT Cycle [])) a
@@ -64,8 +64,8 @@ runCompleter m sys =
             runExceptT (execStateT (runReaderT m []) (CompletionState gen sys))
     in over (traverse._Right) (view system) results
   where
-    gen = mkNameGen deriveFromTypeIdent taken
-    taken = view (instances.to Map.keysSet) sys
+    gen = mkNameGen deriveFromTypeIdent takenNames
+    takenNames = view (instances.to Map.keysSet) sys
 
 
 -- | Lift a nondeterministic choice into the 'Completer' monad.
@@ -133,7 +133,7 @@ completeCompartmentInstance types name roleTyNames = do
         system.containedIn.at roleName .= Just name
 
 
--- | Create a new instance for the given type or create a new one.
+-- | Get an instance of the given type or create a new one.
 getOrCreateInstance :: ComponentTypes -> TypeName -> Completer Name
 getOrCreateInstance types tyName = do
     create <- liftList [True, False]
