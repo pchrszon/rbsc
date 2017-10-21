@@ -81,7 +81,7 @@ toConstants sys = mapWithKey toValue (view instances sys)
   where
     toValue :: Name -> TypeName -> Value
     toValue name tyName =
-        let ty = TyComponent tyName undefined -- TODO: get field types
+        let ty = TyComponent (Just tyName) undefined -- TODO: get field types
             comp = Component name tyName playerName compartmentName
             playerName = view (boundTo.at name) sys
             compartmentName = view (containedIn.at name) sys

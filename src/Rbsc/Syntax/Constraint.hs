@@ -15,5 +15,5 @@ data Constraint
     | HasType (Loc Constraint) (Loc TypeName)
     | BoundTo (Loc Constraint) (Loc Constraint)
     | Element (Loc Constraint) (Loc Constraint)
-    | Quantified !Quantifier !Name (Maybe TypeName) (Loc Constraint)
+    | Quantified !Quantifier !Name (Maybe (Loc TypeName)) (Loc Constraint)
     deriving (Show)

@@ -38,7 +38,7 @@ data Constraint t where
     HasType    :: Constraint Component -> TypeName -> Constraint Bool
     BoundTo    :: Constraint Component -> Constraint Component -> Constraint Bool
     Element    :: Constraint Component -> Constraint Component -> Constraint Bool
-    Quantifier :: Quantifier -> Maybe TypeName -> Scope Bool -> Constraint Bool
+    Quantified :: Quantifier -> Maybe TypeName -> Scope Bool -> Constraint Bool
     Bound      :: Int -> Constraint Component
 
 deriving instance Show t => Show (Constraint t)
@@ -76,7 +76,7 @@ eval = \case
         compartment <- eval r
         return
             (view compContainedIn role == Just (view compName compartment))
-    Quantifier q mTyName sc -> do
+    Quantified q mTyName sc -> do
         comps <- components mTyName <$> ask
         bs <- traverse (eval . instantiate sc) comps
         return (quantifier q bs)
@@ -96,8 +96,8 @@ instantiate (Scope body) comp = go 0 body
         HasType c tyName -> HasType (go i c) tyName
         BoundTo l r -> BoundTo (go i l) (go i r)
         Element l r -> Element (go i l) (go i r)
-        Quantifier q mTyName (Scope body') ->
-            Quantifier q mTyName (Scope (go (succ i) body'))
+        Quantified q mTyName (Scope body') ->
+            Quantified q mTyName (Scope (go (succ i) body'))
         Bound i'
             | i == i' -> Literal comp
             | otherwise -> Bound i'
@@ -116,5 +116,5 @@ components mTyName = mapMaybe getComponent . Map.elems
 
     matchType tyName =
         case mTyName of
-            Just tyName' -> tyName == tyName'
+            Just tyName' -> tyName == Just tyName'
             Nothing      -> True

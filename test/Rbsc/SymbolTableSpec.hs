@@ -35,8 +35,8 @@ spec = describe "fromDeclarations" $ do
             |]
         `shouldBe`
         Right
-            [ ("n", AType (TyComponent "N" Map.empty))
-            , ("r", AType (TyComponent "R" Map.empty))
+            [ ("n", AType (TyComponent (Just "N") Map.empty))
+            , ("r", AType (TyComponent (Just "R") Map.empty))
             ]
 
     it "detects undefined types" $

@@ -46,7 +46,7 @@ quantified :: Parser (Loc Constraint)
 quantified = do
     Loc q start <- quantifier
     name <- unLoc <$> identifier
-    tyName <- optional (colon *> (unLoc <$> identifier))
+    tyName <- optional (colon *> identifier)
     c@(Loc _ end) <- dot *> constraint
 
     return (Loc (Quantified q name tyName c) (start <> end))
