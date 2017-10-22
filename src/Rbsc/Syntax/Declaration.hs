@@ -15,7 +15,7 @@ import Control.Lens
 
 import Rbsc.Report.Region (Loc)
 
-import Rbsc.Syntax.Constraint
+import Rbsc.Syntax.Expr.Untyped
 import Rbsc.Syntax.TypeLevel
 
 
@@ -24,7 +24,7 @@ data Declaration
     = DeclNaturalType NaturalTypeDef
     | DeclRoleType RoleTypeDef
     | DeclCompartmentType CompartmentTypeDef
-    | DeclSystem [Loc Constraint]
+    | DeclSystem [Loc Expr]
     deriving (Show)
 
 makePrisms ''Declaration

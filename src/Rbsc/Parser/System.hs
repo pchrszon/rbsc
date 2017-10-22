@@ -5,7 +5,7 @@ module Rbsc.Parser.System
 
 import Text.Megaparsec
 
-import Rbsc.Parser.Constraint
+import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
 
 import Rbsc.Syntax.Declaration
@@ -13,4 +13,4 @@ import Rbsc.Syntax.Declaration
 
 -- | Parser for a system declaration.
 declSystem :: Parser Declaration
-declSystem = DeclSystem <$> block "system" (constraint `sepBy` comma)
+declSystem = DeclSystem <$> block "system" (expr `sepBy` comma)

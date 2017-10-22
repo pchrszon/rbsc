@@ -27,7 +27,7 @@ import           Rbsc.Report
 import qualified Rbsc.Report.Error.Syntax as Error
 import           Rbsc.Report.Region
 
-import Rbsc.Syntax.Constraint
+import Rbsc.Syntax.Expr.Untyped
 import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.Operators
 import Rbsc.Syntax.TypeLevel
@@ -73,7 +73,7 @@ deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef
 deriving instance Data CompartmentTypeDef
 
-deriving instance Data Constraint
+deriving instance Data Expr
 deriving instance Data BoolBinOp
 deriving instance Data Quantifier
 

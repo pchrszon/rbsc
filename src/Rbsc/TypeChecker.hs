@@ -22,8 +22,8 @@ import Data.Text.Prettyprint.Doc (pretty)
 import qualified Rbsc.Report.Error.Type as Type
 import           Rbsc.Report.Region     (Loc (..), Region)
 
-import Rbsc.Constraint
-import qualified Rbsc.Syntax.Constraint as U
+import Rbsc.Syntax.Expr.Typed
+import qualified Rbsc.Syntax.Expr.Untyped as U
 
 import Rbsc.ComponentType
 import Rbsc.SymbolTable
@@ -53,16 +53,18 @@ runTypeChecker ::
 runTypeChecker m types symTable = runReaderT m (TcInfo types symTable [])
 
 
+-- | Type check an untyped expression and transform it into a typed
+-- expression.
 typeCheck ::
        ComponentTypes
     -> SymbolTable
-    -> Loc U.Constraint
-    -> Either Type.Error (Typed Constraint)
-typeCheck types symTable c = runTypeChecker (tc c) types symTable
+    -> Loc U.Expr
+    -> Either Type.Error (Typed Expr)
+typeCheck types symTable e = runTypeChecker (tc e) types symTable
 
 
-tc :: Loc U.Constraint -> TypeChecker (Typed Constraint)
-tc (Loc c rgn) = case c of
+tc :: Loc U.Expr -> TypeChecker (Typed Expr)
+tc (Loc e rgn) = case e of
     U.LitBool b ->
         Literal b `withType` TyBool
 
@@ -142,11 +144,11 @@ whenTypeExists (Loc tyName rgn) m = do
 
 
 -- | Assume that a given untyped expression has a given 'Type'.
-hasType :: Loc U.Constraint -> Type t -> TypeChecker (Constraint t)
-hasType c expected = do
-    Typed actual c' <- tc c
-    Refl <- expect expected (getLoc c) actual
-    return c'
+hasType :: Loc U.Expr -> Type t -> TypeChecker (Expr t)
+hasType e expected = do
+    Typed actual e' <- tc e
+    Refl <- expect expected (getLoc e) actual
+    return e'
 
 
 -- | @expect expected rgn actual@ returns a witness that the types
@@ -163,9 +165,9 @@ expect expected rgn actual =
     renderType = Text.pack . show . pretty
 
 
--- | Returns a constraint tagged with its 'Type'.
-withType :: Constraint t -> Type t -> TypeChecker (Typed Constraint)
-withType c ty = return (Typed ty c)
+-- | Returns an expression tagged with its 'Type'.
+withType :: Expr t -> Type t -> TypeChecker (Typed Expr)
+withType e ty = return (Typed ty e)
 
 
 tyComponent :: Type Component

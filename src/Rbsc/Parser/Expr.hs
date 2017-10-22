@@ -1,9 +1,9 @@
 {-# LANGUAGE RankNTypes #-}
 
 
--- | Parser for constraint expressions.
-module Rbsc.Parser.Constraint
-    ( constraint
+-- | Parser for expressions.
+module Rbsc.Parser.Expr
+    ( expr
     ) where
 
 
@@ -17,39 +17,39 @@ import Text.Megaparsec
 import Text.Megaparsec.Expr
 
 import           Rbsc.Parser.Lexer
-import           Rbsc.Syntax.Constraint
-import qualified Rbsc.Syntax.Operators  as Ops
+import           Rbsc.Syntax.Expr.Untyped
+import qualified Rbsc.Syntax.Operators    as Ops
 
 
--- | Parser for 'Constraint's.
-constraint :: Parser (Loc Constraint)
-constraint = makeExprParser atom table
+-- | Parser for 'Expr's.
+expr :: Parser (Loc Expr)
+expr = makeExprParser atom table
 
 
-atom :: Parser (Loc Constraint)
+atom :: Parser (Loc Expr)
 atom = choice
-    [ parens constraint
+    [ parens expr
     , litBool
     , quantified
     , variable
     ]
 
 
-litBool :: Parser (Loc Constraint)
+litBool :: Parser (Loc Expr)
 litBool = choice
     [ Loc (LitBool True)  <$> reserved "true"
     , Loc (LitBool False) <$> reserved "false"
     ]
 
 
-quantified :: Parser (Loc Constraint)
+quantified :: Parser (Loc Expr)
 quantified = do
     Loc q start <- quantifier
     name <- unLoc <$> identifier
     tyName <- optional (colon *> identifier)
-    c@(Loc _ end) <- dot *> constraint
+    e@(Loc _ end) <- dot *> expr
 
-    return (Loc (Quantified q name tyName c) (start <> end))
+    return (Loc (Quantified q name tyName e) (start <> end))
   where
     quantifier = choice
         [ Loc Ops.Forall <$> reserved "forall"
@@ -57,17 +57,16 @@ quantified = do
         ]
 
 
-variable :: Parser (Loc Constraint)
+variable :: Parser (Loc Expr)
 variable = fmap Variable <$> identifier
 
 
--- | Operators working on 'Constraint's.
-type ConstraintOp m
-     = Operator (ParsecT Dec Text (StateT ParserState m)) (Loc Constraint)
+-- | Operators working on 'Expr's.
+type ExprOp m = Operator (ParsecT Dec Text (StateT ParserState m)) (Loc Expr)
 
 
 -- | Operator table for expressions.
-table :: Monad m => [[ConstraintOp m]]
+table :: Monad m => [[ExprOp m]]
 table =
     [ [ boolNot ]
     , [ binary InfixN BoundTo (reserved "boundto")
@@ -81,16 +80,16 @@ table =
     ]
 
 
-boolBinOp :: Monad m => String -> Ops.BoolBinOp -> ConstraintOp m
+boolBinOp :: Monad m => String -> Ops.BoolBinOp -> ExprOp m
 boolBinOp n binOp = binary InfixL (BoolBinOp binOp) (op n)
 
 
-hasType :: Monad m => ConstraintOp m
+hasType :: Monad m => ExprOp m
 hasType =
     Postfix $ do
         void (op ":")
         tyName <- identifier
-        return (\c -> Loc (HasType c tyName) (getLoc c <> getLoc tyName))
+        return (\e -> Loc (HasType e tyName) (getLoc e <> getLoc tyName))
 
 
 -- | @binary assoc c p@ creates a binary infix 'Operator' with associativity
@@ -107,11 +106,11 @@ binary ::
 binary assoc c p = assoc ((\l r -> Loc (c l r) (getLoc l <> getLoc r)) <$ p)
 
 
-boolNot :: Monad m => ConstraintOp m
+boolNot :: Monad m => ExprOp m
 boolNot =
     Prefix $ do
         rgn <- symbol "!"
-        return (\c -> Loc (Not c) (rgn <> getLoc c))
+        return (\e -> Loc (Not e) (rgn <> getLoc e))
 
 
 -- | Parser for an operator.

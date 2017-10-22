@@ -19,7 +19,7 @@ import qualified Data.Map.Strict as Map
 import           Rbsc.ComponentType       (ComponentTypes)
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region       (Loc (..), Region)
-import           Rbsc.Syntax.Constraint
+import           Rbsc.Syntax.Expr.Untyped
 import           Rbsc.Syntax.Declaration
 import           Rbsc.Type
 
@@ -55,8 +55,8 @@ runBuilder m =
 -- | Add component instances defined within the system block to the symbol
 -- table.
 components :: ComponentTypes -> [Declaration] -> Builder ()
-components types decls = forOf_ (traverse._DeclSystem) decls $ \cs ->
-    for_ cs $ \case
+components types decls = forOf_ (traverse._DeclSystem) decls $ \es ->
+    for_ es $ \case
         Loc (HasType (Loc (Variable name) rgnVar) (Loc tyName rgnTy)) _ ->
             lookupComponentType types tyName rgnTy >>= \case
                 Just aTy -> insert name aTy rgnVar
