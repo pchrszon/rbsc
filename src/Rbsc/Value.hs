@@ -15,6 +15,7 @@ module Rbsc.Value
 import Data.Map.Strict (Map)
 
 
+import Rbsc.Name
 import Rbsc.Type
 
 

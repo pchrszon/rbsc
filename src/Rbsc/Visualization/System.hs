@@ -13,8 +13,8 @@ import Data.Map.Strict           (assocs)
 import Data.Maybe                (isJust)
 import Data.Text.Prettyprint.Doc
 
+import Rbsc.Name
 import Rbsc.System
-import Rbsc.Type
 
 
 -- | Create a graph representing a system instance in the Graphviz DOT

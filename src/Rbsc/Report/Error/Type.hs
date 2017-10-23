@@ -34,7 +34,8 @@ toReport = \case
     TypeError expected actual rgn ->
         Report "type error"
             [ errorPart rgn . Just $
-                "unexpected type: " <> actual <> "\nexpected type: " <> expected
+                "expression has type: " <> actual <>
+                "\nexpected type: " <> expected
             ]
 
     UndefinedType rgn ->

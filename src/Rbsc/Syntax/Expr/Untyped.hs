@@ -4,9 +4,9 @@ module Rbsc.Syntax.Expr.Untyped
     ) where
 
 
+import Rbsc.Name
 import Rbsc.Report.Region
 import Rbsc.Syntax.Operators
-import Rbsc.Type
 
 
 -- | An untyped expression.

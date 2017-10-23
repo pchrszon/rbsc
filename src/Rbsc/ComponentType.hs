@@ -20,11 +20,11 @@ import           Data.Maybe      (mapMaybe)
 import           Data.Set        (Set)
 import qualified Data.Set        as Set
 
+import           Rbsc.Name
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region
 import           Rbsc.Syntax.Declaration
 import           Rbsc.Syntax.TypeLevel
-import           Rbsc.Type
 
 
 -- | User-defined component types indexed by their name.

@@ -2,73 +2,25 @@
 {-# LANGUAGE LambdaCase         #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeOperators      #-}
 
 
 -- | The type system of the modeling language and its embedding into the
 -- Haskell type system.
 module Rbsc.Type
-    (
-    -- * Instance names and type names
-      Name
-    , RoleName
-    , TypeName(..)
-
-    -- * Components
-    , Component(..)
-    , compName
-    , compTypeName
-    , compBoundTo
-    , compContainedIn
-
-    -- * Type system
-    , Type(..)
+    ( Type(..)
     , AType(..)
     , typeEq
     , (:~:)(..)
     ) where
 
 
-import Control.Lens
-
 import Data.Map.Strict           (Map)
-import Data.String
-import Data.Text
 import Data.Text.Prettyprint.Doc
 import Data.Type.Equality        ((:~:) (..))
 
-
--- | An instance name.
-type Name = Text
-
-
--- | A 'Name' that is intended to be a role instance name.
-type RoleName = Name
-
-
--- | The name of a user-defined component type, role type or compartment type.
-newtype TypeName = TypeName
-    { getTypeName :: Text
-    } deriving (Eq, Ord, Show)
-
-instance Pretty TypeName where
-    pretty = pretty . getTypeName
-
-instance IsString TypeName where
-    fromString = TypeName . fromString
-
-
--- | A component instance (either a natural, a role or a compartment).
-data Component = Component
-    { _compName        :: !Name
-    , _compTypeName    :: !TypeName
-    , _compBoundTo     :: Maybe Name
-    , _compContainedIn :: Maybe Name
-    } deriving (Show)
-
-
-makeLenses ''Component
+import Rbsc.Component
+import Rbsc.Name
 
 
 -- | Value-level representation of types.
@@ -77,7 +29,7 @@ data Type t where
     TyInt       :: Type Integer
     TyDouble    :: Type Double
     TyArray     :: Type t -> Type [t]
-    TyComponent :: Maybe TypeName -> Map Name AType -> Type Component
+    TyComponent :: Maybe TypeName -> Map Name AType -> Type Component -- TODO: remove local variable map?
 
 deriving instance Eq (Type t)
 deriving instance Show (Type t)

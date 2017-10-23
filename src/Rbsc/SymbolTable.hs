@@ -17,10 +17,11 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 import           Rbsc.ComponentType       (ComponentTypes)
+import           Rbsc.Name
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region       (Loc (..), Region)
-import           Rbsc.Syntax.Expr.Untyped
 import           Rbsc.Syntax.Declaration
+import           Rbsc.Syntax.Expr.Untyped
 import           Rbsc.Type
 
 

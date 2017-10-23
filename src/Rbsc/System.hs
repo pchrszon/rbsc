@@ -20,6 +20,8 @@ import Control.Lens
 import Data.Map.Strict           (Map, assocs, mapWithKey)
 import Data.Text.Prettyprint.Doc
 
+import Rbsc.Component
+import Rbsc.Name
 import Rbsc.Type
 import Rbsc.Util
 import Rbsc.Value

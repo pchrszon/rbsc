@@ -11,6 +11,8 @@ module Rbsc.Syntax.Expr.Typed
     ) where
 
 
+import Rbsc.Component
+import Rbsc.Name
 import Rbsc.Syntax.Operators
 import Rbsc.Type
 

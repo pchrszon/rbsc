@@ -6,8 +6,8 @@ module Rbsc.Syntax.TypeLevel
     ) where
 
 
+import Rbsc.Name
 import Rbsc.Report.Region
-import Rbsc.Type
 
 
 -- | A definition of a natural type.

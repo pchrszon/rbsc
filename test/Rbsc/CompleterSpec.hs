@@ -19,8 +19,8 @@ import Test.QuickCheck
 
 import Rbsc.Completer
 import Rbsc.ComponentType
+import Rbsc.Name
 import Rbsc.System
-import Rbsc.Type
 import Rbsc.Util
 
 

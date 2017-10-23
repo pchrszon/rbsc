@@ -32,7 +32,7 @@ import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.Operators
 import Rbsc.Syntax.TypeLevel
 
-import Rbsc.Type
+import Rbsc.Name
 
 
 -- | Quasi quoter that parses the given string into a list of

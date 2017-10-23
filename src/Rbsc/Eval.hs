@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 
 -- | Evaluation of typed expressions.
@@ -13,8 +14,10 @@ import Control.Lens
 import Control.Monad.Reader
 
 import qualified Data.Map.Strict as Map
-import Data.Maybe (mapMaybe)
+import           Data.Maybe      (mapMaybe)
 
+import Rbsc.Component
+import Rbsc.Name
 import Rbsc.Syntax.Expr.Typed
 import Rbsc.Syntax.Operators
 import Rbsc.Type
@@ -31,7 +34,7 @@ eval = \case
             Just (Value ty' v) ->
                 case typeEq ty ty' of
                     Just Refl -> return v
-                    Nothing -> error "type mismatch"
+                    Nothing   -> error "type mismatch"
             Nothing -> error "constant not found"
     Not c -> not <$> eval c
     BoolBinOp binOp l r -> boolBinOp binOp <$> eval l <*> eval r

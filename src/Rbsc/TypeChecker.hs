@@ -14,18 +14,20 @@ import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
 
-import Data.List (find)
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as Text
-import Data.Text.Prettyprint.Doc (pretty)
+import           Data.List                 (find)
+import qualified Data.Map.Strict           as Map
+import qualified Data.Text                 as Text
+import           Data.Text.Prettyprint.Doc (pretty)
 
 import qualified Rbsc.Report.Error.Type as Type
 import           Rbsc.Report.Region     (Loc (..), Region)
 
-import Rbsc.Syntax.Expr.Typed
+import           Rbsc.Syntax.Expr.Typed
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
+import Rbsc.Component
 import Rbsc.ComponentType
+import Rbsc.Name
 import Rbsc.SymbolTable
 import Rbsc.Type
 
