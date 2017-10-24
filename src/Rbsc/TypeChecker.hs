@@ -7,8 +7,8 @@
 
 
 module Rbsc.TypeChecker
-    ( Typed(..)
-    , getTyped
+    ( AnExpr(..)
+    , getExpr
 
     , typeCheck
     , extract
@@ -27,7 +27,7 @@ import           Data.Text.Prettyprint.Doc (pretty)
 import qualified Rbsc.Report.Error.Type as Type
 import           Rbsc.Report.Region     (Loc (..), Region)
 
-import           Rbsc.Syntax.Expr.Typed
+import qualified Rbsc.Syntax.Expr.Typed   as T
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
 import Rbsc.Component
@@ -37,18 +37,17 @@ import Rbsc.SymbolTable
 import Rbsc.Type
 
 
--- | A value tagged with a 'Type' @t@ where @t@ is existentially
--- quantified.
-data Typed a where
-    Typed :: Type t -> a t -> Typed a
+-- | An 'Expr' tagged with its 'Type'.
+data AnExpr where
+    AnExpr :: T.Expr t -> Type t -> AnExpr
 
 
--- | Get a value wrapped in 'Typed'. If the given expected type and the
--- type tag of the value do not match, then @Nothing@ is returned.
-getTyped :: Type t -> Typed a -> Maybe (a t)
-getTyped expected (Typed actual x) = do
+-- | Unwrap 'AnExpr'. If the given expected 'Type' and the actual @Type@ do
+-- not match, then @Nothing@ is returned.
+getExpr :: Type t -> AnExpr -> Maybe (T.Expr t)
+getExpr expected (AnExpr e actual) = do
     Refl <- typeEq expected actual
-    return x
+    return e
 
 
 data TcInfo = TcInfo
@@ -71,59 +70,56 @@ runTypeChecker m types symTable = runReaderT m (TcInfo types symTable [])
 -- | Type check an untyped expression and transform it into a typed
 -- expression.
 typeCheck ::
-       ComponentTypes
-    -> SymbolTable
-    -> Loc U.Expr
-    -> Either Type.Error (Typed Expr)
+       ComponentTypes -> SymbolTable -> Loc U.Expr -> Either Type.Error AnExpr
 typeCheck types symTable e = runTypeChecker (tc e) types symTable
 
 
 -- | @extract expected region e@ extracts an expression @e@ wrapped in
--- 'Typed'. If @e@ does not have the @expected@ type, a type error is
+-- 'AnExpr'. If @e@ does not have the @expected@ type, a type error is
 -- thrown.
-extract :: Type t -> Region -> Typed Expr -> Either Type.Error (Expr t)
-extract expected rgn (Typed actual e) = do
+extract :: Type t -> Region -> AnExpr -> Either Type.Error (T.Expr t)
+extract expected rgn (AnExpr e actual) = do
     Refl <- expect expected rgn actual
     return e
 
 
-tc :: Loc U.Expr -> TypeChecker (Typed Expr)
+tc :: Loc U.Expr -> TypeChecker AnExpr
 tc (Loc e rgn) = case e of
     U.LitBool b ->
-        Literal b `withType` TyBool
+        T.Literal b `withType` TyBool
 
     U.Variable name ->
         lookupBoundVar name >>= \case
             Just (i, AType ty) -> do
                 Refl <- expect tyComponent rgn ty
-                Bound i `withType` ty
+                T.Bound i `withType` ty
             Nothing -> do
                 AType ty <- getIdentifierType name rgn
-                Variable name ty `withType` ty
+                T.Variable name ty `withType` ty
 
     U.Not inner -> do
         inner' <- inner `hasType` TyBool
-        Not inner' `withType` TyBool
+        T.Not inner' `withType` TyBool
 
     U.BoolBinOp binOp l r -> do
         l' <- l `hasType` TyBool
         r' <- r `hasType` TyBool
-        BoolBinOp binOp l' r' `withType` TyBool
+        T.BoolBinOp binOp l' r' `withType` TyBool
 
     U.HasType inner tyName ->
         whenTypeExists tyName $ do
             inner' <- inner `hasType` tyComponent
-            HasType inner' (unLoc tyName) `withType` TyBool
+            T.HasType inner' (unLoc tyName) `withType` TyBool
 
     U.BoundTo l r -> do
         l' <- l `hasType` tyComponent
         r' <- r `hasType` tyComponent
-        BoundTo l' r' `withType` TyBool
+        T.BoundTo l' r' `withType` TyBool
 
     U.Element l r -> do
         l' <- l `hasType` tyComponent
         r' <- r `hasType` tyComponent
-        Element l' r' `withType` TyBool
+        T.Element l' r' `withType` TyBool
 
     U.Quantified q varName mTyName body -> do
         varTy <- case mTyName of
@@ -135,7 +131,7 @@ tc (Loc e rgn) = case e of
         body' <- local (over boundVars ((varName, AType varTy) :)) $
             body `hasType` TyBool
 
-        Quantified q (fmap unLoc mTyName) (Scope body') `withType` TyBool
+        T.Quantified q (fmap unLoc mTyName) (T.Scope body') `withType` TyBool
 
 
 -- | Looks up the type of a given identifier in the symbol table. If the
@@ -168,9 +164,9 @@ whenTypeExists (Loc tyName rgn) m = do
 
 
 -- | Assume that a given untyped expression has a given 'Type'.
-hasType :: Loc U.Expr -> Type t -> TypeChecker (Expr t)
+hasType :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t)
 hasType e expected = do
-    Typed actual e' <- tc e
+    AnExpr e' actual <- tc e
     Refl <- expect expected (getLoc e) actual
     return e'
 
@@ -190,8 +186,8 @@ expect expected rgn actual =
 
 
 -- | Returns an expression tagged with its 'Type'.
-withType :: Expr t -> Type t -> TypeChecker (Typed Expr)
-withType e ty = return (Typed ty e)
+withType :: T.Expr t -> Type t -> TypeChecker AnExpr
+withType e ty = return (AnExpr e ty)
 
 
 tyComponent :: Type Component

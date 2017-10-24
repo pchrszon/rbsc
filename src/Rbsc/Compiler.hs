@@ -41,7 +41,7 @@ compile path = do
                     forOf_ (traverse._DeclSystem) decls $ \cs ->
                         for_ cs $ \c ->
                             case typeCheck types symTable c of
-                                Right (Typed ty c') -> case typeEq ty TyBool of
+                                Right (AnExpr c' ty) -> case typeEq ty TyBool of
                                     Just Refl -> print c'
                                     Nothing   -> putStrLn "type error"
                                 Left err -> putDoc (render (Type.toReport err))

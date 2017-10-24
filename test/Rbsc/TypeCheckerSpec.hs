@@ -21,7 +21,7 @@ import Rbsc.Report.Region
 import qualified Rbsc.Report.Error.Type as Type
 
 import qualified Rbsc.Syntax.Expr.Untyped as U
-import Rbsc.Syntax.Expr.Typed
+import qualified Rbsc.Syntax.Expr.Typed as T
 
 import Rbsc.Parser.TH
 
@@ -31,7 +31,7 @@ spec = describe "typeCheck" $ do
     it "computes the correct type" $
         typeCheck' TyBool [expr| n : N |]
         `shouldBe`
-        Right (Variable "n" tyComponent `HasType` "N")
+        Right (T.Variable "n" tyComponent `T.HasType` "N")
 
     it "detects type errors" $
         typeCheck' TyBool [expr| true : N |]
@@ -49,7 +49,7 @@ spec = describe "typeCheck" $ do
         has (_Left.Type._UndefinedIdentifier)
 
 
-typeCheck' :: Type t -> Loc U.Expr -> Either Type.Error (Expr t)
+typeCheck' :: Type t -> Loc U.Expr -> Either Type.Error (T.Expr t)
 typeCheck' ty e = do
     te <- typeCheck types symbolTable e
     extract ty (getLoc e) te
