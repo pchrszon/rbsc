@@ -124,9 +124,8 @@ tc (Loc e rgn) = case e of
     U.Quantified q varName mTyName body -> do
         varTy <- case mTyName of
             Just tyName -> whenTypeExists tyName $
-                return (TyComponent (Just (unLoc tyName)) undefined) -- TODO: get local variables
-            Nothing ->
-                return (TyComponent Nothing Map.empty)
+                return (TyComponent (Just (unLoc tyName)))
+            Nothing -> return (TyComponent Nothing)
 
         body' <- local (over boundVars ((varName, AType varTy) :)) $
             body `hasType` TyBool
@@ -191,4 +190,4 @@ withType e ty = return (AnExpr e ty)
 
 
 tyComponent :: Type Component
-tyComponent = TyComponent Nothing Map.empty
+tyComponent = TyComponent Nothing

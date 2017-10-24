@@ -8,8 +8,6 @@ module Rbsc.SymbolTableSpec (spec) where
 
 import Control.Lens
 
-import qualified Data.Map.Strict as Map
-
 import Test.Hspec
 
 import qualified Rbsc.ComponentType       as CompTys
@@ -35,8 +33,8 @@ spec = describe "fromDeclarations" $ do
             |]
         `shouldBe`
         Right
-            [ ("n", AType (TyComponent (Just "N") Map.empty))
-            , ("r", AType (TyComponent (Just "R") Map.empty))
+            [ ("n", AType (TyComponent (Just "N")))
+            , ("r", AType (TyComponent (Just "R")))
             ]
 
     it "detects undefined types" $

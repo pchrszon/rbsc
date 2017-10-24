@@ -66,4 +66,4 @@ symbolTable = Map.fromList
     ]
 
 tyComponent :: Type Component
-tyComponent = TyComponent Nothing Map.empty
+tyComponent = TyComponent Nothing

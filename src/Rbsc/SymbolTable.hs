@@ -71,7 +71,7 @@ lookupComponentType ::
        ComponentTypes -> TypeName -> Region -> Builder (Maybe AType)
 lookupComponentType types tyName rgn
     | Map.member tyName types =
-        return (Just (AType (TyComponent (Just tyName) Map.empty)))
+        return (Just (AType (TyComponent (Just tyName))))
     | otherwise = do
         throw (Syntax.UndefinedType rgn)
         return Nothing

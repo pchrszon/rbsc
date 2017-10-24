@@ -15,7 +15,6 @@ module Rbsc.Type
     ) where
 
 
-import Data.Map.Strict           (Map)
 import Data.Text.Prettyprint.Doc
 import Data.Type.Equality        ((:~:) (..))
 
@@ -29,19 +28,18 @@ data Type t where
     TyInt       :: Type Integer
     TyDouble    :: Type Double
     TyArray     :: Type t -> Type [t]
-    TyComponent :: Maybe TypeName -> Map Name AType -> Type Component -- TODO: remove local variable map?
+    TyComponent :: Maybe TypeName -> Type Component
 
 deriving instance Eq (Type t)
 deriving instance Show (Type t)
 
 instance Pretty (Type t) where
     pretty = \case
-        TyBool -> "bool"
-        TyInt -> "int"
-        TyDouble -> "double"
-        TyArray t -> brackets (pretty t)
-        TyComponent (Just tyName) _ -> pretty tyName
-        TyComponent Nothing _ -> "component"
+        TyBool             -> "bool"
+        TyInt              -> "int"
+        TyDouble           -> "double"
+        TyArray t          -> brackets (pretty t)
+        TyComponent tyName -> maybe "component" pretty tyName
 
 
 -- | Existentially quantified 'Type'.
@@ -52,7 +50,7 @@ instance Eq AType where
     (AType s) == (AType t) =
         case typeEq s t of
             Just Refl -> True
-            Nothing -> False
+            Nothing   -> False
 
 deriving instance Show AType
 
@@ -70,5 +68,5 @@ typeEq TyDouble    TyDouble    = Just Refl
 typeEq (TyArray s) (TyArray t) = do
     Refl <- typeEq s t
     pure Refl
-typeEq (TyComponent _ _) (TyComponent _ _) = Just Refl
+typeEq (TyComponent _) (TyComponent _) = Just Refl
 typeEq _ _ = Nothing

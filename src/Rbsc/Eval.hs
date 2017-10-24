@@ -64,7 +64,7 @@ components mTyName = mapMaybe getComponent . Map.elems
   where
     getComponent :: Value -> Maybe Component
     getComponent = \case
-        Value (TyComponent tyName _) comp
+        Value (TyComponent tyName) comp
             | matchType tyName -> Just comp
         _ -> Nothing
 
