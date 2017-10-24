@@ -1,12 +1,17 @@
-{-# LANGUAGE GADTs           #-}
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeOperators         #-}
 
 
 module Rbsc.TypeChecker
     ( Typed(..)
+    , getTyped
+
     , typeCheck
+    , extract
     ) where
 
 
@@ -38,6 +43,14 @@ data Typed a where
     Typed :: Type t -> a t -> Typed a
 
 
+-- | Get a value wrapped in 'Typed'. If the given expected type and the
+-- type tag of the value do not match, then @Nothing@ is returned.
+getTyped :: Type t -> Typed a -> Maybe (a t)
+getTyped expected (Typed actual x) = do
+    Refl <- typeEq expected actual
+    return x
+
+
 data TcInfo = TcInfo
     { _componentTypes :: !ComponentTypes
     , _symbolTable    :: !SymbolTable
@@ -63,6 +76,15 @@ typeCheck ::
     -> Loc U.Expr
     -> Either Type.Error (Typed Expr)
 typeCheck types symTable e = runTypeChecker (tc e) types symTable
+
+
+-- | @extract expected region e@ extracts an expression @e@ wrapped in
+-- 'Typed'. If @e@ does not have the @expected@ type, a type error is
+-- thrown.
+extract :: Type t -> Region -> Typed Expr -> Either Type.Error (Expr t)
+extract expected rgn (Typed actual e) = do
+    Refl <- expect expected rgn actual
+    return e
 
 
 tc :: Loc U.Expr -> TypeChecker (Typed Expr)
@@ -155,7 +177,7 @@ hasType e expected = do
 
 -- | @expect expected rgn actual@ returns a witness that the types
 -- @expected@ and @actual@ are equal (w.r.t. 'typeEq').
-expect :: Type s -> Region -> Type t -> TypeChecker (s :~: t)
+expect :: MonadError Type.Error m => Type s -> Region -> Type t -> m (s :~: t)
 expect expected rgn actual =
     case typeEq expected actual of
         Just Refl -> return Refl

@@ -8,10 +8,14 @@
 
 module Rbsc.Parser.TH
     ( model
+    , expr
     ) where
 
 
 import Control.Exception
+import Control.Monad.Identity
+
+import Text.Megaparsec (eof)
 
 import           Data.Data
 import           Data.Generics
@@ -21,7 +25,9 @@ import qualified Data.Text     as Text
 import Language.Haskell.TH       hiding (Loc)
 import Language.Haskell.TH.Quote
 
-import Rbsc.Parser
+import           Rbsc.Parser.Lexer          (run, sc)
+import           Rbsc.Parser
+import qualified Rbsc.Parser.Expr as Parser
 
 import           Rbsc.Report
 import qualified Rbsc.Report.Error.Syntax as Error
@@ -46,6 +52,21 @@ model = QuasiQuoter
     , quoteType = undefined
     , quoteDec = undefined
     }
+
+
+expr :: QuasiQuoter
+expr = QuasiQuoter
+    { quoteExp = \str -> do
+        let (result, _) = runIdentity (run exprParser "splice" (Text.pack str))
+        case result of
+            Left err -> fail (show err)
+            Right e -> dataToExpQ (const Nothing `extQ` handleText) e
+    , quotePat = undefined
+    , quoteType = undefined
+    , quoteDec = undefined
+    }
+  where
+    exprParser = sc *> Parser.expr <* eof
 
 
 -- | Convert 'Text' to a string literal and apply 'Text.pack'.

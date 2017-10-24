@@ -9,6 +9,8 @@ module Rbsc.Report.Error.Type
     , toReport
 
     , _TypeError
+    , _UndefinedType
+    , _UndefinedIdentifier
     ) where
 
 

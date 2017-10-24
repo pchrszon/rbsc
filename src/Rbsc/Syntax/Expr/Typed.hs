@@ -30,12 +30,13 @@ data Expr t where
     Bound      :: Int -> Expr Component
 
 deriving instance Show t => Show (Expr t)
+deriving instance Eq t => Eq (Expr t)
 
 
 -- | A Scope contains an expression with a bound variable.
 --
 -- Variables bound by a quantifier are identified by their de Bruijn index.
-newtype Scope t = Scope (Expr t) deriving (Show)
+newtype Scope t = Scope (Expr t) deriving (Eq, Show)
 
 
 -- | Instantiate all variables bound by the outermost quantifier.

@@ -22,7 +22,7 @@ data Component = Component
     , _compTypeName    :: !TypeName
     , _compBoundTo     :: Maybe Name
     , _compContainedIn :: Maybe Name
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 
 makeLenses ''Component

@@ -15,7 +15,7 @@ data BoolBinOp
     = And
     | Or
     | Implies
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 -- | Semantics of a 'BoolBinOp'.
@@ -30,7 +30,7 @@ boolBinOp binOp l r = case binOp of
 data Quantifier
     = Forall
     | Exists
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 -- | Semantics of a 'Quantifier'.
