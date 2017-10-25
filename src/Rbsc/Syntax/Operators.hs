@@ -3,24 +3,82 @@
 
 -- | Operators and quantifiers.
 module Rbsc.Syntax.Operators
-    ( BoolBinOp(..)
-    , boolBinOp
+    ( ArithOp(..)
+    , arithOp
+
+    , EqOp(..)
+    , eqOp
+
+    , RelOp(..)
+    , relOp
+
+    , LogicOp(..)
+    , logicOp
+
     , Quantifier(..)
     , quantifier
     ) where
 
 
--- | Boolean binary operators.
-data BoolBinOp
+-- | Arithmetic operators.
+data ArithOp
+    = Add
+    | Sub
+    | Mul
+    deriving (Eq, Show)
+
+
+-- | Semantics of an 'ArithOp'.
+arithOp :: Num a => ArithOp -> a -> a -> a
+arithOp = \case
+    Add -> (+)
+    Sub -> (-)
+    Mul -> (*)
+
+
+-- | Equality operators.
+data EqOp
+    = Eq
+    | NEq
+    deriving (Eq, Show)
+
+
+-- | Semantics of an 'EqOp'.
+eqOp :: Eq a => EqOp -> a -> a -> Bool
+eqOp = \case
+    Eq  -> (==)
+    NEq -> (/=)
+
+
+-- | Relation operators.
+data RelOp
+    = Lt
+    | Lte
+    | Gt
+    | Gte
+    deriving (Eq, Show)
+
+
+-- | Semantics of a 'RelOp'.
+relOp :: Ord a => RelOp -> a -> a -> Bool
+relOp = \case
+    Lt  -> (<)
+    Lte -> (<=)
+    Gt  -> (>)
+    Gte -> (>=)
+
+
+-- | Boolean logic operators.
+data LogicOp
     = And
     | Or
     | Implies
     deriving (Eq, Show)
 
 
--- | Semantics of a 'BoolBinOp'.
-boolBinOp :: BoolBinOp -> Bool -> Bool -> Bool
-boolBinOp binOp l r = case binOp of
+-- | Semantics of a 'LogicOp'.
+logicOp :: LogicOp -> Bool -> Bool -> Bool
+logicOp binOp l r = case binOp of
     And     -> l && r
     Or      -> l || r
     Implies -> not l || r

@@ -9,6 +9,7 @@ module Rbsc.Report.Error.Type
     , toReport
 
     , _TypeError
+    , _NotComparable
     , _UndefinedType
     , _UndefinedIdentifier
     ) where
@@ -16,8 +17,9 @@ module Rbsc.Report.Error.Type
 
 import Control.Lens
 
-import Data.Monoid ((<>))
-import Data.Text   (Text)
+import           Data.Monoid ((<>))
+import           Data.Text   (Text)
+import qualified Data.Text   as Text
 
 import Rbsc.Report
 import Rbsc.Report.Region
@@ -25,7 +27,8 @@ import Rbsc.Report.Region
 
 -- | Represents a type error.
 data Error
-    = TypeError !Text !Text !Region
+    = TypeError [Text] !Text !Region
+    | NotComparable !Text !Region
     | UndefinedType !Region
     | UndefinedIdentifier !Region
     deriving (Eq, Show)
@@ -37,7 +40,13 @@ toReport = \case
         Report "type error"
             [ errorPart rgn . Just $
                 "expression has type: " <> actual <>
-                "\nexpected type: " <> expected
+                "\nexpected type: " <> orList expected
+            ]
+
+    NotComparable ty rgn ->
+        Report "uncomparable values"
+            [ errorPart rgn . Just $
+                "values of type " <> ty <> " are not comparable"
             ]
 
     UndefinedType rgn ->
@@ -45,6 +54,13 @@ toReport = \case
 
     UndefinedIdentifier rgn ->
         Report "undefined identifier" [errorPart rgn Nothing]
+
+
+orList :: [Text] -> Text
+orList []     = Text.empty
+orList [x]    = x
+orList [x, y] = x <> " or " <> y
+orList (x:xs) = x <> ", " <> orList xs
 
 
 makePrisms ''Error

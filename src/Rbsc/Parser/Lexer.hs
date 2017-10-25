@@ -30,6 +30,8 @@ module Rbsc.Parser.Lexer
     , comma
     , semi
     , colon
+    , integer
+    , number
     , symbol
     , lexeme
     , sc
@@ -184,6 +186,20 @@ semi = symbol ";"
 -- | Parser for a colon.
 colon :: Parser Region
 colon = symbol ":"
+
+
+-- | Parser for an integer.
+integer :: Parser (Loc Integer)
+integer = lexeme (Loc <$> Lexer.signed sc Lexer.integer)
+
+
+-- | Parser for decimal numbers.
+number :: Parser (Either (Loc Double) (Loc Integer))
+number = (Left <$> try float) <|> (Right <$> integer)
+
+
+float :: Parser (Loc Double)
+float = lexeme (Loc <$> Lexer.signed sc Lexer.float)
 
 
 -- | Parser for a symbol.

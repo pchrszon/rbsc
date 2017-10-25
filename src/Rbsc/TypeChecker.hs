@@ -21,6 +21,7 @@ import Control.Monad.Reader
 
 import           Data.List                 (find)
 import qualified Data.Map.Strict           as Map
+import           Data.Text                 (Text)
 import qualified Data.Text                 as Text
 import           Data.Text.Prettyprint.Doc (pretty)
 
@@ -88,6 +89,12 @@ tc (Loc e rgn) = case e of
     U.LitBool b ->
         T.Literal b `withType` TyBool
 
+    U.LitInt i ->
+        T.Literal i `withType` TyInt
+
+    U.LitDouble d ->
+        T.Literal d `withType` TyDouble
+
     U.Variable name ->
         lookupBoundVar name >>= \case
             Just (i, AType ty) -> do
@@ -101,10 +108,41 @@ tc (Loc e rgn) = case e of
         inner' <- inner `hasType` TyBool
         T.Not inner' `withType` TyBool
 
-    U.BoolBinOp binOp l r -> do
+    U.Negate inner -> do
+        AnExpr inner' ty <- tc inner
+        Dict <- isNumType ty (getLoc inner)
+        T.Negate inner' `withType` ty
+
+    U.ArithOp aOp l r -> do
+        (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
+        Refl <- expect tyL (getLoc r) tyR
+        Dict <- isNumType tyL (getLoc l)
+        T.ArithOp aOp l' r' `withType` tyL
+
+    U.Divide l r -> do
+        (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
+        Refl <- expect tyL (getLoc r) tyR
+        case tyL of
+            TyInt    -> T.DivInt l' r' `withType` TyInt
+            TyDouble -> T.DivDouble l' r' `withType` TyDouble
+            _        -> throwError (typeError numTypes tyL (getLoc l))
+
+    U.EqOp eOp l r -> do
+        (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
+        Refl <- expect tyL (getLoc r) tyR
+        return $ case dictEq tyL of
+            Dict -> AnExpr (T.EqOp tyL eOp l' r') TyBool
+
+    U.RelOp rOp l r -> do
+        (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
+        Refl <- expect tyL (getLoc r) tyR
+        Dict <- isOrdType tyL (getLoc l)
+        T.RelOp tyL rOp l' r' `withType` TyBool
+
+    U.LogicOp lOp l r -> do
         l' <- l `hasType` TyBool
         r' <- r `hasType` TyBool
-        T.BoolBinOp binOp l' r' `withType` TyBool
+        T.LogicOp lOp l' r' `withType` TyBool
 
     U.HasType inner tyName ->
         whenTypeExists tyName $ do
@@ -154,6 +192,18 @@ lookupBoundVar name = do
     toIndexAndType ((_, aTy), i) = (i, aTy)
 
 
+-- | If one of the two given expression has 'TyDouble' and the other one
+-- has 'TyInt', then cast the @TyInt@ expression to @TyDouble@.
+binaryCast :: AnExpr -> AnExpr -> (AnExpr, AnExpr)
+binaryCast (AnExpr l TyDouble) (AnExpr r TyInt) =
+    (AnExpr l TyDouble, AnExpr (T.Cast r) TyDouble)
+binaryCast (AnExpr l TyInt) (AnExpr r TyDouble) =
+    (AnExpr (T.Cast l) TyDouble, AnExpr r TyDouble)
+binaryCast l r = (l, r)
+
+
+-- | When a given user-defined component type exists, execute the given
+-- action. Otherwise, an error is thrown.
 whenTypeExists :: Loc TypeName -> TypeChecker a -> TypeChecker a
 whenTypeExists (Loc tyName rgn) m = do
     types <- view componentTypes
@@ -176,12 +226,23 @@ expect :: MonadError Type.Error m => Type s -> Region -> Type t -> m (s :~: t)
 expect expected rgn actual =
     case typeEq expected actual of
         Just Refl -> return Refl
-        Nothing ->
-            throwError
-                (Type.TypeError (renderType expected) (renderType actual) rgn)
-  where
-    renderType :: Type r -> Text.Text
-    renderType = Text.pack . show . pretty
+        Nothing   -> throwError (typeError [AType expected] actual rgn)
+
+
+-- | Assume that the given type is a number type. If not, a type error is
+-- thrown.
+isNumType :: Type t -> Region -> TypeChecker (Dict (Num t))
+isNumType ty rgn = case checkNum ty of
+    Just Dict -> return Dict
+    Nothing   -> throwError (typeError numTypes ty rgn)
+
+
+-- | Assume that values of the given type are comparable. If not, an error
+-- is thrown.
+isOrdType :: Type t -> Region -> TypeChecker (Dict (Ord t))
+isOrdType ty rgn = case checkOrd ty of
+    Just Dict -> return Dict
+    Nothing   -> throwError (Type.NotComparable (renderType ty) rgn)
 
 
 -- | Returns an expression tagged with its 'Type'.
@@ -191,3 +252,15 @@ withType e ty = return (AnExpr e ty)
 
 tyComponent :: Type Component
 tyComponent = TyComponent Nothing
+
+
+-- | @typeError expected actual region@ constructs a 'Type.Error'.
+typeError :: [AType] -> Type t -> Region -> Type.Error
+typeError expected actual =
+    Type.TypeError (fmap renderAType expected) (renderType actual)
+  where
+    renderAType (AType ty) = renderType ty
+
+
+renderType :: Type r -> Text
+renderType = Text.pack . show . pretty

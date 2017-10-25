@@ -28,6 +28,7 @@ import Rbsc.Value
 eval :: MonadReader Constants m => Expr t -> m t
 eval = \case
     Literal x -> return x
+
     Variable name ty -> do
         consts <- ask
         case Map.lookup name consts of
@@ -36,24 +37,36 @@ eval = \case
                     Just Refl -> return v
                     Nothing   -> error "type mismatch"
             Nothing -> error "constant not found"
-    Not c -> not <$> eval c
-    BoolBinOp binOp l r -> boolBinOp binOp <$> eval l <*> eval r
+
+    Cast e          -> fromInteger <$> eval e
+    Not e           -> not <$> eval e
+    Negate e        -> negate <$> eval e
+    ArithOp aOp l r -> arithOp aOp <$> eval l <*> eval r
+    DivInt l r      -> div <$> eval l <*> eval r
+    DivDouble l r   -> (/) <$> eval l <*> eval r
+    EqOp _ eOp l r  -> eqOp eOp <$> eval l <*> eval r
+    RelOp _ rOp l r -> relOp rOp <$> eval l <*> eval r
+    LogicOp lOp l r -> logicOp lOp <$> eval l <*> eval r
+
     HasType c tyName -> do
         comp <- eval c
         return (view compTypeName comp == tyName)
+
     BoundTo l r -> do
         role <- eval l
         player <- eval r
         return (view compBoundTo role == Just (view compName player))
+
     Element l r -> do
         role <- eval l
         compartment <- eval r
-        return
-            (view compContainedIn role == Just (view compName compartment))
+        return (view compContainedIn role == Just (view compName compartment))
+
     Quantified q mTyName sc -> do
         comps <- components mTyName <$> ask
         bs <- traverse (eval . instantiate sc) comps
         return (quantifier q bs)
+
     Bound _ -> error "unbound variable"
 
 

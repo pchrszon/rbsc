@@ -95,7 +95,10 @@ deriving instance Data RoleTypeDef
 deriving instance Data CompartmentTypeDef
 
 deriving instance Data Expr
-deriving instance Data BoolBinOp
+deriving instance Data ArithOp
+deriving instance Data EqOp
+deriving instance Data RelOp
+deriving instance Data LogicOp
 deriving instance Data Quantifier
 
 deriving instance Data Position

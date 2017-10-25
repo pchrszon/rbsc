@@ -30,6 +30,7 @@ atom :: Parser (Loc Expr)
 atom = choice
     [ parens expr
     , litBool
+    , litNumber
     , quantified
     , variable
     ]
@@ -40,6 +41,18 @@ litBool = choice
     [ Loc (LitBool True)  <$> reserved "true"
     , Loc (LitBool False) <$> reserved "false"
     ]
+
+
+litNumber :: Parser (Loc Expr)
+litNumber = do
+    n <- number
+    return $ case n of
+        Left d  -> LitDouble <$> d
+        Right i -> LitInt <$> i
+
+
+variable :: Parser (Loc Expr)
+variable = fmap Variable <$> identifier
 
 
 quantified :: Parser (Loc Expr)
@@ -57,10 +70,6 @@ quantified = do
         ]
 
 
-variable :: Parser (Loc Expr)
-variable = fmap Variable <$> identifier
-
-
 -- | Operators working on 'Expr's.
 type ExprOp m = Operator (ParsecT Dec Text (StateT ParserState m)) (Loc Expr)
 
@@ -68,20 +77,43 @@ type ExprOp m = Operator (ParsecT Dec Text (StateT ParserState m)) (Loc Expr)
 -- | Operator table for expressions.
 table :: Monad m => [[ExprOp m]]
 table =
-    [ [ boolNot ]
+    [ [ unary Negate "-"
+      ]
     , [ binary InfixN BoundTo (reserved "boundto")
       , binary InfixN Element (reserved "in")
       , hasType
       ]
-    , [ boolBinOp "&" Ops.And
-      , boolBinOp "|" Ops.Or
+    , [ binaryLOp "*" (ArithOp Ops.Mul)
+      , binaryLOp "/" Divide
       ]
-    , [ boolBinOp "->" Ops.Implies ]
+    , [ binaryLOp "+" (ArithOp Ops.Add)
+      , binaryLOp "-" (ArithOp Ops.Sub)
+      ]
+    , [ binaryNOp ">"  (RelOp Ops.Gt)
+      , binaryNOp ">=" (RelOp Ops.Gte)
+      , binaryNOp "<"  (RelOp Ops.Lt)
+      , binaryNOp "<=" (RelOp Ops.Lte)
+      ]
+    , [ binaryNOp "="  (EqOp Ops.Eq)
+      , binaryNOp "!=" (EqOp Ops.NEq)
+      ]
+    , [ unary Not "!"
+      ]
+    , [ binaryLOp "&"  (LogicOp Ops.And)
+      ]
+    , [ binaryLOp "|"  (LogicOp Ops.Or)
+      ]
+    , [ binaryLOp "=>" (LogicOp Ops.Implies)
+      ]
     ]
 
 
-boolBinOp :: Monad m => String -> Ops.BoolBinOp -> ExprOp m
-boolBinOp n binOp = binary InfixL (BoolBinOp binOp) (op n)
+binaryLOp :: Monad m => String -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
+binaryLOp n c = binary InfixL c (op n)
+
+
+binaryNOp :: Monad m => String -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
+binaryNOp n c = binary InfixN c (op n)
 
 
 hasType :: Monad m => ExprOp m
@@ -106,11 +138,14 @@ binary ::
 binary assoc c p = assoc ((\l r -> Loc (c l r) (getLoc l <> getLoc r)) <$ p)
 
 
-boolNot :: Monad m => ExprOp m
-boolNot =
+-- | @unary c s@ creates a prefix 'Operator' that parses the symbol @s@.
+-- The expression is annotated with the 'Region' including both the operand
+-- and the prefix operator.
+unary :: Monad m => (Loc Expr -> Expr) -> String -> ExprOp m
+unary c s =
     Prefix $ do
-        rgn <- symbol "!"
-        return (\e -> Loc (Not e) (rgn <> getLoc e))
+        rgn <- symbol s
+        return (\e -> Loc (c e) (rgn <> getLoc e))
 
 
 -- | Parser for an operator.
