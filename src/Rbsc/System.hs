@@ -87,4 +87,4 @@ toConstants sys = mapWithKey toValue (view instances sys)
             comp = Component name tyName playerName compartmentName
             playerName = view (boundTo.at name) sys
             compartmentName = view (containedIn.at name) sys
-        in Value ty comp
+        in Value comp ty

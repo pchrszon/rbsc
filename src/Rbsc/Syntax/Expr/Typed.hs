@@ -1,5 +1,7 @@
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE LambdaCase         #-}
+{-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
 
@@ -7,12 +9,19 @@
 module Rbsc.Syntax.Expr.Typed
     ( Expr(..)
     , Scope(..)
+
     , instantiate
+    , transform
+    , transformM
     ) where
+
+
+import Control.Monad.Identity
 
 
 import Rbsc.Component
 import Rbsc.Name
+import Rbsc.Report.Region
 import Rbsc.Syntax.Operators
 import Rbsc.Type
 
@@ -25,16 +34,16 @@ data Expr t where
     Not        :: Expr Bool -> Expr Bool
     Negate     :: Num t => Expr t -> Expr t
     ArithOp    :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
-    DivInt     :: Expr Integer -> Expr Integer -> Expr Integer
-    DivDouble  :: Expr Double -> Expr Double -> Expr Double
+    DivInt     :: Region -> Expr Integer -> Expr Integer -> Expr Integer
+    DivDouble  :: Region -> Expr Double -> Expr Double -> Expr Double
     EqOp       :: Eq t => Type t -> EqOp -> Expr t -> Expr t -> Expr Bool
     RelOp      :: Ord t => Type t -> RelOp -> Expr t -> Expr t -> Expr Bool
     LogicOp    :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
     HasType    :: Expr Component -> TypeName -> Expr Bool
     BoundTo    :: Expr Component -> Expr Component -> Expr Bool
     Element    :: Expr Component -> Expr Component -> Expr Bool
-    Quantified :: Quantifier -> Maybe TypeName -> Scope Bool -> Expr Bool
     Bound      :: Int -> Expr Component
+    Quantified :: Quantifier -> Maybe TypeName -> Scope Bool -> Expr Bool
 
 deriving instance Show (Expr t)
 
@@ -57,10 +66,10 @@ instance Eq (Expr t) where
     ArithOp aOp l r == ArithOp aOp' l' r' =
         aOp == aOp' && l == l' && r == r'
 
-    DivInt l r == DivInt l' r' =
+    DivInt _ l r == DivInt _ l' r' =
         l == l' && r == r'
 
-    DivDouble l r == DivDouble l' r' =
+    DivDouble _ l r == DivDouble _ l' r' =
         l == l' && r == r'
 
     EqOp ty eOp l r == EqOp ty' eOp' l' r' = case typeEq ty ty' of
@@ -83,11 +92,11 @@ instance Eq (Expr t) where
     Element l r == Element l' r' =
         l == l' && r == r'
 
-    Quantified q mTyName body == Quantified q' mTyName' body' =
-        q == q' && mTyName == mTyName' && body == body'
-
     Bound i == Bound i' =
         i == i'
+
+    Quantified q mTyName body == Quantified q' mTyName' body' =
+        q == q' && mTyName == mTyName' && body == body'
 
     _ == _ = False
 
@@ -99,10 +108,10 @@ newtype Scope t = Scope (Expr t) deriving (Eq, Show)
 
 
 -- | Instantiate all variables bound by the outermost quantifier.
-instantiate :: Scope t -> Component -> Expr t
+instantiate :: forall t. Scope t -> Component -> Expr t
 instantiate (Scope body) comp = go 0 body
   where
-    go :: Int -> Expr t -> Expr t
+    go :: Int -> Expr a -> Expr a
     go i = \case
         Literal x         -> Literal x
         Variable name ty  -> Variable name ty
@@ -110,16 +119,54 @@ instantiate (Scope body) comp = go 0 body
         Not e             -> Not (go i e)
         Negate e          -> Negate (go i e)
         ArithOp aOp l r   -> ArithOp aOp (go i l) (go i r)
-        DivInt l r        -> DivInt (go i l) (go i r)
-        DivDouble l r     -> DivDouble (go i l) (go i r)
+        DivInt rgn l r    -> DivInt rgn (go i l) (go i r)
+        DivDouble rgn l r -> DivDouble rgn (go i l) (go i r)
         EqOp ty eOp l r   -> EqOp ty eOp (go i l) (go i r)
         RelOp ty rOp l r  -> RelOp ty rOp (go i l) (go i r)
-        LogicOp binOp l r -> LogicOp binOp (go i l) (go i r)
+        LogicOp lOp l r   -> LogicOp lOp (go i l) (go i r)
         HasType e tyName  -> HasType (go i e) tyName
         BoundTo l r       -> BoundTo (go i l) (go i r)
         Element l r       -> Element (go i l) (go i r)
-        Quantified q mTyName (Scope body') ->
-            Quantified q mTyName (Scope (go (succ i) body'))
         Bound i'
             | i == i' -> Literal comp
             | otherwise -> Bound i'
+        Quantified q mTyName (Scope body') ->
+            Quantified q mTyName (Scope (go (succ i) body'))
+
+
+-- | Transform every element in an expression tree, in a bottom-up manner.
+transform :: (forall a. Expr a -> Expr a) -> Expr t -> Expr t
+transform f = runIdentity . transformM (Identity . f)
+
+
+-- | Transform every element in an expression tree, in a bottom-up manner
+-- and monadically.
+transformM ::
+       forall m.
+       forall t. Monad m =>
+                     (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
+transformM f = go
+  where
+    go :: Expr t -> m (Expr t)
+    go e = descend go e >>= f
+
+
+descend ::
+       Applicative m => (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
+descend f = \case
+    Literal x         -> pure (Literal x)
+    Variable name ty  -> pure (Variable name ty)
+    Cast e            -> Cast <$> f e
+    Not e             -> Not <$> f e
+    Negate e          -> Negate <$> f e
+    ArithOp aOp l r   -> ArithOp aOp <$> f l <*> f r
+    DivInt rgn l r    -> DivInt rgn <$> f l <*> f r
+    DivDouble rgn l r -> DivDouble rgn <$> f l <*> f r
+    EqOp ty eOp l r   -> EqOp ty eOp <$> f l <*> f r
+    RelOp ty rOp l r  -> RelOp ty rOp <$> f l <*> f r
+    LogicOp lOp l r   -> LogicOp lOp <$> f l <*> f r
+    HasType e tyName  -> HasType <$> f e <*> pure tyName
+    BoundTo l r       -> BoundTo <$> f l <*> f r
+    Element l r       -> Element <$> f l <*> f r
+    Bound i           -> pure (Bound i)
+    Quantified q mTyName (Scope body) -> Quantified q mTyName . Scope <$> f body

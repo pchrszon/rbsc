@@ -16,7 +16,6 @@ module Rbsc.Syntax.Operators
     , logicOp
 
     , Quantifier(..)
-    , quantifier
     ) where
 
 
@@ -89,10 +88,3 @@ data Quantifier
     = Forall
     | Exists
     deriving (Eq, Show)
-
-
--- | Semantics of a 'Quantifier'.
-quantifier :: Foldable t => Quantifier -> t Bool -> Bool
-quantifier = \case
-    Forall -> and
-    Exists -> or

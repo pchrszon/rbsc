@@ -21,7 +21,7 @@ import Rbsc.Type
 
 -- | A value tagged with its 'Type'.
 data Value where
-    Value :: Show t => Type t -> t -> Value
+    Value :: Show t => t -> Type t -> Value
 
 deriving instance Show Value
 

@@ -123,8 +123,8 @@ tc (Loc e rgn) = case e of
         (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
         Refl <- expect tyL (getLoc r) tyR
         case tyL of
-            TyInt    -> T.DivInt l' r' `withType` TyInt
-            TyDouble -> T.DivDouble l' r' `withType` TyDouble
+            TyInt    -> T.DivInt rgn l' r' `withType` TyInt
+            TyDouble -> T.DivDouble rgn l' r' `withType` TyDouble
             _        -> throwError (typeError numTypes tyL (getLoc l))
 
     U.EqOp eOp l r -> do
