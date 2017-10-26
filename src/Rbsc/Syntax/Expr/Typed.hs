@@ -34,8 +34,7 @@ data Expr t where
     Not        :: Expr Bool -> Expr Bool
     Negate     :: Num t => Expr t -> Expr t
     ArithOp    :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
-    DivInt     :: Region -> Expr Integer -> Expr Integer -> Expr Integer
-    DivDouble  :: Region -> Expr Double -> Expr Double -> Expr Double
+    Divide     :: Region -> Expr Double -> Expr Double -> Expr Double
     EqOp       :: Eq t => Type t -> EqOp -> Expr t -> Expr t -> Expr Bool
     RelOp      :: Ord t => Type t -> RelOp -> Expr t -> Expr t -> Expr Bool
     LogicOp    :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
@@ -66,10 +65,7 @@ instance Eq (Expr t) where
     ArithOp aOp l r == ArithOp aOp' l' r' =
         aOp == aOp' && l == l' && r == r'
 
-    DivInt _ l r == DivInt _ l' r' =
-        l == l' && r == r'
-
-    DivDouble _ l r == DivDouble _ l' r' =
+    Divide _ l r == Divide _ l' r' =
         l == l' && r == r'
 
     EqOp ty eOp l r == EqOp ty' eOp' l' r' = case typeEq ty ty' of
@@ -113,20 +109,19 @@ instantiate (Scope body) comp = go 0 body
   where
     go :: Int -> Expr a -> Expr a
     go i = \case
-        Literal x         -> Literal x
-        Variable name ty  -> Variable name ty
-        Cast e            -> Cast (go i e)
-        Not e             -> Not (go i e)
-        Negate e          -> Negate (go i e)
-        ArithOp aOp l r   -> ArithOp aOp (go i l) (go i r)
-        DivInt rgn l r    -> DivInt rgn (go i l) (go i r)
-        DivDouble rgn l r -> DivDouble rgn (go i l) (go i r)
-        EqOp ty eOp l r   -> EqOp ty eOp (go i l) (go i r)
-        RelOp ty rOp l r  -> RelOp ty rOp (go i l) (go i r)
-        LogicOp lOp l r   -> LogicOp lOp (go i l) (go i r)
-        HasType e tyName  -> HasType (go i e) tyName
-        BoundTo l r       -> BoundTo (go i l) (go i r)
-        Element l r       -> Element (go i l) (go i r)
+        Literal x        -> Literal x
+        Variable name ty -> Variable name ty
+        Cast e           -> Cast (go i e)
+        Not e            -> Not (go i e)
+        Negate e         -> Negate (go i e)
+        ArithOp aOp l r  -> ArithOp aOp (go i l) (go i r)
+        Divide rgn l r   -> Divide rgn (go i l) (go i r)
+        EqOp ty eOp l r  -> EqOp ty eOp (go i l) (go i r)
+        RelOp ty rOp l r -> RelOp ty rOp (go i l) (go i r)
+        LogicOp lOp l r  -> LogicOp lOp (go i l) (go i r)
+        HasType e tyName -> HasType (go i e) tyName
+        BoundTo l r      -> BoundTo (go i l) (go i r)
+        Element l r      -> Element (go i l) (go i r)
         Bound i'
             | i == i' -> Literal comp
             | otherwise -> Bound i'
@@ -154,19 +149,18 @@ transformM f = go
 descend ::
        Applicative m => (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
 descend f = \case
-    Literal x         -> pure (Literal x)
-    Variable name ty  -> pure (Variable name ty)
-    Cast e            -> Cast <$> f e
-    Not e             -> Not <$> f e
-    Negate e          -> Negate <$> f e
-    ArithOp aOp l r   -> ArithOp aOp <$> f l <*> f r
-    DivInt rgn l r    -> DivInt rgn <$> f l <*> f r
-    DivDouble rgn l r -> DivDouble rgn <$> f l <*> f r
-    EqOp ty eOp l r   -> EqOp ty eOp <$> f l <*> f r
-    RelOp ty rOp l r  -> RelOp ty rOp <$> f l <*> f r
-    LogicOp lOp l r   -> LogicOp lOp <$> f l <*> f r
-    HasType e tyName  -> HasType <$> f e <*> pure tyName
-    BoundTo l r       -> BoundTo <$> f l <*> f r
-    Element l r       -> Element <$> f l <*> f r
-    Bound i           -> pure (Bound i)
+    Literal x        -> pure (Literal x)
+    Variable name ty -> pure (Variable name ty)
+    Cast e           -> Cast <$> f e
+    Not e            -> Not <$> f e
+    Negate e         -> Negate <$> f e
+    ArithOp aOp l r  -> ArithOp aOp <$> f l <*> f r
+    Divide rgn l r   -> Divide rgn <$> f l <*> f r
+    EqOp ty eOp l r  -> EqOp ty eOp <$> f l <*> f r
+    RelOp ty rOp l r -> RelOp ty rOp <$> f l <*> f r
+    LogicOp lOp l r  -> LogicOp lOp <$> f l <*> f r
+    HasType e tyName -> HasType <$> f e <*> pure tyName
+    BoundTo l r      -> BoundTo <$> f l <*> f r
+    Element l r      -> Element <$> f l <*> f r
+    Bound i          -> pure (Bound i)
     Quantified q mTyName (Scope body) -> Quantified q mTyName . Scope <$> f body

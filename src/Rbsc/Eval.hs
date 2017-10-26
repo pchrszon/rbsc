@@ -81,11 +81,7 @@ toLiteral e = case e of
     ArithOp aOp (Literal l) (Literal r) ->
         return (Literal (arithOp aOp l r))
 
-    DivInt rgn (Literal l) (Literal r)
-        | r == 0    -> throwError (Eval.DivisionByZero rgn)
-        | otherwise -> return (Literal (div l r))
-
-    DivDouble rgn (Literal l) (Literal r)
+    Divide rgn (Literal l) (Literal r)
         | r == 0.0  -> throwError (Eval.DivisionByZero rgn)
         | otherwise -> return (Literal (l / r))
 

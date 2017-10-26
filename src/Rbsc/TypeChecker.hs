@@ -120,12 +120,9 @@ tc (Loc e rgn) = case e of
         T.ArithOp aOp l' r' `withType` tyL
 
     U.Divide l r -> do
-        (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
-        Refl <- expect tyL (getLoc r) tyR
-        case tyL of
-            TyInt    -> T.DivInt rgn l' r' `withType` TyInt
-            TyDouble -> T.DivDouble rgn l' r' `withType` TyDouble
-            _        -> throwError (typeError numTypes tyL (getLoc l))
+        l' <- l `hasType` TyDouble
+        r' <- r `hasType` TyDouble
+        T.Divide rgn l' r' `withType` TyDouble
 
     U.EqOp eOp l r -> do
         (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
@@ -202,6 +199,13 @@ binaryCast (AnExpr l TyInt) (AnExpr r TyDouble) =
 binaryCast l r = (l, r)
 
 
+-- | @cast expected e@ casts expression @t@ to 'TyDouble' if @expected@ is
+-- @TyDouble@ and the expression has type 'TyInt'.
+cast :: Type t -> AnExpr -> AnExpr
+cast TyDouble (AnExpr e TyInt) = AnExpr (T.Cast e) TyDouble
+cast _        e                = e
+
+
 -- | When a given user-defined component type exists, execute the given
 -- action. Otherwise, an error is thrown.
 whenTypeExists :: Loc TypeName -> TypeChecker a -> TypeChecker a
@@ -213,9 +217,12 @@ whenTypeExists (Loc tyName rgn) m = do
 
 
 -- | Assume that a given untyped expression has a given 'Type'.
+--
+-- If the expected type is 'TyDouble' but the expression has type 'TyInt',
+-- a 'Cast' is inserted automatically.
 hasType :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t)
 hasType e expected = do
-    AnExpr e' actual <- tc e
+    AnExpr e' actual <- cast expected <$> tc e
     Refl <- expect expected (getLoc e) actual
     return e'
 
