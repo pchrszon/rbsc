@@ -30,6 +30,7 @@ module Rbsc.Parser.Lexer
     , comma
     , semi
     , colon
+    , equals
     , integer
     , number
     , symbol
@@ -117,6 +118,10 @@ makeLenses ''ParserState
 reservedWords :: [String]
 reservedWords =
     [ "include"
+    , "bool"
+    , "int"
+    , "double"
+    , "const"
     , "natural"
     , "role"
     , "compartment"
@@ -186,6 +191,11 @@ semi = symbol ";"
 -- | Parser for a colon.
 colon :: Parser Region
 colon = symbol ":"
+
+
+-- | Parser for an equals symbol.
+equals :: Parser Region
+equals = symbol "="
 
 
 -- | Parser for an integer.

@@ -21,6 +21,7 @@ import Text.Megaparsec       hiding (parse)
 import Text.Megaparsec.Error (parseErrorTextPretty)
 
 import Rbsc.Parser.ComponentType
+import Rbsc.Parser.Constant
 import Rbsc.Parser.Declaration
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
@@ -54,7 +55,8 @@ modelFile =
 
 declaration :: Parser ErrorOrDecl
 declaration = withRecoveryOn (semi <|> symbol "}") . choice $
-    [ declType
+    [ declConstant
+    , declType
     , declSystem
     ]
 

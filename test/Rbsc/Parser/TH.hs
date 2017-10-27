@@ -34,6 +34,7 @@ import qualified Rbsc.Report.Error.Syntax as Error
 import           Rbsc.Report.Region
 
 import Rbsc.Syntax.ComponentType
+import Rbsc.Syntax.Constant
 import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.Expr.Untyped
 import Rbsc.Syntax.Operators
@@ -89,6 +90,9 @@ printErrors = fmap (show . render . Error.toReport)
 
 
 deriving instance Data Declaration
+
+deriving instance Data ConstantDef
+deriving instance Data ConstantType
 
 deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef
