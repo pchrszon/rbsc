@@ -60,7 +60,7 @@ data AType where
     AType :: Type t -> AType
 
 instance Eq AType where
-    (AType s) == (AType t) =
+    AType s == AType t =
         case typeEq s t of
             Just Refl -> True
             Nothing   -> False

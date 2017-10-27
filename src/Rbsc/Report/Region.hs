@@ -54,7 +54,7 @@ data LineRegion = LineRegion
 
 -- | A value annotated with a 'Region'.
 data Loc a = Loc
-    { unLoc  :: !a
+    { unLoc  :: a
     , getLoc :: !Region
     } deriving (Eq, Functor, Show)
 
