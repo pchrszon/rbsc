@@ -2,7 +2,7 @@
 
 
 -- | Parsers for user-defined natural types, role types and compartment types.
-module Rbsc.Parser.TypeLevel
+module Rbsc.Parser.ComponentType
     ( declType
     ) where
 
@@ -10,8 +10,8 @@ module Rbsc.Parser.TypeLevel
 import Text.Megaparsec
 
 import Rbsc.Parser.Lexer
+import Rbsc.Syntax.ComponentType
 import Rbsc.Syntax.Declaration
-import Rbsc.Syntax.TypeLevel
 
 
 -- | Parser for a top-level type declaration.

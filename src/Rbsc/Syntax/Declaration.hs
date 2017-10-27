@@ -15,8 +15,8 @@ import Control.Lens
 
 import Rbsc.Report.Region (Loc)
 
+import Rbsc.Syntax.ComponentType
 import Rbsc.Syntax.Expr.Untyped
-import Rbsc.Syntax.TypeLevel
 
 
 -- | Top-level declarations of a model.

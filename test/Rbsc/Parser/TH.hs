@@ -33,10 +33,10 @@ import           Rbsc.Report
 import qualified Rbsc.Report.Error.Syntax as Error
 import           Rbsc.Report.Region
 
-import Rbsc.Syntax.Expr.Untyped
+import Rbsc.Syntax.ComponentType
 import Rbsc.Syntax.Declaration
+import Rbsc.Syntax.Expr.Untyped
 import Rbsc.Syntax.Operators
-import Rbsc.Syntax.TypeLevel
 
 import Rbsc.Name
 

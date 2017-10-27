@@ -20,10 +20,10 @@ import System.FilePath
 import Text.Megaparsec       hiding (parse)
 import Text.Megaparsec.Error (parseErrorTextPretty)
 
+import Rbsc.Parser.ComponentType
 import Rbsc.Parser.Declaration
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
-import Rbsc.Parser.TypeLevel
 
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import qualified Rbsc.Report.Region       as Region

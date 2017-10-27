@@ -1,5 +1,5 @@
 -- | Abstract syntax for component type definitions.
-module Rbsc.Syntax.TypeLevel
+module Rbsc.Syntax.ComponentType
     ( NaturalTypeDef(..)
     , RoleTypeDef(..)
     , CompartmentTypeDef(..)
