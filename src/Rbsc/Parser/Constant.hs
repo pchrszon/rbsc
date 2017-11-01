@@ -1,25 +1,25 @@
 -- | Parser for constant definitions.
 module Rbsc.Parser.Constant
-    ( declConstant
+    ( constantDef
     ) where
 
 
 import Text.Megaparsec
 
+import Rbsc.Parser.Definition
 import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
 
 import Rbsc.Syntax.Constant
-import Rbsc.Syntax.Declaration
 
 
 -- | Parser for a constant definition.
-declConstant :: Parser Declaration
-declConstant = DeclConstant <$> constantDef
+constantDef :: Parser Definition
+constantDef = DefConstant <$> constant
 
 
-constantDef :: Parser ConstantDef
-constantDef =
+constant :: Parser ConstantDef
+constant =
     ConstantDef <$>
     (reserved "const" *> identifier) <*>
     (colon *> constantType) <*>

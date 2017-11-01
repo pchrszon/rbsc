@@ -25,8 +25,8 @@ import qualified Data.Text     as Text
 import Language.Haskell.TH       hiding (Loc)
 import Language.Haskell.TH.Quote
 
-import           Rbsc.Parser.Lexer          (run, sc)
 import           Rbsc.Parser
+import           Rbsc.Parser.Lexer          (run, sc)
 import qualified Rbsc.Parser.Expr as Parser
 
 import           Rbsc.Report
@@ -35,20 +35,19 @@ import           Rbsc.Report.Region
 
 import Rbsc.Syntax.ComponentType
 import Rbsc.Syntax.Constant
-import Rbsc.Syntax.Declaration
 import Rbsc.Syntax.Expr.Untyped
+import Rbsc.Syntax.Model
 import Rbsc.Syntax.Operators
 
 import Rbsc.Name
 
 
--- | Quasi quoter that parses the given string into a list of
--- 'Declaration's.
+-- | Quasi quoter that parses the given string into a 'Model'.
 model :: QuasiQuoter
 model = QuasiQuoter
     { quoteExp = \str -> do
-        decls <- runIO (parseIO str)
-        dataToExpQ (const Nothing `extQ` handleText) decls
+        m <- runIO (parseIO str)
+        dataToExpQ (const Nothing `extQ` handleText) m
     , quotePat = undefined
     , quoteType = undefined
     , quoteDec = undefined
@@ -77,19 +76,19 @@ handleText :: Text -> Maybe ExpQ
 handleText = Just . appE (varE 'Text.pack) . litE . StringL . Text.unpack
 
 
-parseIO :: String -> IO [Declaration]
+parseIO :: String -> IO Model
 parseIO str = do
     result <- parse "splice" (Text.pack str)
     case result of
         Left errors -> throwIO (userError (unlines (printErrors errors)))
-        Right decls -> return decls
+        Right m     -> return m
 
 
 printErrors :: [Error.Error] -> [String]
 printErrors = fmap (show . render . Error.toReport)
 
 
-deriving instance Data Declaration
+deriving instance Data Model
 
 deriving instance Data ConstantDef
 deriving instance Data ConstantType

@@ -3,23 +3,24 @@
 
 -- | Parsers for user-defined natural types, role types and compartment types.
 module Rbsc.Parser.ComponentType
-    ( declType
+    ( componentTypeDef
     ) where
 
 
 import Text.Megaparsec
 
 import Rbsc.Parser.Lexer
+import Rbsc.Parser.Definition
+
 import Rbsc.Syntax.ComponentType
-import Rbsc.Syntax.Declaration
 
 
--- | Parser for a top-level type declaration.
-declType :: Parser Declaration
-declType = choice
-    [ DeclNaturalType <$> naturalTypeDef
-    , DeclRoleType <$> roleTypeDef
-    , DeclCompartmentType <$> compartmentTypeDef
+-- | Parser for a componen type definition.
+componentTypeDef :: Parser Definition
+componentTypeDef = choice
+    [ DefNaturalType <$> naturalTypeDef
+    , DefRoleType <$> roleTypeDef
+    , DefCompartmentType <$> compartmentTypeDef
     ]
 
 

@@ -4,13 +4,12 @@
 module Rbsc.Compiler where
 
 
-import Control.Lens
 import Control.Monad
 
 import Data.Foldable
 import Data.Text.Prettyprint.Doc.Render.Terminal
 
-import Rbsc.Syntax.Declaration
+import Rbsc.Syntax.Model
 import qualified Rbsc.ComponentType as CompTy
 import qualified Rbsc.SymbolTable as SymbolTable
 import Rbsc.Parser
@@ -28,9 +27,9 @@ compile path = do
     parseResult <- parse path content
     case parseResult of
         Left errors -> printErrors errors
-        Right decls -> case CompTy.fromDeclarations decls of
+        Right model -> case CompTy.fromModel model of
             Left errors -> printErrors errors
-            Right types -> case SymbolTable.fromDeclarations types decls of
+            Right types -> case SymbolTable.fromModel types model of
                 Left errors -> printErrors errors
                 Right symTable -> do
                     print types
@@ -38,13 +37,12 @@ compile path = do
                     print symTable
                     putStrLn ""
 
-                    forOf_ (traverse._DeclSystem) decls $ \cs ->
-                        for_ cs $ \c ->
-                            case typeCheck types symTable c of
-                                Right (AnExpr c' ty) -> case typeEq ty TyBool of
-                                    Just Refl -> print c'
-                                    Nothing   -> putStrLn "type error"
-                                Left err -> putDoc (render (Type.toReport err))
+                    for_ (system model) $ \c ->
+                        case typeCheck types symTable c of
+                            Right (AnExpr c' ty) -> case typeEq ty TyBool of
+                                Just Refl -> print c'
+                                Nothing   -> putStrLn "type error"
+                            Left err -> putDoc (render (Type.toReport err))
 
 
 printErrors :: [Syntax.Error] -> IO ()

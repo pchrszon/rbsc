@@ -5,7 +5,7 @@
 -- | Construction of symbol tables.
 module Rbsc.SymbolTable
     ( SymbolTable
-    , fromDeclarations
+    , fromModel
     ) where
 
 
@@ -18,10 +18,14 @@ import qualified Data.Map.Strict as Map
 
 import           Rbsc.ComponentType       (ComponentTypes)
 import           Rbsc.Name
+
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region       (Loc (..), Region)
-import           Rbsc.Syntax.Declaration
+
+import           Rbsc.Syntax.Model (Model)
+import qualified Rbsc.Syntax.Model as Model
 import           Rbsc.Syntax.Expr.Untyped
+
 import           Rbsc.Type
 
 
@@ -37,10 +41,10 @@ data BuilderState = BuilderState
 makeLenses ''BuilderState
 
 
--- | Extract a 'SymbolTable' from a list of 'Declaration's.
-fromDeclarations ::
-       ComponentTypes -> [Declaration] -> Either [Syntax.Error] SymbolTable
-fromDeclarations types decls = runBuilder (components types decls)
+-- | Extract a 'SymbolTable' from a 'Model'.
+fromModel :: ComponentTypes -> Model -> Either [Syntax.Error] SymbolTable
+fromModel types model =
+    runBuilder (components types (Model.system model))
 
 
 type Builder a = State BuilderState a
@@ -55,14 +59,13 @@ runBuilder m =
 
 -- | Add component instances defined within the system block to the symbol
 -- table.
-components :: ComponentTypes -> [Declaration] -> Builder ()
-components types decls = forOf_ (traverse._DeclSystem) decls $ \es ->
-    for_ es $ \case
-        Loc (HasType (Loc (Variable name) rgnVar) (Loc tyName rgnTy)) _ ->
-            lookupComponentType types tyName rgnTy >>= \case
-                Just aTy -> insert name aTy rgnVar
-                Nothing  -> return ()
-        _ -> return ()
+components :: ComponentTypes -> [Loc Expr] -> Builder ()
+components types es = for_ es $ \case
+    Loc (HasType (Loc (Variable name) rgnVar) (Loc tyName rgnTy)) _ ->
+        lookupComponentType types tyName rgnTy >>= \case
+            Just aTy -> insert name aTy rgnVar
+            Nothing  -> return ()
+    _ -> return ()
 
 
 -- | Look up the component type with the given name. If the type does not

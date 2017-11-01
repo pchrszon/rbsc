@@ -14,14 +14,14 @@ import qualified Rbsc.ComponentType       as CompTys
 import           Rbsc.Parser.TH
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.SymbolTable
-import           Rbsc.Syntax.Declaration
+import           Rbsc.Syntax.Model
 import           Rbsc.Type
 
 
 spec :: Spec
-spec = describe "fromDeclarations" $ do
+spec = describe "fromModel" $ do
     it "extracts all components" $
-        fromDeclarations'
+        fromModel'
             [model|
                 natural type N;
                 role type R(N);
@@ -38,7 +38,7 @@ spec = describe "fromDeclarations" $ do
             ]
 
     it "detects undefined types" $
-        fromDeclarations'
+        fromModel'
             [model|
                 system {
                     n : Undefined
@@ -48,7 +48,7 @@ spec = describe "fromDeclarations" $ do
         has (_Left.traverse.Syntax._UndefinedType)
 
     it "detects duplicated components" $
-        fromDeclarations'
+        fromModel'
             [model|
                 natural type N;
 
@@ -61,7 +61,7 @@ spec = describe "fromDeclarations" $ do
         has (_Left.traverse.Syntax._DuplicateIdentifier)
 
 
-fromDeclarations' :: [Declaration] -> Either [Syntax.Error] SymbolTable
-fromDeclarations' decls = do
-    types <- CompTys.fromDeclarations decls
-    fromDeclarations types decls
+fromModel' :: Model -> Either [Syntax.Error] SymbolTable
+fromModel' m = do
+    types <- CompTys.fromModel m
+    fromModel types m

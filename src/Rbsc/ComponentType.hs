@@ -6,7 +6,8 @@
 module Rbsc.ComponentType
     ( ComponentTypes
     , ComponentType(..)
-    , fromDeclarations
+
+    , fromModel
     ) where
 
 
@@ -26,7 +27,8 @@ import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region
 
 import Rbsc.Syntax.ComponentType
-import Rbsc.Syntax.Declaration
+import Rbsc.Syntax.Model (Model)
+import qualified Rbsc.Syntax.Model as Model
 
 
 -- | User-defined component types indexed by their name.
@@ -44,30 +46,33 @@ data ComponentType
     deriving (Eq, Show)
 
 
--- | Extract 'ComponentTypes' from a list of 'Declaration's.
-fromDeclarations :: [Declaration] -> Either [Syntax.Error] ComponentTypes
-fromDeclarations decls =
-    let (types, errors) = convert decls
-        moreErrors = validate types decls
+-- | Extract 'ComponentTypes' from a 'Model'.
+fromModel :: Model -> Either [Syntax.Error] ComponentTypes
+fromModel model =
+    let (types, errors) = convert model
+        moreErrors = validate types model
         allErrors = errors ++ moreErrors
     in if null allErrors
            then Right types
            else Left allErrors
 
 
-convert :: [Declaration] -> (ComponentTypes, [Syntax.Error])
-convert decls =
-    over _1 (fmap fst) . flip execState (Map.empty, []) . for_ decls $ \case
-        DeclNaturalType (NaturalTypeDef (Loc name rgn)) ->
+convert :: Model -> (ComponentTypes, [Syntax.Error])
+convert model =
+    over _1 (fmap fst) . flip execState (Map.empty, []) $ do
+        for_ (Model.naturalTypes model) $ \(NaturalTypeDef (Loc name rgn)) ->
             insertType name NaturalType rgn
-        DeclRoleType (RoleTypeDef (Loc name rgn) playerTyNames) ->
-            insertType
-                name
-                (RoleType (Set.fromList (fmap unLoc playerTyNames)))
-                rgn
-        DeclCompartmentType (CompartmentTypeDef (Loc name rgn) roleTyNames) ->
-            insertType name (CompartmentType (fmap unLoc roleTyNames)) rgn
-        _ -> return ()
+
+        for_ (Model.roleTypes model) $
+            \(RoleTypeDef (Loc name rgn) playerTyNames) ->
+                insertType
+                    name
+                    (RoleType (Set.fromList (fmap unLoc playerTyNames)))
+                    rgn
+
+        for_ (Model.compartmentTypes model) $
+            \(CompartmentTypeDef (Loc name rgn) roleTyNames) ->
+                insertType name (CompartmentType (fmap unLoc roleTyNames)) rgn
   where
     insertType ::
            TypeName
@@ -82,16 +87,17 @@ convert decls =
     throw e = modifying _2 (++ [e])
 
 
-validate :: ComponentTypes -> [Declaration] -> [Syntax.Error]
-validate types = concatMap validateDecl
+validate :: ComponentTypes -> Model -> [Syntax.Error]
+validate types model =
+    validateRoleTypes (Model.roleTypes model) ++
+    validateCompartmentTypes (Model.compartmentTypes model)
   where
-    validateDecl = \case
-        DeclNaturalType _ -> []
-        DeclRoleType (RoleTypeDef _ playerTyNames) ->
-            mapMaybe exists playerTyNames
-        DeclCompartmentType (CompartmentTypeDef _ roleTyNames) ->
+    validateRoleTypes = concatMap $ \(RoleTypeDef _ playerTyNames) ->
+        mapMaybe exists playerTyNames
+
+    validateCompartmentTypes = concatMap $
+        \(CompartmentTypeDef _ roleTyNames) ->
             mapMaybe isRoleType roleTyNames
-        _ -> []
 
     exists (Loc tyName rgn)
         | Map.member tyName types = Nothing

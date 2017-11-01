@@ -1,16 +1,15 @@
 module Rbsc.Parser.System
-    ( declSystem
+    ( systemDef
     ) where
 
 
 import Text.Megaparsec
 
+import Rbsc.Parser.Definition
 import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
 
-import Rbsc.Syntax.Declaration
 
-
--- | Parser for a system declaration.
-declSystem :: Parser Declaration
-declSystem = DeclSystem <$> block "system" (expr `sepBy` comma)
+-- | Parser for a system definition.
+systemDef :: Parser Definition
+systemDef = DefSystem <$> block "system" (expr `sepBy` comma)

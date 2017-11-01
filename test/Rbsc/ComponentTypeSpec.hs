@@ -16,9 +16,9 @@ import Rbsc.Parser.TH
 
 
 spec :: Spec
-spec = describe "fromDeclarations" $ do
+spec = describe "fromModel" $ do
     it "extracts all types" $
-        fromDeclarations
+        fromModel
             [model|
                 natural type N;
                 role type R(N);
@@ -32,12 +32,12 @@ spec = describe "fromDeclarations" $ do
             ]
 
     it "detects undefined types" $
-        fromDeclarations [model| role type R(Undefined); |]
+        fromModel [model| role type R(Undefined); |]
         `shouldSatisfy`
         has (_Left.traverse.Syntax._UndefinedType)
 
     it "detects duplicate type definitions" $
-        fromDeclarations
+        fromModel
             [model|
                 natural type N;
                 natural type N;
@@ -46,7 +46,7 @@ spec = describe "fromDeclarations" $ do
         has (_Left.traverse.Syntax._DuplicateType)
 
     it "detects non-role types in compartments" $
-        fromDeclarations
+        fromModel
             [model|
                 natural type N;
                 compartment type C(N);
