@@ -3,7 +3,7 @@
 
 
 -- | Construction of symbol tables.
-module Rbsc.SymbolTable
+module Rbsc.Data.SymbolTable
     ( SymbolTable
     , fromModel
     ) where
@@ -16,17 +16,16 @@ import           Data.Foldable   (for_)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
-import           Rbsc.ComponentType       (ComponentTypes)
-import           Rbsc.Name
+import Rbsc.Data.ComponentType (ComponentTypes)
+import Rbsc.Data.Name
+import Rbsc.Data.Type
 
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region       (Loc (..), Region)
 
-import           Rbsc.Syntax.Model (Model)
-import qualified Rbsc.Syntax.Model as Model
 import           Rbsc.Syntax.Expr.Untyped
-
-import           Rbsc.Type
+import           Rbsc.Syntax.Model        (Model)
+import qualified Rbsc.Syntax.Model        as Model
 
 
 -- | The symbol table holds the type of each identifier in the model

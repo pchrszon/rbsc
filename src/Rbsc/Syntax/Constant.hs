@@ -4,7 +4,7 @@ module Rbsc.Syntax.Constant
     ) where
 
 
-import Rbsc.Name
+import Rbsc.Data.Name
 import Rbsc.Report.Region
 import Rbsc.Syntax.Expr.Untyped
 

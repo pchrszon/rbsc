@@ -2,7 +2,8 @@
 {-# LANGUAGE TemplateHaskell   #-}
 
 
-module Rbsc.System
+-- | Representation of system instances.
+module Rbsc.Data.System
     ( System(..)
     , instances
     , boundTo
@@ -20,11 +21,12 @@ import Control.Lens
 import Data.Map.Strict           (Map, assocs, mapWithKey)
 import Data.Text.Prettyprint.Doc
 
-import Rbsc.Component
-import Rbsc.Name
-import Rbsc.Type
+import Rbsc.Data.Component
+import Rbsc.Data.Name
+import Rbsc.Data.Type
+import Rbsc.Data.Value
+
 import Rbsc.Util
-import Rbsc.Value
 
 
 -- | A system instance that assigns a type to each component, role and

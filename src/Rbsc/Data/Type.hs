@@ -1,14 +1,14 @@
+{-# LANGUAGE ConstraintKinds    #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE LambdaCase         #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators      #-}
-{-# LANGUAGE ConstraintKinds #-}
 
 
 -- | The type system of the modeling language and its embedding into the
 -- Haskell type system.
-module Rbsc.Type
+module Rbsc.Data.Type
     ( Type(..)
     , AType(..)
     , typeEq
@@ -31,8 +31,8 @@ import Data.Constraint           (Dict (..))
 import Data.Text.Prettyprint.Doc
 import Data.Type.Equality        ((:~:) (..))
 
-import Rbsc.Component
-import Rbsc.Name
+import Rbsc.Data.Component
+import Rbsc.Data.Name
 
 
 -- | Value-level representation of types.

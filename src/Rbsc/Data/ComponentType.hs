@@ -3,7 +3,7 @@
 
 
 -- | User-defined natural types, role types and compartment types.
-module Rbsc.ComponentType
+module Rbsc.Data.ComponentType
     ( ComponentTypes
     , ComponentType(..)
 
@@ -21,14 +21,14 @@ import           Data.Maybe      (mapMaybe)
 import           Data.Set        (Set)
 import qualified Data.Set        as Set
 
-import Rbsc.Name
+import Rbsc.Data.Name
 
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region
 
-import Rbsc.Syntax.ComponentType
-import Rbsc.Syntax.Model (Model)
-import qualified Rbsc.Syntax.Model as Model
+import           Rbsc.Syntax.ComponentType
+import           Rbsc.Syntax.Model         (Model)
+import qualified Rbsc.Syntax.Model         as Model
 
 
 -- | User-defined component types indexed by their name.

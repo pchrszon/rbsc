@@ -25,6 +25,9 @@ import qualified Data.Text     as Text
 import Language.Haskell.TH       hiding (Loc)
 import Language.Haskell.TH.Quote
 
+
+import Rbsc.Data.Name
+
 import           Rbsc.Parser
 import           Rbsc.Parser.Lexer          (run, sc)
 import qualified Rbsc.Parser.Expr as Parser
@@ -38,8 +41,6 @@ import Rbsc.Syntax.Constant
 import Rbsc.Syntax.Expr.Untyped
 import Rbsc.Syntax.Model
 import Rbsc.Syntax.Operators
-
-import Rbsc.Name
 
 
 -- | Quasi quoter that parses the given string into a 'Model'.

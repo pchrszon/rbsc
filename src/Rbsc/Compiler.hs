@@ -6,18 +6,23 @@ module Rbsc.Compiler where
 
 import Control.Monad
 
-import Data.Foldable
-import Data.Text.Prettyprint.Doc.Render.Terminal
+import           Data.Foldable
+import qualified Data.Text.IO                              as Text
+import           Data.Text.Prettyprint.Doc.Render.Terminal
+
+
+import qualified Rbsc.Data.ComponentType as CompTy
+import qualified Rbsc.Data.SymbolTable   as SymbolTable
+import           Rbsc.Data.Type
+
+import Rbsc.Parser
+
+import           Rbsc.Report
+import qualified Rbsc.Report.Error.Syntax as Syntax
+import qualified Rbsc.Report.Error.Type   as Type
 
 import Rbsc.Syntax.Model
-import qualified Rbsc.ComponentType as CompTy
-import qualified Rbsc.SymbolTable as SymbolTable
-import Rbsc.Parser
-import Rbsc.Report
-import qualified Rbsc.Report.Error.Syntax as Syntax
-import qualified Rbsc.Report.Error.Type as Type
-import qualified Data.Text.IO as Text
-import Rbsc.Type
+
 import Rbsc.TypeChecker
 
 

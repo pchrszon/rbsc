@@ -3,19 +3,22 @@
 {-# LANGUAGE QuasiQuotes       #-}
 
 
-module Rbsc.SymbolTableSpec (spec) where
+module Rbsc.Data.SymbolTableSpec (spec) where
 
 
 import Control.Lens
 
 import Test.Hspec
 
-import qualified Rbsc.ComponentType       as CompTys
-import           Rbsc.Parser.TH
+import qualified Rbsc.Data.ComponentType as CompTys
+import           Rbsc.Data.SymbolTable
+import           Rbsc.Data.Type
+
+import Rbsc.Parser.TH
+
 import qualified Rbsc.Report.Error.Syntax as Syntax
-import           Rbsc.SymbolTable
-import           Rbsc.Syntax.Model
-import           Rbsc.Type
+
+import Rbsc.Syntax.Model
 
 
 spec :: Spec

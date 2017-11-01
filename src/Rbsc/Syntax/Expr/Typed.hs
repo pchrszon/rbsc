@@ -1,8 +1,8 @@
-{-# LANGUAGE GADTs              #-}
-{-# LANGUAGE LambdaCase         #-}
-{-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneDeriving  #-}
 
 
 -- | Typed expressions.
@@ -19,11 +19,13 @@ module Rbsc.Syntax.Expr.Typed
 import Control.Monad.Identity
 
 
-import Rbsc.Component
-import Rbsc.Name
+import Rbsc.Data.Component
+import Rbsc.Data.Name
+import Rbsc.Data.Type
+
 import Rbsc.Report.Region
+
 import Rbsc.Syntax.Operators
-import Rbsc.Type
 
 
 -- | Typed abstract syntax of expressions.

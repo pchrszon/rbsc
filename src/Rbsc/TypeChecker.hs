@@ -25,17 +25,18 @@ import           Data.Text                 (Text)
 import qualified Data.Text                 as Text
 import           Data.Text.Prettyprint.Doc (pretty)
 
+
+import Rbsc.Data.Component
+import Rbsc.Data.ComponentType
+import Rbsc.Data.Name
+import Rbsc.Data.SymbolTable
+import Rbsc.Data.Type
+
 import qualified Rbsc.Report.Error.Type as Type
 import           Rbsc.Report.Region     (Loc (..), Region)
 
 import qualified Rbsc.Syntax.Expr.Typed   as T
 import qualified Rbsc.Syntax.Expr.Untyped as U
-
-import Rbsc.Component
-import Rbsc.ComponentType
-import Rbsc.Name
-import Rbsc.SymbolTable
-import Rbsc.Type
 
 
 -- | An 'Expr' tagged with its 'Type'.

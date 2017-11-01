@@ -2,7 +2,8 @@
 {-# LANGUAGE StandaloneDeriving #-}
 
 
-module Rbsc.Value
+-- | Type-tagged values.
+module Rbsc.Data.Value
     (
     -- * Values
       Value(..)
@@ -15,8 +16,8 @@ module Rbsc.Value
 import Data.Map.Strict (Map)
 
 
-import Rbsc.Name
-import Rbsc.Type
+import Rbsc.Data.Name
+import Rbsc.Data.Type
 
 
 -- | A value tagged with its 'Type'.

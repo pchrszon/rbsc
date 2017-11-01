@@ -17,10 +17,13 @@ import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
+
 import Rbsc.Completer
-import Rbsc.ComponentType
-import Rbsc.Name
-import Rbsc.System
+
+import Rbsc.Data.ComponentType
+import Rbsc.Data.Name
+import Rbsc.Data.System
+
 import Rbsc.Util
 
 

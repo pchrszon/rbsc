@@ -29,9 +29,11 @@ import qualified Data.Set        as Set
 import           Data.Text       (Text)
 import qualified Data.Text       as T
 
-import Rbsc.ComponentType
-import Rbsc.Name
-import Rbsc.System
+
+import Rbsc.Data.ComponentType
+import Rbsc.Data.Name
+import Rbsc.Data.System
+
 import Rbsc.Util.NameGen
 
 

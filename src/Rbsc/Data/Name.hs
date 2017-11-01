@@ -1,5 +1,5 @@
 -- | Instance names and type names.
-module Rbsc.Name
+module Rbsc.Data.Name
     ( Name
     , RoleName
     , TypeName(..)

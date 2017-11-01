@@ -2,7 +2,7 @@
 
 
 -- | Internal representation of component instances.
-module Rbsc.Component
+module Rbsc.Data.Component
     ( Component(..)
     , compName
     , compTypeName
@@ -13,7 +13,7 @@ module Rbsc.Component
 
 import Control.Lens
 
-import Rbsc.Name
+import Rbsc.Data.Name
 
 
 -- | A component instance (either a natural, a role or a compartment).

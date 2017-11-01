@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes       #-}
 
 
 module Rbsc.TypeCheckerSpec (spec) where
@@ -11,19 +11,21 @@ import qualified Data.Map.Strict as Map
 
 import Test.Hspec
 
-import Rbsc.Component
-import Rbsc.ComponentType
-import Rbsc.SymbolTable
-import Rbsc.Type
-import Rbsc.TypeChecker
 
-import Rbsc.Report.Region
-import qualified Rbsc.Report.Error.Type as Type
-
-import qualified Rbsc.Syntax.Expr.Untyped as U
-import qualified Rbsc.Syntax.Expr.Typed as T
+import Rbsc.Data.Component
+import Rbsc.Data.ComponentType
+import Rbsc.Data.SymbolTable
+import Rbsc.Data.Type
 
 import Rbsc.Parser.TH
+
+import qualified Rbsc.Report.Error.Type as Type
+import           Rbsc.Report.Region
+
+import qualified Rbsc.Syntax.Expr.Typed   as T
+import qualified Rbsc.Syntax.Expr.Untyped as U
+
+import Rbsc.TypeChecker
 
 
 spec :: Spec

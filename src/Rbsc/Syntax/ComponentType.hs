@@ -6,7 +6,7 @@ module Rbsc.Syntax.ComponentType
     ) where
 
 
-import Rbsc.Name
+import Rbsc.Data.Name
 import Rbsc.Report.Region
 
 

@@ -3,16 +3,16 @@
 {-# LANGUAGE QuasiQuotes       #-}
 
 
-module Rbsc.ComponentTypeSpec (spec) where
+module Rbsc.Data.ComponentTypeSpec (spec) where
 
 
 import Control.Lens
 
 import Test.Hspec
 
-import Rbsc.ComponentType
+import           Rbsc.Data.ComponentType
+import           Rbsc.Parser.TH
 import qualified Rbsc.Report.Error.Syntax as Syntax
-import Rbsc.Parser.TH
 
 
 spec :: Spec

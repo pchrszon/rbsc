@@ -19,11 +19,13 @@ import qualified Rbsc.Report.Error.Eval as Eval
 import qualified Rbsc.Report.Error.Type as Type
 import           Rbsc.Report.Region     (Loc (..))
 
+
 import Rbsc.Eval
-import Rbsc.SymbolTable
-import Rbsc.Type
 import Rbsc.TypeChecker
-import Rbsc.Value
+
+import Rbsc.Data.SymbolTable
+import Rbsc.Data.Type
+import Rbsc.Data.Value
 
 import Rbsc.Parser.TH
 

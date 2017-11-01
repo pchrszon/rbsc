@@ -19,15 +19,17 @@ import Control.Monad.Reader
 import qualified Data.Map.Strict as Map
 import           Data.Maybe      (mapMaybe)
 
+
+import Rbsc.Data.Component
+import Rbsc.Data.Name
+import Rbsc.Data.Type
+import Rbsc.Data.Value
+
 import qualified Rbsc.Report.Error.Eval as Eval
 import           Rbsc.Report.Region     (Loc (..))
 
-import Rbsc.Component
-import Rbsc.Name
 import Rbsc.Syntax.Expr.Typed as T
 import Rbsc.Syntax.Operators
-import Rbsc.Type
-import Rbsc.Value
 
 
 newtype ReducerInfo = ReducerInfo
