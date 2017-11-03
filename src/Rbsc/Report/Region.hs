@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable    #-}
+{-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveTraversable #-}
 
 
 -- | Positions and regions in source files.
@@ -56,7 +58,7 @@ data LineRegion = LineRegion
 data Loc a = Loc
     { unLoc  :: a
     , getLoc :: !Region
-    } deriving (Eq, Functor, Show)
+    } deriving (Eq, Show, Functor, Foldable, Traversable)
 
 
 -- | Split a 'Region' into 'LineRegion's.

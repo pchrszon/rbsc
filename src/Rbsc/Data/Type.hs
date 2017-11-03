@@ -24,13 +24,19 @@ module Rbsc.Data.Type
 
     , (:~:)(..)
     , Dict(..)
+
+    , module Rbsc.Data.Name
     ) where
 
+
+import Control.Applicative
 
 import Data.Constraint           (Dict (..))
 import Data.Text.Prettyprint.Doc
 import Data.Type.Equality        ((:~:) (..))
 
+
+import Rbsc.Data.Array
 import Rbsc.Data.Component
 import Rbsc.Data.Name
 
@@ -40,7 +46,7 @@ data Type t where
     TyBool      :: Type Bool
     TyInt       :: Type Integer
     TyDouble    :: Type Double
-    TyArray     :: Type t -> Type [t]
+    TyArray     :: Type t -> Maybe Int -> Type (Array t)
     TyComponent :: Maybe TypeName -> Type Component
 
 deriving instance Eq (Type t)
@@ -48,10 +54,11 @@ deriving instance Show (Type t)
 
 instance Pretty (Type t) where
     pretty = \case
-        TyBool             -> "bool"
-        TyInt              -> "int"
-        TyDouble           -> "double"
-        TyArray t          -> brackets (pretty t)
+        TyBool         -> "bool"
+        TyInt          -> "int"
+        TyDouble       -> "double"
+        TyArray t mLen ->
+            brackets (pretty t <> maybe emptyDoc (("; " <>) . pretty) mLen)
         TyComponent tyName -> maybe "component" pretty tyName
 
 
@@ -73,14 +80,20 @@ instance Pretty AType where
 
 -- | Check the equality of 'Type's.
 --
+-- If array types are checked for equality and both array types have
+-- a known size, the size is checked for equality as well. Otherwise, the
+-- array size is ignored.
+--
 -- The user-defined type of components is not checked for equality.
 typeEq :: Type s -> Type t -> Maybe (s :~: t)
-typeEq TyBool      TyBool      = Just Refl
-typeEq TyInt       TyInt       = Just Refl
-typeEq TyDouble    TyDouble    = Just Refl
-typeEq (TyArray s) (TyArray t) = do
+typeEq TyBool      TyBool   = Just Refl
+typeEq TyInt       TyInt    = Just Refl
+typeEq TyDouble    TyDouble = Just Refl
+typeEq (TyArray s sLen) (TyArray t tLen) = do
     Refl <- typeEq s t
-    pure Refl
+    case liftA2 (==) sLen tLen of
+        Just False -> Nothing
+        _ ->          Just Refl
 typeEq (TyComponent _) (TyComponent _) = Just Refl
 typeEq _ _ = Nothing
 
@@ -91,7 +104,7 @@ dictShow = \case
     TyBool        -> Dict
     TyInt         -> Dict
     TyDouble      -> Dict
-    TyArray ty    -> case dictShow ty of Dict -> Dict
+    TyArray ty _  -> case dictShow ty of Dict -> Dict
     TyComponent _ -> Dict
 
 
@@ -101,7 +114,7 @@ dictEq = \case
     TyBool        -> Dict
     TyInt         -> Dict
     TyDouble      -> Dict
-    TyArray ty    -> case dictEq ty of Dict -> Dict
+    TyArray ty _  -> case dictEq ty of Dict -> Dict
     TyComponent _ -> Dict
 
 
@@ -121,9 +134,9 @@ numTypes = [AType TyInt, AType TyDouble]
 -- | Check if for a given 'Type' @t@ whether @t@ is an instance of 'Ord'.
 checkOrd :: Type t -> Maybe (Dict (Ord t))
 checkOrd = \case
-    TyInt      -> return Dict
-    TyDouble   -> return Dict
-    TyArray ty -> do
+    TyInt        -> return Dict
+    TyDouble     -> return Dict
+    TyArray ty _ -> do
         Dict <- checkOrd ty
         return Dict
     _ -> Nothing

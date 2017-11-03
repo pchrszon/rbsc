@@ -18,9 +18,11 @@ module Rbsc.Syntax.Expr.Typed
 
 import Control.Monad.Identity
 
+import Data.List.NonEmpty (NonEmpty)
 
+
+import Rbsc.Data.Array
 import Rbsc.Data.Component
-import Rbsc.Data.Name
 import Rbsc.Data.Type
 
 import Rbsc.Report.Region
@@ -31,6 +33,7 @@ import Rbsc.Syntax.Operators
 -- | Typed abstract syntax of expressions.
 data Expr t where
     Literal    :: (Eq t, Show t) => t -> Expr t
+    Array      :: (Eq t, Show t) => NonEmpty (Expr t) -> Expr (Array t)
     Variable   :: Name -> Type t -> Expr t
     Cast       :: Expr Integer -> Expr Double
     Not        :: Expr Bool -> Expr Bool
@@ -40,6 +43,7 @@ data Expr t where
     EqOp       :: Eq t => Type t -> EqOp -> Expr t -> Expr t -> Expr Bool
     RelOp      :: Ord t => Type t -> RelOp -> Expr t -> Expr t -> Expr Bool
     LogicOp    :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
+    Index      :: (Eq t, Show t) => Expr (Array t) -> Loc (Expr Integer) -> Expr t
     HasType    :: Expr Component -> TypeName -> Expr Bool
     BoundTo    :: Expr Component -> Expr Component -> Expr Bool
     Element    :: Expr Component -> Expr Component -> Expr Bool
@@ -51,6 +55,9 @@ deriving instance Show (Expr t)
 instance Eq (Expr t) where
     Literal x == Literal x' =
         x == x'
+
+    Array es == Array es' =
+        es == es'
 
     Variable name ty == Variable name' ty' =
         name == name' && ty == ty'
@@ -80,6 +87,9 @@ instance Eq (Expr t) where
 
     LogicOp lOp l r == LogicOp lOp' l' r' =
         lOp == lOp' && l == l' && r == r'
+
+    Index e (Loc idx _) == Index e' (Loc idx' _) =
+        e == e' && idx == idx'
 
     HasType e tyName == HasType e' tyName' =
         e == e' && tyName == tyName'
@@ -112,6 +122,7 @@ instantiate (Scope body) comp = go 0 body
     go :: Int -> Expr a -> Expr a
     go i = \case
         Literal x        -> Literal x
+        Array es         -> Array (fmap (go i) es)
         Variable name ty -> Variable name ty
         Cast e           -> Cast (go i e)
         Not e            -> Not (go i e)
@@ -121,6 +132,7 @@ instantiate (Scope body) comp = go 0 body
         EqOp ty eOp l r  -> EqOp ty eOp (go i l) (go i r)
         RelOp ty rOp l r -> RelOp ty rOp (go i l) (go i r)
         LogicOp lOp l r  -> LogicOp lOp (go i l) (go i r)
+        Index e idx      -> Index (go i e) (fmap (go i) idx)
         HasType e tyName -> HasType (go i e) tyName
         BoundTo l r      -> BoundTo (go i l) (go i r)
         Element l r      -> Element (go i l) (go i r)
@@ -152,6 +164,7 @@ descend ::
        Applicative m => (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
 descend f = \case
     Literal x        -> pure (Literal x)
+    Array es         -> Array <$> traverse f es
     Variable name ty -> pure (Variable name ty)
     Cast e           -> Cast <$> f e
     Not e            -> Not <$> f e
@@ -161,6 +174,7 @@ descend f = \case
     EqOp ty eOp l r  -> EqOp ty eOp <$> f l <*> f r
     RelOp ty rOp l r -> RelOp ty rOp <$> f l <*> f r
     LogicOp lOp l r  -> LogicOp lOp <$> f l <*> f r
+    Index e idx      -> Index <$> f e <*> traverse f idx
     HasType e tyName -> HasType <$> f e <*> pure tyName
     BoundTo l r      -> BoundTo <$> f l <*> f r
     Element l r      -> Element <$> f l <*> f r

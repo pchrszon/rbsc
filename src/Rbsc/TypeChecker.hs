@@ -15,11 +15,12 @@ module Rbsc.TypeChecker
     ) where
 
 
-import Control.Lens
+import Control.Lens         hiding ((<|))
 import Control.Monad.Except
 import Control.Monad.Reader
 
 import           Data.List                 (find)
+import           Data.List.NonEmpty        (NonEmpty (..), (<|))
 import qualified Data.Map.Strict           as Map
 import           Data.Text                 (Text)
 import qualified Data.Text                 as Text
@@ -96,6 +97,9 @@ tc (Loc e rgn) = case e of
     U.LitDouble d ->
         T.Literal d `withType` TyDouble
 
+    U.Array es ->
+        tcArray es
+
     U.Variable name ->
         lookupBoundVar name >>= \case
             Just (i, AType ty) -> do
@@ -142,6 +146,16 @@ tc (Loc e rgn) = case e of
         r' <- r `hasType` TyBool
         T.LogicOp lOp l' r' `withType` TyBool
 
+    U.Index inner idx -> do
+        AnExpr inner' ty <- tc inner
+        case ty of
+            TyArray elemTy _ -> do
+                idx' <- idx `hasType` TyInt
+                Dict <- return (dictEq elemTy)
+                Dict <- return (dictShow elemTy)
+                T.Index inner' (Loc idx' (getLoc idx)) `withType` elemTy
+            _ -> throwError (Type.NotAnArray (renderType ty) (getLoc inner))
+
     U.HasType inner tyName ->
         whenTypeExists tyName $ do
             inner' <- inner `hasType` tyComponent
@@ -167,6 +181,20 @@ tc (Loc e rgn) = case e of
             body `hasType` TyBool
 
         T.Quantified q (fmap unLoc mTyName) (T.Scope body') `withType` TyBool
+
+
+tcArray :: NonEmpty (Loc U.Expr) -> TypeChecker AnExpr
+tcArray (e :| []) = do
+    AnExpr e' ty <- tc e
+    Dict <- return (dictEq ty)
+    Dict <- return (dictShow ty)
+    return (AnExpr (T.Array (e' :| [])) (TyArray ty (Just 1)))
+tcArray (e :| (x:xs)) = do
+    AnExpr e' ty <- tc e
+    AnExpr (T.Array es') (TyArray elemTy len) <- tcArray (x :| xs)
+    Refl <- expect elemTy (getLoc e) ty
+    return (AnExpr (T.Array (e' <| es')) (TyArray ty (succ <$> len)))
+
 
 
 -- | Looks up the type of a given identifier in the symbol table. If the

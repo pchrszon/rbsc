@@ -29,6 +29,7 @@ import Rbsc.Report.Region
 data Error
     = TypeError [Text] !Text !Region
     | NotComparable !Text !Region
+    | NotAnArray !Text !Region
     | UndefinedType !Region
     | UndefinedIdentifier !Region
     deriving (Eq, Show)
@@ -41,6 +42,13 @@ toReport = \case
             [ errorPart rgn . Just $
                 "expression has type: " <> actual <>
                 "\nexpected type: " <> orList expected
+            ]
+
+    NotAnArray actual rgn ->
+        Report "not an array"
+            [ errorPart rgn . Just $
+                "expression has type: " <> actual <>
+                "\nexpected type: array"
             ]
 
     NotComparable ty rgn ->

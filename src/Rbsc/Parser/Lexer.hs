@@ -25,6 +25,7 @@ module Rbsc.Parser.Lexer
     , block
     , parens
     , braces
+    , brackets
     , stringLiteral
     , dot
     , comma
@@ -59,6 +60,7 @@ import           Data.Text       (Text)
 
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as Lexer
+
 
 import           Rbsc.Report.Region (Loc (..), Region)
 import qualified Rbsc.Report.Region as Region
@@ -165,6 +167,11 @@ parens = between (symbol "(") (symbol ")")
 -- | Parser for surrounding braces.
 braces :: Monad m => ParserT m a -> ParserT m a
 braces = between (symbol "{") (symbol "}")
+
+
+-- | Parser for surrounding brackets.
+brackets :: Monad m => ParserT m a -> ParserT m a
+brackets = between (symbol "[") (symbol "]")
 
 
 -- | Parser for a string literal (in double quotes).

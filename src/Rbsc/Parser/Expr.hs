@@ -7,14 +7,17 @@ module Rbsc.Parser.Expr
     ) where
 
 
+import Control.Applicative
 import Control.Monad
 import Control.Monad.State
 
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup
-import Data.Text      (Text)
+import Data.Text          (Text)
 
 import Text.Megaparsec
 import Text.Megaparsec.Expr
+
 
 import           Rbsc.Parser.Lexer
 import           Rbsc.Syntax.Expr.Untyped
@@ -23,7 +26,16 @@ import qualified Rbsc.Syntax.Operators    as Ops
 
 -- | Parser for 'Expr's.
 expr :: Parser (Loc Expr)
-expr = makeExprParser atom table
+expr = makeExprParser term table
+
+
+term :: Parser (Loc Expr)
+term = quantified <|> do
+    e <- atom
+    accessors <- many index
+    return (apply accessors e)
+  where
+    apply = foldr (.) id . reverse
 
 
 atom :: Parser (Loc Expr)
@@ -31,9 +43,15 @@ atom = choice
     [ parens expr
     , litBool
     , litNumber
-    , quantified
+    , array
     , variable
     ]
+
+
+index :: Parser (Loc Expr -> Loc Expr)
+index = do
+    idx <- brackets expr
+    return (\e -> Loc (Index e idx) (getLoc e <> getLoc idx))
 
 
 litBool :: Parser (Loc Expr)
@@ -49,6 +67,15 @@ litNumber = do
     return $ case n of
         Left d  -> LitDouble <$> d
         Right i -> LitInt <$> i
+
+
+array :: Parser (Loc Expr)
+array = do
+    start <- symbol "{"
+    e  <- expr
+    es <- many (comma *> expr)
+    end <- symbol "}"
+    return (Loc (Array (e :| es)) (start <> end))
 
 
 variable :: Parser (Loc Expr)

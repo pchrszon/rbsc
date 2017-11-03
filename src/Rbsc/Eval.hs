@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 
 -- | Evaluation of typed expressions.
@@ -16,14 +17,18 @@ import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
 
-import qualified Data.Map.Strict as Map
-import           Data.Maybe      (mapMaybe)
+import           Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Map.Strict    as Map
+import           Data.Maybe         (mapMaybe)
 
 
-import Rbsc.Data.Component
-import Rbsc.Data.Name
-import Rbsc.Data.Type
-import Rbsc.Data.Value
+import           Rbsc.Data.Array     (Array)
+import qualified Rbsc.Data.Array     as Array
+import           Rbsc.Data.Component
+import           Rbsc.Data.Name
+import           Rbsc.Data.Type
+import           Rbsc.Data.Value
 
 import qualified Rbsc.Report.Error.Eval as Eval
 import           Rbsc.Report.Region     (Loc (..))
@@ -71,6 +76,10 @@ toLiteral e = case e of
                 Nothing -> error "reduce: constant has wrong type"
             Nothing -> return e
 
+    Array es -> return $ case toArray es of
+        Just arr -> Literal arr
+        Nothing  -> e
+
     Cast (Literal x) ->
         return (Literal (fromInteger x))
 
@@ -96,6 +105,12 @@ toLiteral e = case e of
     LogicOp lOp (Literal l) (Literal r) ->
         return (Literal (logicOp lOp l r))
 
+    Index (Literal arr) (Loc (Literal (fromIntegral -> i)) rgn) ->
+        case Array.index arr i of
+            Just x  -> return (Literal x)
+            Nothing ->
+                throwError (Eval.IndexOutOfBounds (Array.length arr) i rgn)
+
     HasType (Literal comp) tyName ->
         return (Literal (view compTypeName comp == tyName))
 
@@ -119,6 +134,13 @@ toLiteral e = case e of
         return (quantifier q es')
 
     _ -> return e
+
+
+toArray :: NonEmpty (Expr t) -> Maybe (Array t)
+toArray = fmap Array.fromList . traverse f . NonEmpty.toList
+  where
+    f (Literal x) = Just x
+    f _           = Nothing
 
 
 filterLiterals :: Quantifier -> [Expr Bool] -> [Expr Bool]

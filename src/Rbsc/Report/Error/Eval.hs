@@ -15,6 +15,10 @@ module Rbsc.Report.Error.Eval
 
 import Control.Lens
 
+import Data.Semigroup
+import qualified Data.Text as Text
+
+
 import Rbsc.Report
 import Rbsc.Report.Region
 
@@ -22,6 +26,7 @@ import Rbsc.Report.Region
 data Error
     = DivisionByZero !Region
     | NotConstant !Region
+    | IndexOutOfBounds !Int !Int !Region
     deriving (Eq, Show)
 
 
@@ -35,6 +40,13 @@ toReport = \case
 
     NotConstant rgn ->
         Report "expression is not constant" [ errorPart rgn Nothing ]
+
+    IndexOutOfBounds len idx rgn ->
+        Report "index out of bounds"
+            [ errorPart rgn . Just $
+                "array has size " <> Text.pack (show len) <>
+                "but the index is " <> Text.pack (show idx)
+            ]
 
 
 makePrisms ''Error
