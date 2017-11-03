@@ -135,6 +135,16 @@ reservedWords =
     , "boundto"
     , "in"
     , "system"
+    , "min"
+    , "minf"
+    , "max"
+    , "maxf"
+    , "floor"
+    , "ceil"
+    , "pow"
+    , "powf"
+    , "mod"
+    , "log"
     ]
 
 

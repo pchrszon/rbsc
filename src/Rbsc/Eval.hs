@@ -26,6 +26,7 @@ import           Data.Maybe         (mapMaybe)
 import           Rbsc.Data.Array     (Array)
 import qualified Rbsc.Data.Array     as Array
 import           Rbsc.Data.Component
+import           Rbsc.Data.Function  (Fn (..), function)
 import           Rbsc.Data.Name
 import           Rbsc.Data.Type
 import           Rbsc.Data.Value
@@ -71,14 +72,16 @@ toLiteral e = case e of
         value <- view (constants.at name)
         case value of
             Just (Value v ty') -> case typeEq ty ty' of -- if the variable is a constant ...
-                Just Refl -> case dictEq ty' of
-                    Dict -> return (Literal v) -- ... then replace by constant value
-                Nothing -> error "reduce: constant has wrong type"
+                Just Refl -> return (Literal v) -- ... then replace by constant value
+                Nothing   -> error "reduce: constant has wrong type"
             Nothing -> return e
 
     Array es -> return $ case toArray es of
         Just arr -> Literal arr
         Nothing  -> e
+
+    Function func ->
+        return (Literal (Fn (function func)))
 
     Cast (Literal x) ->
         return (Literal (fromInteger x))
@@ -110,6 +113,9 @@ toLiteral e = case e of
             Just x  -> return (Literal x)
             Nothing ->
                 throwError (Eval.IndexOutOfBounds (Array.length arr) i rgn)
+
+    Apply (Literal (Fn f)) (Literal arg) ->
+        return (Literal (f arg))
 
     HasType (Literal comp) tyName ->
         return (Literal (view compTypeName comp == tyName))

@@ -29,6 +29,7 @@ import           Data.Text.Prettyprint.Doc (pretty)
 
 import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Function
 import Rbsc.Data.Name
 import Rbsc.Data.SymbolTable
 import Rbsc.Data.Type
@@ -97,6 +98,9 @@ tc (Loc e rgn) = case e of
     U.LitDouble d ->
         T.Literal d `withType` TyDouble
 
+    U.Function f ->
+        return (fromFunctionSym f)
+
     U.Array es ->
         tcArray es
 
@@ -120,8 +124,9 @@ tc (Loc e rgn) = case e of
 
     U.ArithOp aOp l r -> do
         (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
-        Refl <- expect tyL (getLoc r) tyR
         Dict <- isNumType tyL (getLoc l)
+        _    <- isNumType tyR (getLoc r)
+        Refl <- expect tyL (getLoc r) tyR
         T.ArithOp aOp l' r' `withType` tyL
 
     U.Divide l r -> do
@@ -131,14 +136,16 @@ tc (Loc e rgn) = case e of
 
     U.EqOp eOp l r -> do
         (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
+        Dict <- isEqType tyL (getLoc l)
+        _    <- isEqType tyR (getLoc r)
         Refl <- expect tyL (getLoc r) tyR
-        Dict <- return (dictEq tyL)
         T.EqOp eOp l' r' `withType` TyBool
 
     U.RelOp rOp l r -> do
         (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
-        Refl <- expect tyL (getLoc r) tyR
         Dict <- isOrdType tyL (getLoc l)
+        _    <- isOrdType tyR (getLoc r)
+        Refl <- expect tyL (getLoc r) tyR
         T.RelOp rOp l' r' `withType` TyBool
 
     U.LogicOp lOp l r -> do
@@ -154,6 +161,11 @@ tc (Loc e rgn) = case e of
                 Dict <- return (dictShow elemTy)
                 T.Index inner' (Loc idx' (getLoc idx)) `withType` elemTy
             _ -> throwError (Type.NotAnArray (renderType ty) (getLoc inner))
+
+    U.Call f args -> do
+        f' <- tc f
+        checkCallArity rgn f' args
+        tcCall (Loc f' (getLoc f)) args
 
     U.HasType inner tyName ->
         whenTypeExists tyName $ do
@@ -182,6 +194,55 @@ tc (Loc e rgn) = case e of
         T.Quantified q (fmap unLoc mTyName) (T.Scope body') `withType` TyBool
 
 
+fromFunctionSym :: FunctionSym -> AnExpr
+fromFunctionSym = \case
+    FuncMinInt ->
+        AnExpr (T.Function MinInt) (TyInt --> TyInt --> TyInt)
+    FuncMinDouble ->
+        AnExpr (T.Function MinDouble) (TyDouble --> TyDouble --> TyDouble)
+    FuncMaxInt ->
+        AnExpr (T.Function MaxInt) (TyInt --> TyInt --> TyInt)
+    FuncMaxDouble ->
+        AnExpr (T.Function MaxDouble) (TyDouble --> TyDouble --> TyDouble)
+    FuncFloor ->
+        AnExpr (T.Function Floor) (TyDouble --> TyInt)
+    FuncCeil ->
+        AnExpr (T.Function Ceil) (TyDouble --> TyInt)
+    FuncPowInt ->
+        AnExpr (T.Function PowInt) (TyInt --> TyInt --> TyInt)
+    FuncPowDouble ->
+        AnExpr (T.Function PowDouble) (TyDouble --> TyDouble --> TyDouble)
+    FuncMod ->
+        AnExpr (T.Function Mod) (TyInt --> TyInt --> TyInt)
+    FuncLog ->
+        AnExpr (T.Function Log) (TyDouble --> TyDouble --> TyDouble)
+
+
+checkCallArity :: Region -> AnExpr -> [args] -> TypeChecker ()
+checkCallArity rgn (AnExpr _ ty) args
+    | numParams > 0 && numParams < numArgs =
+        throwError (Type.WrongNumberOfArguments numParams numArgs rgn)
+    | otherwise = return ()
+  where
+    numParams = paramsLength ty
+    numArgs   = length args
+
+    paramsLength :: Type t -> Int
+    paramsLength = \case
+        TyFunc _ tyRes -> 1 + paramsLength tyRes
+        _              -> 0
+
+
+tcCall :: Loc AnExpr -> [Loc U.Expr] -> TypeChecker AnExpr
+tcCall (Loc (AnExpr e ty) _) [] = return (AnExpr e ty)
+tcCall (Loc (AnExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
+    arg' <- arg `hasType` tyParam
+    Dict <- return (dictShow tyRes)
+    tcCall (Loc (AnExpr (T.Apply f arg') tyRes) rgn) args
+tcCall (Loc (AnExpr _ ty) rgn) (_ : _) =
+    throwError (Type.NotAFunction (renderType ty) rgn)
+
+
 tcArray :: NonEmpty (Loc U.Expr) -> TypeChecker AnExpr
 tcArray (e :| []) = do
     AnExpr e' ty <- tc e
@@ -192,7 +253,6 @@ tcArray (e :| (x:xs)) = do
     AnExpr (T.Array es') (TyArray elemTy len) <- tcArray (x :| xs)
     Refl <- expect elemTy (getLoc e) ty
     return (AnExpr (T.Array (e' <| es')) (TyArray ty (succ <$> len)))
-
 
 
 -- | Looks up the type of a given identifier in the symbol table. If the
@@ -261,6 +321,14 @@ expect expected rgn actual =
     case typeEq expected actual of
         Just Refl -> return Refl
         Nothing   -> throwError (typeError [AType expected] actual rgn)
+
+
+-- | Assume that values of the given type can be checked for equality. If
+-- not, an error is thrown.
+isEqType :: Type t -> Region -> TypeChecker (Dict (Eq t))
+isEqType ty rgn = case checkEq ty of
+    Just Dict -> return Dict
+    Nothing   -> throwError (Type.NotComparable (renderType ty) rgn)
 
 
 -- | Assume that the given type is a number type. If not, a type error is

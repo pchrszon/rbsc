@@ -39,6 +39,26 @@ spec = describe "typeCheck" $ do
         `shouldSatisfy`
         has (_Left.Type._TypeError)
 
+    it "reports comparison of uncomparable values" $
+        typeCheck' TyBool [expr| n > 5 |]
+        `shouldSatisfy`
+        has (_Left.Type._NotComparable)
+
+    it "reports indexing of non-array values" $
+        typeCheck' TyBool [expr| n[1] |]
+        `shouldSatisfy`
+        has (_Left.Type._NotAnArray)
+
+    it "reports invocation on a non-function value" $
+        typeCheck' TyBool [expr| n(1) |]
+        `shouldSatisfy`
+        has (_Left.Type._NotAFunction)
+
+    it "detects too many arguments on a function call" $
+        typeCheck' TyBool [expr| min(1, 2, 3) |]
+        `shouldSatisfy`
+        has (_Left.Type._WrongNumberOfArguments)
+
     it "detects undefined types" $
         typeCheck' TyBool [expr| n : Undefined |]
         `shouldSatisfy`

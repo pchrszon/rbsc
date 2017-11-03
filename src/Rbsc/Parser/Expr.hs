@@ -19,7 +19,10 @@ import Text.Megaparsec
 import Text.Megaparsec.Expr
 
 
-import           Rbsc.Parser.Lexer
+import Rbsc.Data.Function (FunctionSym (..))
+
+import Rbsc.Parser.Lexer
+
 import           Rbsc.Syntax.Expr.Untyped
 import qualified Rbsc.Syntax.Operators    as Ops
 
@@ -32,8 +35,8 @@ expr = makeExprParser term table
 term :: Parser (Loc Expr)
 term = quantified <|> do
     e <- atom
-    accessors <- many index
-    return (apply accessors e)
+    postfix <- many (index <|> call)
+    return (apply postfix e)
   where
     apply = foldr (.) id . reverse
 
@@ -44,14 +47,25 @@ atom = choice
     , litBool
     , litNumber
     , array
+    , function
     , variable
     ]
 
 
 index :: Parser (Loc Expr -> Loc Expr)
 index = do
-    idx <- brackets expr
-    return (\e -> Loc (Index e idx) (getLoc e <> getLoc idx))
+    _ <- symbol "["
+    idx <- expr
+    end <- symbol "]"
+    return (\e -> Loc (Index e idx) (getLoc e <> end))
+
+
+call :: Parser (Loc Expr -> Loc Expr)
+call = do
+    _ <- symbol "("
+    args <- expr `sepBy1` comma
+    end <- symbol ")"
+    return (\e -> Loc (Call e args) (getLoc e <> end))
 
 
 litBool :: Parser (Loc Expr)
@@ -76,6 +90,25 @@ array = do
     es <- many (comma *> expr)
     end <- symbol "}"
     return (Loc (Array (e :| es)) (start <> end))
+
+
+function :: Parser (Loc Expr)
+function = choice
+    [ fn FuncMinDouble "minf"
+    , fn FuncMinInt    "min"
+    , fn FuncMaxDouble "maxf"
+    , fn FuncMaxInt    "max"
+    , fn FuncFloor     "floor"
+    , fn FuncCeil      "ceil"
+    , fn FuncPowInt    "pow"
+    , fn FuncPowDouble "powf"
+    , fn FuncMod       "mod"
+    , fn FuncLog       "log"
+    ]
+  where
+    fn sym name = do
+        rgn <- reserved name
+        return (Loc (Function sym) rgn)
 
 
 variable :: Parser (Loc Expr)

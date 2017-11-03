@@ -10,6 +10,9 @@ module Rbsc.Report.Error.Type
 
     , _TypeError
     , _NotComparable
+    , _NotAnArray
+    , _NotAFunction
+    , _WrongNumberOfArguments
     , _UndefinedType
     , _UndefinedIdentifier
     ) where
@@ -30,6 +33,8 @@ data Error
     = TypeError [Text] !Text !Region
     | NotComparable !Text !Region
     | NotAnArray !Text !Region
+    | NotAFunction !Text !Region
+    | WrongNumberOfArguments !Int !Int !Region
     | UndefinedType !Region
     | UndefinedIdentifier !Region
     deriving (Eq, Show)
@@ -44,6 +49,12 @@ toReport = \case
                 "\nexpected type: " <> orList expected
             ]
 
+    NotComparable ty rgn ->
+        Report "uncomparable values"
+            [ errorPart rgn . Just $
+                "values of type " <> ty <> " are not comparable"
+            ]
+
     NotAnArray actual rgn ->
         Report "not an array"
             [ errorPart rgn . Just $
@@ -51,10 +62,17 @@ toReport = \case
                 "\nexpected type: array"
             ]
 
-    NotComparable ty rgn ->
-        Report "uncomparable values"
+    NotAFunction ty rgn ->
+        Report "not a function"
             [ errorPart rgn . Just $
-                "values of type " <> ty <> " are not comparable"
+                "this is not a function\nexpression has type: " <> ty
+            ]
+
+    WrongNumberOfArguments expected actual rgn ->
+        Report "wrong number of arguments"
+            [ errorPart rgn . Just $
+                "arguments given: " <> Text.pack (show actual) <>
+                "\nexpected: " <> Text.pack (show expected)
             ]
 
     UndefinedType rgn ->

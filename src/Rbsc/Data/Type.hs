@@ -10,11 +10,15 @@
 -- Haskell type system.
 module Rbsc.Data.Type
     ( Type(..)
+    , (-->)
+
     , AType(..)
+
     , typeEq
 
     , dictShow
-    , dictEq
+
+    , checkEq
 
     , checkNum
     , numTypes
@@ -38,6 +42,7 @@ import Data.Type.Equality        ((:~:) (..))
 
 import Rbsc.Data.Array
 import Rbsc.Data.Component
+import Rbsc.Data.Function
 import Rbsc.Data.Name
 
 
@@ -46,20 +51,28 @@ data Type t where
     TyBool      :: Type Bool
     TyInt       :: Type Integer
     TyDouble    :: Type Double
-    TyArray     :: Type t -> Maybe Int -> Type (Array t)
     TyComponent :: Maybe TypeName -> Type Component
+    TyArray     :: Type t -> Maybe Int -> Type (Array t)
+    TyFunc      :: Type a -> Type b -> Type (Fn (a -> b))
 
 deriving instance Eq (Type t)
 deriving instance Show (Type t)
 
 instance Pretty (Type t) where
     pretty = \case
-        TyBool         -> "bool"
-        TyInt          -> "int"
-        TyDouble       -> "double"
+        TyBool   -> "bool"
+        TyInt    -> "int"
+        TyDouble -> "double"
+        TyComponent tyName -> maybe "component" pretty tyName
         TyArray t mLen ->
             brackets (pretty t <> maybe emptyDoc (("; " <>) . pretty) mLen)
-        TyComponent tyName -> maybe "component" pretty tyName
+        TyFunc a b -> parens (pretty a <+> "->" <+> pretty b)
+
+
+infixr 9 -->
+-- | Infix operator for 'TyFunc'.
+(-->) :: Type a -> Type b -> Type (Fn (a -> b))
+(-->) = TyFunc
 
 
 -- | Existentially quantified 'Type'.
@@ -89,12 +102,16 @@ typeEq :: Type s -> Type t -> Maybe (s :~: t)
 typeEq TyBool      TyBool   = Just Refl
 typeEq TyInt       TyInt    = Just Refl
 typeEq TyDouble    TyDouble = Just Refl
+typeEq (TyComponent _) (TyComponent _) = Just Refl
 typeEq (TyArray s sLen) (TyArray t tLen) = do
     Refl <- typeEq s t
     case liftA2 (==) sLen tLen of
         Just False -> Nothing
         _ ->          Just Refl
-typeEq (TyComponent _) (TyComponent _) = Just Refl
+typeEq (TyFunc a b) (TyFunc c d) = do
+    Refl <- typeEq a c
+    Refl <- typeEq b d
+    Just Refl
 typeEq _ _ = Nothing
 
 
@@ -104,18 +121,22 @@ dictShow = \case
     TyBool        -> Dict
     TyInt         -> Dict
     TyDouble      -> Dict
+    TyComponent _ -> Dict
     TyArray ty _  -> case dictShow ty of Dict -> Dict
-    TyComponent _ -> Dict
+    TyFunc _ _    -> Dict
 
 
--- | The 'Eq' @t@ type class dictionary for the 'Type' @t@.
-dictEq :: Type t -> Dict (Eq t)
-dictEq = \case
-    TyBool        -> Dict
-    TyInt         -> Dict
-    TyDouble      -> Dict
-    TyArray ty _  -> case dictEq ty of Dict -> Dict
-    TyComponent _ -> Dict
+-- | Check if for a given 'Type' @t@ whether @t@ is an instance of 'Eq'.
+checkEq :: Type t -> Maybe (Dict (Eq t))
+checkEq = \case
+    TyBool        -> return Dict
+    TyInt         -> return Dict
+    TyDouble      -> return Dict
+    TyComponent _ -> return Dict
+    TyArray ty _  -> do
+        Dict <- checkEq ty
+        return Dict
+    _ -> Nothing
 
 
 -- | Check if for a given 'Type' @t@ whether @t@ is an instance of 'Num'.
