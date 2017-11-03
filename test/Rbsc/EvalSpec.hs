@@ -11,23 +11,22 @@ import qualified Data.Map.Strict as Map
 
 import Test.Hspec
 
-import qualified Rbsc.Syntax.Expr.Typed   as T
-import qualified Rbsc.Syntax.Expr.Untyped as U
-import           Rbsc.Syntax.Operators
-
-import qualified Rbsc.Report.Error.Eval as Eval
-import qualified Rbsc.Report.Error.Type as Type
-import           Rbsc.Report.Region     (Loc (..))
-
-
-import Rbsc.Eval
-import Rbsc.TypeChecker
 
 import Rbsc.Data.SymbolTable
 import Rbsc.Data.Type
 import Rbsc.Data.Value
 
+import Rbsc.Eval
+
 import Rbsc.Parser.TH
+
+import qualified Rbsc.Report.Error.Eval as Eval
+import qualified Rbsc.Report.Error.Type as Type
+import           Rbsc.Report.Region     (Loc (..))
+
+import qualified Rbsc.Syntax.Expr.Untyped as U
+
+import Rbsc.TypeChecker
 
 
 spec :: Spec
@@ -47,17 +46,12 @@ spec = do
         it "evaluates constant expressions" $
             reduce' TyBool [expr| (x + 1) * 2 = 4 |]
             `shouldBe`
-            Right (T.Literal True)
+            Right "Literal True"
 
         it "evaluates constant sub-expressions" $
             reduce' TyBool [expr| y + 1 < x * 2 |]
             `shouldBe`
-            Right
-                (T.RelOp
-                     TyInt
-                     Lt
-                     (T.ArithOp Add (T.Variable "y" TyInt) (T.Literal 1))
-                     (T.Literal 2))
+            Right "RelOp Lt (ArithOp Add (Variable \"y\" TyInt) (Literal 1)) (Literal 2)"
 
 
 constants :: Constants
@@ -82,10 +76,10 @@ eval' ty e = case typeCheck Map.empty symbolTable e >>= extract ty (getLoc e) of
 
 
 reduce' ::
-       Type t -> Loc U.Expr -> Either (Either Type.Error Eval.Error) (T.Expr t)
+       Type t -> Loc U.Expr -> Either (Either Type.Error Eval.Error) String
 reduce' ty e =
     case typeCheck Map.empty symbolTable e >>= extract ty (getLoc e) of
         Left err -> Left (Left err)
         Right e' -> case reduce constants e' of
             Left err  -> Left (Right err)
-            Right e'' -> Right e''
+            Right e'' -> Right (show e'')

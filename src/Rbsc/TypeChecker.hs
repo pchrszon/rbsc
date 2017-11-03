@@ -132,14 +132,14 @@ tc (Loc e rgn) = case e of
     U.EqOp eOp l r -> do
         (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
         Refl <- expect tyL (getLoc r) tyR
-        return $ case dictEq tyL of
-            Dict -> AnExpr (T.EqOp tyL eOp l' r') TyBool
+        Dict <- return (dictEq tyL)
+        T.EqOp eOp l' r' `withType` TyBool
 
     U.RelOp rOp l r -> do
         (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
         Refl <- expect tyL (getLoc r) tyR
         Dict <- isOrdType tyL (getLoc l)
-        T.RelOp tyL rOp l' r' `withType` TyBool
+        T.RelOp rOp l' r' `withType` TyBool
 
     U.LogicOp lOp l r -> do
         l' <- l `hasType` TyBool
@@ -151,7 +151,6 @@ tc (Loc e rgn) = case e of
         case ty of
             TyArray elemTy _ -> do
                 idx' <- idx `hasType` TyInt
-                Dict <- return (dictEq elemTy)
                 Dict <- return (dictShow elemTy)
                 T.Index inner' (Loc idx' (getLoc idx)) `withType` elemTy
             _ -> throwError (Type.NotAnArray (renderType ty) (getLoc inner))
@@ -186,7 +185,6 @@ tc (Loc e rgn) = case e of
 tcArray :: NonEmpty (Loc U.Expr) -> TypeChecker AnExpr
 tcArray (e :| []) = do
     AnExpr e' ty <- tc e
-    Dict <- return (dictEq ty)
     Dict <- return (dictShow ty)
     return (AnExpr (T.Array (e' :| [])) (TyArray ty (Just 1)))
 tcArray (e :| (x:xs)) = do

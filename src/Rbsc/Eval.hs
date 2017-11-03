@@ -96,10 +96,10 @@ toLiteral e = case e of
         | r == 0.0  -> throwError (Eval.DivisionByZero rgn)
         | otherwise -> return (Literal (l / r))
 
-    EqOp _ eOp (Literal l) (Literal r) ->
+    EqOp eOp (Literal l) (Literal r) ->
         return (Literal (eqOp eOp l r))
 
-    RelOp _ rOp (Literal l) (Literal r) ->
+    RelOp rOp (Literal l) (Literal r) ->
         return (Literal (relOp rOp l r))
 
     LogicOp lOp (Literal l) (Literal r) ->
@@ -144,8 +144,7 @@ toArray = fmap Array.fromList . traverse f . NonEmpty.toList
 
 
 filterLiterals :: Quantifier -> [Expr Bool] -> [Expr Bool]
-filterLiterals q = filter (/= neutralElement q)
-
+filterLiterals q = filter (not . isNeutralElement q)
 
 quantifier :: Quantifier -> [Expr Bool] -> Expr Bool
 quantifier q = \case
@@ -161,6 +160,15 @@ neutralElement :: Quantifier -> Expr Bool
 neutralElement = \case
     Forall -> Literal True
     Exists -> Literal False
+
+
+isNeutralElement :: Quantifier -> Expr Bool -> Bool
+isNeutralElement Forall = \case
+    Literal True -> True
+    _            -> False
+isNeutralElement Exists = \case
+    Literal False -> True
+    _             -> False
 
 
 -- | Get the list of all constants of type 'Component'. If a 'TypeName' is
