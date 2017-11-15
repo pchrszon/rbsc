@@ -129,9 +129,11 @@ toLiteral e = case e of
 
     Quantified q mTyName sc -> do
         comps <- components mTyName <$> view constants
+        let ty        = TyComponent mTyName
+            compExprs = fmap (\c -> T.AnExpr (Literal c) ty) comps
 
         -- instantiate quantified expression and reduce
-        es <- traverse (T.transformM toLiteral . instantiate sc) comps
+        es <- traverse (T.transformM toLiteral . instantiate sc) compExprs
 
         -- remove all literals that do not influence the truth value
         let es' = filterLiterals q es

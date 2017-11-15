@@ -10,6 +10,8 @@ module Rbsc.Syntax.Expr.Typed
     ( Expr(..)
     , Scope(..)
 
+    , AnExpr(..)
+
     , instantiate
     , transform
     , transformM
@@ -50,7 +52,7 @@ data Expr t where
     HasType    :: Expr Component -> TypeName -> Expr Bool
     BoundTo    :: Expr Component -> Expr Component -> Expr Bool
     Element    :: Expr Component -> Expr Component -> Expr Bool
-    Bound      :: Int -> Expr Component
+    Bound      :: Int -> Type t -> Expr t
     Quantified :: Quantifier -> Maybe TypeName -> Scope Bool -> Expr Bool
 
 deriving instance Show (Expr t)
@@ -62,32 +64,39 @@ deriving instance Show (Expr t)
 newtype Scope t = Scope (Expr t) deriving (Show)
 
 
+-- | An 'Expr' tagged with its 'Type'.
+data AnExpr where
+    AnExpr :: Expr t -> Type t -> AnExpr
+
+
 -- | Instantiate all variables bound by the outermost quantifier.
-instantiate :: forall t. Scope t -> Component -> Expr t
-instantiate (Scope body) comp = go 0 body
+instantiate :: forall t. Scope t -> AnExpr -> Expr t
+instantiate (Scope body) (AnExpr s ty) = go 0 body
   where
     go :: Int -> Expr a -> Expr a
     go i = \case
-        Literal x        -> Literal x
-        Array es         -> Array (fmap (go i) es)
-        Function f       -> Function f
-        Variable name ty -> Variable name ty
-        Cast e           -> Cast (go i e)
-        Not e            -> Not (go i e)
-        Negate e         -> Negate (go i e)
-        ArithOp aOp l r  -> ArithOp aOp (go i l) (go i r)
-        Divide rgn l r   -> Divide rgn (go i l) (go i r)
-        EqOp eOp l r     -> EqOp eOp (go i l) (go i r)
-        RelOp rOp l r    -> RelOp rOp (go i l) (go i r)
-        LogicOp lOp l r  -> LogicOp lOp (go i l) (go i r)
-        Index e idx      -> Index (go i e) (fmap (go i) idx)
-        Apply f e        -> Apply (go i f) (go i e)
-        HasType e tyName -> HasType (go i e) tyName
-        BoundTo l r      -> BoundTo (go i l) (go i r)
-        Element l r      -> Element (go i l) (go i r)
-        Bound i'
-            | i == i' -> Literal comp
-            | otherwise -> Bound i'
+        Literal x         -> Literal x
+        Array es          -> Array (fmap (go i) es)
+        Function f        -> Function f
+        Variable name ty' -> Variable name ty'
+        Cast e            -> Cast (go i e)
+        Not e             -> Not (go i e)
+        Negate e          -> Negate (go i e)
+        ArithOp aOp l r   -> ArithOp aOp (go i l) (go i r)
+        Divide rgn l r    -> Divide rgn (go i l) (go i r)
+        EqOp eOp l r      -> EqOp eOp (go i l) (go i r)
+        RelOp rOp l r     -> RelOp rOp (go i l) (go i r)
+        LogicOp lOp l r   -> LogicOp lOp (go i l) (go i r)
+        Index e idx       -> Index (go i e) (fmap (go i) idx)
+        Apply f e         -> Apply (go i f) (go i e)
+        HasType e tyName  -> HasType (go i e) tyName
+        BoundTo l r       -> BoundTo (go i l) (go i r)
+        Element l r       -> Element (go i l) (go i r)
+        Bound i' ty'
+            | i == i' -> case typeEq ty ty' of
+                Just Refl -> s
+                Nothing   -> error "instantiate: type error"
+            | otherwise -> Bound i' ty'
         Quantified q mTyName (Scope body') ->
             Quantified q mTyName (Scope (go (succ i) body'))
 
@@ -129,5 +138,5 @@ descend f = \case
     HasType e tyName -> HasType <$> f e <*> pure tyName
     BoundTo l r      -> BoundTo <$> f l <*> f r
     Element l r      -> Element <$> f l <*> f r
-    Bound i          -> pure (Bound i)
+    Bound i ty       -> pure (Bound i ty)
     Quantified q mTyName (Scope body) -> Quantified q mTyName . Scope <$> f body

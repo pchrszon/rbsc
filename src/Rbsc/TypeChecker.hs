@@ -37,13 +37,9 @@ import Rbsc.Data.Type
 import qualified Rbsc.Report.Error.Type as Type
 import           Rbsc.Report.Region     (Loc (..), Region)
 
+import           Rbsc.Syntax.Expr.Typed   (AnExpr (..))
 import qualified Rbsc.Syntax.Expr.Typed   as T
 import qualified Rbsc.Syntax.Expr.Untyped as U
-
-
--- | An 'Expr' tagged with its 'Type'.
-data AnExpr where
-    AnExpr :: T.Expr t -> Type t -> AnExpr
 
 
 -- | Unwrap 'AnExpr'. If the given expected 'Type' and the actual @Type@ do
@@ -108,7 +104,7 @@ tc (Loc e rgn) = case e of
         lookupBoundVar name >>= \case
             Just (i, AType ty) -> do
                 Refl <- expect tyComponent rgn ty
-                T.Bound i `withType` ty
+                T.Bound i ty `withType` ty
             Nothing -> do
                 AType ty <- getIdentifierType name rgn
                 T.Variable name ty `withType` ty
