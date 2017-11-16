@@ -10,6 +10,8 @@ module Rbsc.Report.Error.Eval
 
     , _DivisionByZero
     , _NotConstant
+    , _IndexOutOfBounds
+    , _ExceededDepth
     ) where
 
 
@@ -27,6 +29,7 @@ data Error
     = DivisionByZero !Region
     | NotConstant !Region
     | IndexOutOfBounds !Int !Int !Region
+    | ExceededDepth !Region
     deriving (Eq, Show)
 
 
@@ -46,6 +49,12 @@ toReport = \case
             [ errorPart rgn . Just $
                 "array has size " <> Text.pack (show len) <>
                 "but the index is " <> Text.pack (show idx)
+            ]
+
+    ExceededDepth rgn ->
+        Report "exceeded maximum recursion depth"
+            [ errorPart rgn . Just $
+                "exceeded recursion depth evaluating this expression"
             ]
 
 

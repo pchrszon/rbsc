@@ -13,8 +13,10 @@ module Rbsc.Syntax.Expr.Typed
     , AnExpr(..)
 
     , instantiate
+
     , transform
     , transformM
+    , descend
     ) where
 
 
@@ -53,6 +55,7 @@ data Expr t where
     BoundTo    :: Expr Component -> Expr Component -> Expr Bool
     Element    :: Expr Component -> Expr Component -> Expr Bool
     Bound      :: Int -> Type t -> Expr t
+    Lambda     :: Type a -> Scope b -> Expr (Fn (a -> b))
     Quantified :: Quantifier -> Maybe TypeName -> Scope Bool -> Expr Bool
 
 deriving instance Show (Expr t)
@@ -69,7 +72,7 @@ data AnExpr where
     AnExpr :: Expr t -> Type t -> AnExpr
 
 
--- | Instantiate all variables bound by the outermost quantifier.
+-- | Instantiate all variables bound by the outermost binder.
 instantiate :: forall t. Scope t -> AnExpr -> Expr t
 instantiate (Scope body) (AnExpr s ty) = go 0 body
   where
@@ -97,6 +100,7 @@ instantiate (Scope body) (AnExpr s ty) = go 0 body
                 Just Refl -> s
                 Nothing   -> error "instantiate: type error"
             | otherwise -> Bound i' ty'
+        Lambda ty' (Scope body') -> Lambda ty' (Scope (go (succ i) body'))
         Quantified q mTyName (Scope body') ->
             Quantified q mTyName (Scope (go (succ i) body'))
 
@@ -118,6 +122,7 @@ transformM f = go
     go e = descend go e >>= f
 
 
+-- | Traverse the children of an 'Expr'.
 descend ::
        Applicative m => (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
 descend f = \case
@@ -139,4 +144,5 @@ descend f = \case
     BoundTo l r      -> BoundTo <$> f l <*> f r
     Element l r      -> Element <$> f l <*> f r
     Bound i ty       -> pure (Bound i ty)
+    Lambda ty (Scope body) -> Lambda ty . Scope <$> f body
     Quantified q mTyName (Scope body) -> Quantified q mTyName . Scope <$> f body

@@ -14,6 +14,7 @@ module Rbsc.Syntax.Operators
 
     , LogicOp(..)
     , logicOp
+    , logicOpShortcut
 
     , Quantifier(..)
     ) where
@@ -81,6 +82,18 @@ logicOp binOp l r = case binOp of
     And     -> l && r
     Or      -> l || r
     Implies -> not l || r
+
+
+-- | Shortcut-semanitcs of a 'LogicOp'. If the left-hand operand already
+-- fully determines the truth-value of the operator, then @Just@ the
+-- truth-value is returned. If the second operand must be evaluated as
+-- well, then @Nothing@ is returned.
+logicOpShortcut :: LogicOp -> Bool -> Maybe Bool
+logicOpShortcut binOp l = case binOp of
+    And | not l     -> Just False
+    Or  | l         -> Just True
+    Implies | not l -> Just True
+    _ -> Nothing
 
 
 -- | A quantifier.

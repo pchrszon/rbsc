@@ -91,7 +91,7 @@ eval' :: Type t -> Loc U.Expr -> Either (Either Type.Error Eval.Error) t
 eval' ty e =
     case typeCheck componentTypes symbolTable e >>= extract ty (getLoc e) of
         Left err -> Left (Left err)
-        Right e' -> case eval constants (Loc e' (getLoc e)) of
+        Right e' -> case eval constants 100 (Loc e' (getLoc e)) of
             Left err -> Left (Right err)
             Right x  -> Right x
 
@@ -101,6 +101,6 @@ reduce' ::
 reduce' ty e =
     case typeCheck Map.empty symbolTable e >>= extract ty (getLoc e) of
         Left err -> Left (Left err)
-        Right e' -> case reduce constants e' of
+        Right e' -> case reduce constants 100 (Loc e' (getLoc e)) of
             Left err  -> Left (Right err)
             Right e'' -> Right (show e'')

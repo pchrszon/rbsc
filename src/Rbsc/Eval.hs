@@ -8,7 +8,8 @@
 
 -- | Evaluation of typed expressions.
 module Rbsc.Eval
-    ( eval
+    ( RecursionDepth
+    , eval
     , reduce
     ) where
 
@@ -32,14 +33,19 @@ import           Rbsc.Data.Type
 import           Rbsc.Data.Value
 
 import qualified Rbsc.Report.Error.Eval as Eval
-import           Rbsc.Report.Region     (Loc (..))
+import           Rbsc.Report.Region     (Loc (..), Region)
 
 import Rbsc.Syntax.Expr.Typed as T
 import Rbsc.Syntax.Operators
 
 
-newtype ReducerInfo = ReducerInfo
-    { _constants :: Constants
+type RecursionDepth = Int
+
+
+data ReducerInfo = ReducerInfo
+    { _constants      :: Constants
+    , _remainingDepth :: !RecursionDepth
+    , _region         :: !Region
     }
 
 makeLenses ''ReducerInfo
@@ -47,23 +53,41 @@ makeLenses ''ReducerInfo
 
 type Reducer a = ReaderT ReducerInfo (Either Eval.Error) a
 
-runReducer :: Reducer a -> Constants -> Either Eval.Error a
-runReducer m cs = runReaderT m (ReducerInfo cs)
+runReducer ::
+       Reducer a -> Constants -> RecursionDepth -> Region -> Either Eval.Error a
+runReducer m cs depth rgn = runReaderT m (ReducerInfo cs depth rgn)
 
 
 -- | Evaluate an expression under a given set of constants.
-eval :: Constants -> Loc (Expr t) -> Either Eval.Error t
-eval cs (Loc e rgn) = do
-    e' <- reduce cs e
+eval :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Eval.Error t
+eval cs depth e = do
+    e' <- reduce cs depth e
     case e' of
         Literal x -> return x
-        _         -> throwError (Eval.NotConstant rgn)
+        _         -> throwError (Eval.NotConstant (getLoc e))
 
 
 -- | Reduce an expression as far as possible by evaluating constant
 -- sub-expressions.
-reduce :: Constants -> Expr t -> Either Eval.Error (Expr t)
-reduce cs e = runReducer (T.transformM toLiteral e) cs
+reduce ::
+       Constants -> RecursionDepth -> Loc (Expr t) -> Either Eval.Error (Expr t)
+reduce cs depth (Loc e rgn) = runReducer (reduce' e) cs depth rgn
+
+
+reduce' :: Expr t -> Reducer (Expr t)
+reduce' e = case e of
+    LogicOp lOp l r -> do
+        l' <- reduce' l
+        case l' of
+            Literal x -> case logicOpShortcut lOp x of
+                Just b -> return (Literal b)
+                Nothing -> do
+                    r' <- reduce' r
+                    toLiteral (LogicOp lOp l' r')
+            _ -> do
+                r' <- reduce' r
+                return (LogicOp lOp l' r')
+    _ -> descend reduce' e >>= toLiteral
 
 
 toLiteral :: Expr t -> Reducer (Expr t)
@@ -73,7 +97,7 @@ toLiteral e = case e of
         case value of
             Just (Value v ty') -> case typeEq ty ty' of -- if the variable is a constant ...
                 Just Refl -> return (Literal v) -- ... then replace by constant value
-                Nothing   -> error "reduce: constant has wrong type"
+                Nothing   -> error "toLiteral: type error"
             Nothing -> return e
 
     Array es -> return $ case toArray es of
@@ -117,6 +141,12 @@ toLiteral e = case e of
     Apply (Literal (Fn f)) (Literal arg) ->
         return (Literal (f arg))
 
+    Apply (Lambda ty body) arg -> do
+        checkDepth
+        let body' = instantiate body (AnExpr arg ty)
+        local (remainingDepth %~ (-) 1) $
+            reduce' body'
+
     HasType (Literal comp) tyName ->
         return (Literal (view compTypeName comp == tyName))
 
@@ -149,6 +179,14 @@ toArray = fmap Array.fromList . traverse f . NonEmpty.toList
   where
     f (Literal x) = Just x
     f _           = Nothing
+
+
+checkDepth :: Reducer ()
+checkDepth = do
+    depth <- view remainingDepth
+    rgn   <- view region
+    when (depth <= 0) $
+        throwError (Eval.ExceededDepth rgn)
 
 
 filterLiterals :: Quantifier -> [Expr Bool] -> [Expr Bool]
