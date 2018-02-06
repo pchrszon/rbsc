@@ -21,7 +21,7 @@ import Data.Text (Text)
 data Position = Position
     { line   :: !Int
     , column :: !Int
-    } deriving (Eq, Show)
+    } deriving (Eq, Ord, Show)
 
 
 -- | A region within a source file.
@@ -35,15 +35,9 @@ data Region = Region
 
 instance Semigroup Region where
     Region path1 source1 start1 end1 <> Region _ _ start2 end2 =
-        Region
-            path1
-            source1
-            (Position
-                 (min (line start1) (line start2))
-                 (min (column start1) (column start2)))
-            (Position
-                 (max (line end1) (line end2))
-                 (max (column end1) (column end2)))
+        Region path1 source1 (minimum positions) (maximum positions)
+      where
+        positions = [start1, end1, start2, end2]
 
 
 -- | A region within a source file spanning contained within a single line.
