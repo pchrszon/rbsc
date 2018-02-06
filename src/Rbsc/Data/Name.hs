@@ -22,7 +22,10 @@ type RoleName = Name
 -- | The name of a user-defined component type, role type or compartment type.
 newtype TypeName = TypeName
     { getTypeName :: Text
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord)
+
+instance Show TypeName where
+    showsPrec p (TypeName n) = showsPrec p n
 
 instance Pretty TypeName where
     pretty = pretty . getTypeName
