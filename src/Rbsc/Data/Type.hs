@@ -12,7 +12,7 @@ module Rbsc.Data.Type
     ( Type(..)
     , (-->)
 
-    , AType(..)
+    , SomeType(..)
 
     , typeEq
 
@@ -76,19 +76,19 @@ infixr 9 -->
 
 
 -- | Existentially quantified 'Type'.
-data AType where
-    AType :: Type t -> AType
+data SomeType where
+    SomeType :: Type t -> SomeType
 
-instance Eq AType where
-    AType s == AType t =
+instance Eq SomeType where
+    SomeType s == SomeType t =
         case typeEq s t of
             Just Refl -> True
             Nothing   -> False
 
-deriving instance Show AType
+deriving instance Show SomeType
 
-instance Pretty AType where
-    pretty (AType ty) = pretty ty
+instance Pretty SomeType where
+    pretty (SomeType ty) = pretty ty
 
 
 -- | Check the equality of 'Type's.
@@ -148,8 +148,8 @@ checkNum = \case
 
 
 -- | List of number types.
-numTypes :: [AType]
-numTypes = [AType TyInt, AType TyDouble]
+numTypes :: [SomeType]
+numTypes = [SomeType TyInt, SomeType TyDouble]
 
 
 -- | Check if for a given 'Type' @t@ whether @t@ is an instance of 'Ord'.
@@ -164,5 +164,5 @@ checkOrd = \case
 
 
 -- | List of primitive types that can be compared.
-ordTypes :: [AType]
-ordTypes = [AType TyInt, AType TyDouble]
+ordTypes :: [SomeType]
+ordTypes = [SomeType TyInt, SomeType TyDouble]

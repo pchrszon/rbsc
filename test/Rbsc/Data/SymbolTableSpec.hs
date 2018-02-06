@@ -36,8 +36,8 @@ spec = describe "fromModel" $ do
             |]
         `shouldBe`
         Right
-            [ ("n", AType (TyComponent (Just "N")))
-            , ("r", AType (TyComponent (Just "R")))
+            [ ("n", SomeType (TyComponent (Just "N")))
+            , ("r", SomeType (TyComponent (Just "R")))
             ]
 
     it "detects undefined types" $

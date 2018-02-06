@@ -44,7 +44,7 @@ compile path = do
 
                     for_ (system model) $ \c ->
                         case typeCheck types symTable c of
-                            Right (AnExpr c' ty) -> case typeEq ty TyBool of
+                            Right (SomeExpr c' ty) -> case typeEq ty TyBool of
                                 Just Refl -> print c'
                                 Nothing   -> putStrLn "type error"
                             Left err -> putDoc (render (Type.toReport err))

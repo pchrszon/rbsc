@@ -10,7 +10,7 @@ module Rbsc.Syntax.Expr.Typed
     ( Expr(..)
     , Scope(..)
 
-    , AnExpr(..)
+    , SomeExpr(..)
 
     , instantiate
 
@@ -68,13 +68,13 @@ newtype Scope t = Scope (Expr t) deriving (Show)
 
 
 -- | An 'Expr' tagged with its 'Type'.
-data AnExpr where
-    AnExpr :: Expr t -> Type t -> AnExpr
+data SomeExpr where
+    SomeExpr :: Expr t -> Type t -> SomeExpr
 
 
 -- | Instantiate all variables bound by the outermost binder.
-instantiate :: forall t. Scope t -> AnExpr -> Expr t
-instantiate (Scope body) (AnExpr s ty) = go 0 body
+instantiate :: forall t. Scope t -> SomeExpr -> Expr t
+instantiate (Scope body) (SomeExpr s ty) = go 0 body
   where
     go :: Int -> Expr a -> Expr a
     go i = \case

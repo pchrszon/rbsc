@@ -7,7 +7,7 @@
 
 
 module Rbsc.TypeChecker
-    ( AnExpr(..)
+    ( SomeExpr(..)
     , getExpr
 
     , typeCheck
@@ -37,15 +37,15 @@ import Rbsc.Data.Type
 import qualified Rbsc.Report.Error.Type as Type
 import           Rbsc.Report.Region     (Loc (..), Region)
 
-import           Rbsc.Syntax.Expr.Typed   (AnExpr (..))
+import           Rbsc.Syntax.Expr.Typed   (SomeExpr (..))
 import qualified Rbsc.Syntax.Expr.Typed   as T
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
 
--- | Unwrap 'AnExpr'. If the given expected 'Type' and the actual @Type@ do
+-- | Unwrap 'SomeExpr'. If the given expected 'Type' and the actual @Type@ do
 -- not match, then @Nothing@ is returned.
-getExpr :: Type t -> AnExpr -> Maybe (T.Expr t)
-getExpr expected (AnExpr e actual) = do
+getExpr :: Type t -> SomeExpr -> Maybe (T.Expr t)
+getExpr expected (SomeExpr e actual) = do
     Refl <- typeEq expected actual
     return e
 
@@ -53,7 +53,7 @@ getExpr expected (AnExpr e actual) = do
 data TcInfo = TcInfo
     { _componentTypes :: !ComponentTypes
     , _symbolTable    :: !SymbolTable
-    , _boundVars      :: [(Name, AType)]
+    , _boundVars      :: [(Name, SomeType)]
     }
 
 makeLenses ''TcInfo
@@ -70,20 +70,20 @@ runTypeChecker m types symTable = runReaderT m (TcInfo types symTable [])
 -- | Type check an untyped expression and transform it into a typed
 -- expression.
 typeCheck ::
-       ComponentTypes -> SymbolTable -> Loc U.Expr -> Either Type.Error AnExpr
+       ComponentTypes -> SymbolTable -> Loc U.Expr -> Either Type.Error SomeExpr
 typeCheck types symTable e = runTypeChecker (tc e) types symTable
 
 
 -- | @extract expected region e@ extracts an expression @e@ wrapped in
--- 'AnExpr'. If @e@ does not have the @expected@ type, a type error is
+-- 'SomeExpr'. If @e@ does not have the @expected@ type, a type error is
 -- thrown.
-extract :: Type t -> Region -> AnExpr -> Either Type.Error (T.Expr t)
-extract expected rgn (AnExpr e actual) = do
+extract :: Type t -> Region -> SomeExpr -> Either Type.Error (T.Expr t)
+extract expected rgn (SomeExpr e actual) = do
     Refl <- expect expected rgn actual
     return e
 
 
-tc :: Loc U.Expr -> TypeChecker AnExpr
+tc :: Loc U.Expr -> TypeChecker SomeExpr
 tc (Loc e rgn) = case e of
     U.LitBool b ->
         T.Literal b `withType` TyBool
@@ -102,11 +102,11 @@ tc (Loc e rgn) = case e of
 
     U.Variable name ->
         lookupBoundVar name >>= \case
-            Just (i, AType ty) -> do
+            Just (i, SomeType ty) -> do
                 Refl <- expect tyComponent rgn ty
                 T.Bound i ty `withType` ty
             Nothing -> do
-                AType ty <- getIdentifierType name rgn
+                SomeType ty <- getIdentifierType name rgn
                 T.Variable name ty `withType` ty
 
     U.Not inner -> do
@@ -114,12 +114,12 @@ tc (Loc e rgn) = case e of
         T.Not inner' `withType` TyBool
 
     U.Negate inner -> do
-        AnExpr inner' ty <- tc inner
+        SomeExpr inner' ty <- tc inner
         Dict <- isNumType ty (getLoc inner)
         T.Negate inner' `withType` ty
 
     U.ArithOp aOp l r -> do
-        (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
+        (SomeExpr l' tyL, SomeExpr r' tyR) <- binaryCast <$> tc l <*> tc r
         Dict <- isNumType tyL (getLoc l)
         _    <- isNumType tyR (getLoc r)
         Refl <- expect tyL (getLoc r) tyR
@@ -131,14 +131,14 @@ tc (Loc e rgn) = case e of
         T.Divide rgn l' r' `withType` TyDouble
 
     U.EqOp eOp l r -> do
-        (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
+        (SomeExpr l' tyL, SomeExpr r' tyR) <- binaryCast <$> tc l <*> tc r
         Dict <- isEqType tyL (getLoc l)
         _    <- isEqType tyR (getLoc r)
         Refl <- expect tyL (getLoc r) tyR
         T.EqOp eOp l' r' `withType` TyBool
 
     U.RelOp rOp l r -> do
-        (AnExpr l' tyL, AnExpr r' tyR) <- binaryCast <$> tc l <*> tc r
+        (SomeExpr l' tyL, SomeExpr r' tyR) <- binaryCast <$> tc l <*> tc r
         Dict <- isOrdType tyL (getLoc l)
         _    <- isOrdType tyR (getLoc r)
         Refl <- expect tyL (getLoc r) tyR
@@ -150,7 +150,7 @@ tc (Loc e rgn) = case e of
         T.LogicOp lOp l' r' `withType` TyBool
 
     U.Index inner idx -> do
-        AnExpr inner' ty <- tc inner
+        SomeExpr inner' ty <- tc inner
         case ty of
             TyArray elemTy _ -> do
                 idx' <- idx `hasType` TyInt
@@ -184,38 +184,38 @@ tc (Loc e rgn) = case e of
                 return (TyComponent (Just (unLoc tyName)))
             Nothing -> return (TyComponent Nothing)
 
-        body' <- local (over boundVars ((varName, AType varTy) :)) $
+        body' <- local (over boundVars ((varName, SomeType varTy) :)) $
             body `hasType` TyBool
 
         T.Quantified q (fmap unLoc mTyName) (T.Scope body') `withType` TyBool
 
 
-fromFunctionSym :: FunctionSym -> AnExpr
+fromFunctionSym :: FunctionSym -> SomeExpr
 fromFunctionSym = \case
     FuncMinInt ->
-        AnExpr (T.Function MinInt) (TyInt --> TyInt --> TyInt)
+        SomeExpr (T.Function MinInt) (TyInt --> TyInt --> TyInt)
     FuncMinDouble ->
-        AnExpr (T.Function MinDouble) (TyDouble --> TyDouble --> TyDouble)
+        SomeExpr (T.Function MinDouble) (TyDouble --> TyDouble --> TyDouble)
     FuncMaxInt ->
-        AnExpr (T.Function MaxInt) (TyInt --> TyInt --> TyInt)
+        SomeExpr (T.Function MaxInt) (TyInt --> TyInt --> TyInt)
     FuncMaxDouble ->
-        AnExpr (T.Function MaxDouble) (TyDouble --> TyDouble --> TyDouble)
+        SomeExpr (T.Function MaxDouble) (TyDouble --> TyDouble --> TyDouble)
     FuncFloor ->
-        AnExpr (T.Function Floor) (TyDouble --> TyInt)
+        SomeExpr (T.Function Floor) (TyDouble --> TyInt)
     FuncCeil ->
-        AnExpr (T.Function Ceil) (TyDouble --> TyInt)
+        SomeExpr (T.Function Ceil) (TyDouble --> TyInt)
     FuncPowInt ->
-        AnExpr (T.Function PowInt) (TyInt --> TyInt --> TyInt)
+        SomeExpr (T.Function PowInt) (TyInt --> TyInt --> TyInt)
     FuncPowDouble ->
-        AnExpr (T.Function PowDouble) (TyDouble --> TyDouble --> TyDouble)
+        SomeExpr (T.Function PowDouble) (TyDouble --> TyDouble --> TyDouble)
     FuncMod ->
-        AnExpr (T.Function Mod) (TyInt --> TyInt --> TyInt)
+        SomeExpr (T.Function Mod) (TyInt --> TyInt --> TyInt)
     FuncLog ->
-        AnExpr (T.Function Log) (TyDouble --> TyDouble --> TyDouble)
+        SomeExpr (T.Function Log) (TyDouble --> TyDouble --> TyDouble)
 
 
-checkCallArity :: Region -> AnExpr -> [args] -> TypeChecker ()
-checkCallArity rgn (AnExpr _ ty) args
+checkCallArity :: Region -> SomeExpr -> [args] -> TypeChecker ()
+checkCallArity rgn (SomeExpr _ ty) args
     | numParams > 0 && numParams < numArgs =
         throwError (Type.WrongNumberOfArguments numParams numArgs rgn)
     | otherwise = return ()
@@ -229,31 +229,31 @@ checkCallArity rgn (AnExpr _ ty) args
         _              -> 0
 
 
-tcCall :: Loc AnExpr -> [Loc U.Expr] -> TypeChecker AnExpr
-tcCall (Loc (AnExpr e ty) _) [] = return (AnExpr e ty)
-tcCall (Loc (AnExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
+tcCall :: Loc SomeExpr -> [Loc U.Expr] -> TypeChecker SomeExpr
+tcCall (Loc (SomeExpr e ty) _) [] = return (SomeExpr e ty)
+tcCall (Loc (SomeExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
     arg' <- arg `hasType` tyParam
     Dict <- return (dictShow tyRes)
-    tcCall (Loc (AnExpr (T.Apply f arg') tyRes) rgn) args
-tcCall (Loc (AnExpr _ ty) rgn) (_ : _) =
+    tcCall (Loc (SomeExpr (T.Apply f arg') tyRes) rgn) args
+tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
     throwError (Type.NotAFunction (renderType ty) rgn)
 
 
-tcArray :: NonEmpty (Loc U.Expr) -> TypeChecker AnExpr
+tcArray :: NonEmpty (Loc U.Expr) -> TypeChecker SomeExpr
 tcArray (e :| []) = do
-    AnExpr e' ty <- tc e
+    SomeExpr e' ty <- tc e
     Dict <- return (dictShow ty)
-    return (AnExpr (T.Array (e' :| [])) (TyArray ty (Just 1)))
+    return (SomeExpr (T.Array (e' :| [])) (TyArray ty (Just 1)))
 tcArray (e :| (x:xs)) = do
-    AnExpr e' ty <- tc e
-    AnExpr (T.Array es') (TyArray elemTy len) <- tcArray (x :| xs)
+    SomeExpr e' ty <- tc e
+    SomeExpr (T.Array es') (TyArray elemTy len) <- tcArray (x :| xs)
     Refl <- expect elemTy (getLoc e) ty
-    return (AnExpr (T.Array (e' <| es')) (TyArray ty (succ <$> len)))
+    return (SomeExpr (T.Array (e' <| es')) (TyArray ty (succ <$> len)))
 
 
 -- | Looks up the type of a given identifier in the symbol table. If the
 -- identifier is undefined, an error is thrown.
-getIdentifierType :: Name -> Region -> TypeChecker AType
+getIdentifierType :: Name -> Region -> TypeChecker SomeType
 getIdentifierType name rgn = do
     varTy <- view (symbolTable.at name)
     case varTy of
@@ -262,7 +262,7 @@ getIdentifierType name rgn = do
 
 
 -- | Looks up the type and the de-Bruijn index of a given identifier.
-lookupBoundVar :: Name -> TypeChecker (Maybe (Int, AType))
+lookupBoundVar :: Name -> TypeChecker (Maybe (Int, SomeType))
 lookupBoundVar name = do
     vars <- view boundVars
     let indexedVars = zip vars [0..]
@@ -274,18 +274,18 @@ lookupBoundVar name = do
 
 -- | If one of the two given expression has 'TyDouble' and the other one
 -- has 'TyInt', then cast the @TyInt@ expression to @TyDouble@.
-binaryCast :: AnExpr -> AnExpr -> (AnExpr, AnExpr)
-binaryCast (AnExpr l TyDouble) (AnExpr r TyInt) =
-    (AnExpr l TyDouble, AnExpr (T.Cast r) TyDouble)
-binaryCast (AnExpr l TyInt) (AnExpr r TyDouble) =
-    (AnExpr (T.Cast l) TyDouble, AnExpr r TyDouble)
+binaryCast :: SomeExpr -> SomeExpr -> (SomeExpr, SomeExpr)
+binaryCast (SomeExpr l TyDouble) (SomeExpr r TyInt) =
+    (SomeExpr l TyDouble, SomeExpr (T.Cast r) TyDouble)
+binaryCast (SomeExpr l TyInt) (SomeExpr r TyDouble) =
+    (SomeExpr (T.Cast l) TyDouble, SomeExpr r TyDouble)
 binaryCast l r = (l, r)
 
 
 -- | @cast expected e@ casts expression @t@ to 'TyDouble' if @expected@ is
 -- @TyDouble@ and the expression has type 'TyInt'.
-cast :: Type t -> AnExpr -> AnExpr
-cast TyDouble (AnExpr e TyInt) = AnExpr (T.Cast e) TyDouble
+cast :: Type t -> SomeExpr -> SomeExpr
+cast TyDouble (SomeExpr e TyInt) = SomeExpr (T.Cast e) TyDouble
 cast _        e                = e
 
 
@@ -305,7 +305,7 @@ whenTypeExists (Loc tyName rgn) m = do
 -- a 'Cast' is inserted automatically.
 hasType :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t)
 hasType e expected = do
-    AnExpr e' actual <- cast expected <$> tc e
+    SomeExpr e' actual <- cast expected <$> tc e
     Refl <- expect expected (getLoc e) actual
     return e'
 
@@ -316,7 +316,7 @@ expect :: MonadError Type.Error m => Type s -> Region -> Type t -> m (s :~: t)
 expect expected rgn actual =
     case typeEq expected actual of
         Just Refl -> return Refl
-        Nothing   -> throwError (typeError [AType expected] actual rgn)
+        Nothing   -> throwError (typeError [SomeType expected] actual rgn)
 
 
 -- | Assume that values of the given type can be checked for equality. If
@@ -344,8 +344,8 @@ isOrdType ty rgn = case checkOrd ty of
 
 
 -- | Returns an expression tagged with its 'Type'.
-withType :: T.Expr t -> Type t -> TypeChecker AnExpr
-withType e ty = return (AnExpr e ty)
+withType :: T.Expr t -> Type t -> TypeChecker SomeExpr
+withType e ty = return (SomeExpr e ty)
 
 
 tyComponent :: Type Component
@@ -353,11 +353,11 @@ tyComponent = TyComponent Nothing
 
 
 -- | @typeError expected actual region@ constructs a 'Type.Error'.
-typeError :: [AType] -> Type t -> Region -> Type.Error
+typeError :: [SomeType] -> Type t -> Region -> Type.Error
 typeError expected actual =
-    Type.TypeError (fmap renderAType expected) (renderType actual)
+    Type.TypeError (fmap renderSomeType expected) (renderType actual)
   where
-    renderAType (AType ty) = renderType ty
+    renderSomeType (SomeType ty) = renderType ty
 
 
 renderType :: Type r -> Text

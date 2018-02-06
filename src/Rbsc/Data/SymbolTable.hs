@@ -30,10 +30,10 @@ import qualified Rbsc.Syntax.Model        as Model
 
 -- | The symbol table holds the type of each identifier in the model
 -- source.
-type SymbolTable = Map Name AType
+type SymbolTable = Map Name SomeType
 
 data BuilderState = BuilderState
-    { _symbols :: Map Name (AType, Region)
+    { _symbols :: Map Name (SomeType, Region)
     , _errors  :: [Syntax.Error]
     }
 
@@ -70,18 +70,18 @@ components types es = for_ es $ \case
 -- | Look up the component type with the given name. If the type does not
 -- exist, an error is thrown and @Nothing@ is returned.
 lookupComponentType ::
-       ComponentTypes -> TypeName -> Region -> Builder (Maybe AType)
+       ComponentTypes -> TypeName -> Region -> Builder (Maybe SomeType)
 lookupComponentType types tyName rgn
     | Map.member tyName types =
-        return (Just (AType (TyComponent (Just tyName))))
+        return (Just (SomeType (TyComponent (Just tyName))))
     | otherwise = do
         throw (Syntax.UndefinedType rgn)
         return Nothing
 
 
--- | Insert an identifier with a given 'Name' and 'AType' into the symbol
+-- | Insert an identifier with a given 'Name' and 'SomeType' into the symbol
 -- table. Throws an error if the identifier has been defined already.
-insert :: Name -> AType -> Region -> Builder ()
+insert :: Name -> SomeType -> Region -> Builder ()
 insert name aTy rgn =
     use (symbols.at name) >>= \case
         Just (_, rgnFirst) -> throw (Syntax.DuplicateIdentifier rgn rgnFirst)

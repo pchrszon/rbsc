@@ -32,7 +32,7 @@ spec = describe "typeCheck" $ do
     it "computes the correct type" $
         typeCheck' TyBool [expr| n : N |]
         `shouldBe`
-        Right "HasType (Variable \"n\" (TyComponent Nothing)) (TypeName {getTypeName = \"N\"})"
+        Right "HasType (Variable \"n\" (TyComponent Nothing)) \"N\""
 
     it "detects type errors" $
         typeCheck' TyBool [expr| true : N |]
@@ -83,7 +83,7 @@ types = Map.fromList
 
 symbolTable :: SymbolTable
 symbolTable = Map.fromList
-    [ ("n", AType tyComponent)
+    [ ("n", SomeType tyComponent)
     ]
 
 tyComponent :: Type Component

@@ -143,7 +143,7 @@ toLiteral e = case e of
 
     Apply (Lambda ty body) arg -> do
         checkDepth
-        let body' = instantiate body (AnExpr arg ty)
+        let body' = instantiate body (SomeExpr arg ty)
         local (remainingDepth %~ (-) 1) $
             reduce' body'
 
@@ -160,7 +160,7 @@ toLiteral e = case e of
     Quantified q mTyName sc -> do
         comps <- components mTyName <$> view constants
         let ty        = TyComponent mTyName
-            compExprs = fmap (\c -> T.AnExpr (Literal c) ty) comps
+            compExprs = fmap (\c -> T.SomeExpr (Literal c) ty) comps
 
         -- instantiate quantified expression and reduce
         es <- traverse (T.transformM toLiteral . instantiate sc) compExprs

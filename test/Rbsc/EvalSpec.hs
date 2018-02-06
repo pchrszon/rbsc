@@ -74,10 +74,10 @@ constants = Map.fromList
 
 symbolTable :: SymbolTable
 symbolTable = Map.fromList
-    [ ("x", AType TyInt)
-    , ("y", AType TyInt)
-    , ("n", AType (TyComponent (Just "N")))
-    , ("r", AType (TyComponent (Just "R")))
+    [ ("x", SomeType TyInt)
+    , ("y", SomeType TyInt)
+    , ("n", SomeType (TyComponent (Just "N")))
+    , ("r", SomeType (TyComponent (Just "R")))
     ]
 
 componentTypes :: ComponentTypes
