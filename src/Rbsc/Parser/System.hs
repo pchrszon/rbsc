@@ -12,4 +12,5 @@ import Rbsc.Parser.Lexer
 
 -- | Parser for a system definition.
 systemDef :: Parser Definition
-systemDef = DefSystem <$> block "system" (expr `sepBy` comma)
+systemDef =
+    DefSystem <$> block "system" (expr `sepBy` comma) <?> "system definition"

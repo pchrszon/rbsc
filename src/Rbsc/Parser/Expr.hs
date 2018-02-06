@@ -29,11 +29,11 @@ import qualified Rbsc.Syntax.Operators    as Ops
 
 -- | Parser for 'Expr's.
 expr :: Parser (Loc Expr)
-expr = makeExprParser term table
+expr = makeExprParser term table <?> "expression"
 
 
 term :: Parser (Loc Expr)
-term = quantified <|> do
+term = label "expression" $ quantified <|> do
     e <- atom
     postfix <- many (index <|> call)
     return (apply postfix e)

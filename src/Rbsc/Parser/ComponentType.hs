@@ -17,7 +17,7 @@ import Rbsc.Syntax.ComponentType
 
 -- | Parser for a componen type definition.
 componentTypeDef :: Parser Definition
-componentTypeDef = choice
+componentTypeDef = label "type definition" $ choice
     [ DefNaturalType <$> naturalTypeDef
     , DefRoleType <$> roleTypeDef
     , DefCompartmentType <$> compartmentTypeDef
