@@ -19,8 +19,8 @@ module Rbsc.Parser.Lexer
     , SourceMap
 
       -- * Token parsers
-    , reservedWords
     , reserved
+    , operator
     , identifier
     , block
     , parens
@@ -64,6 +64,8 @@ import qualified Text.Megaparsec.Lexer as Lexer
 
 import           Rbsc.Report.Region (Loc (..), Region)
 import qualified Rbsc.Report.Region as Region
+
+import Rbsc.Parser.Reserved
 
 
 -- | Stores the contents of each encountered source file.
@@ -116,44 +118,19 @@ initialState path source = ParserState source (Map.singleton path source)
 makeLenses ''ParserState
 
 
--- | List of reserved keywords.
-reservedWords :: [String]
-reservedWords =
-    [ "include"
-    , "bool"
-    , "int"
-    , "double"
-    , "array"
-    , "of"
-    , "const"
-    , "natural"
-    , "role"
-    , "compartment"
-    , "type"
-    , "true"
-    , "false"
-    , "forall"
-    , "exists"
-    , "boundto"
-    , "in"
-    , "system"
-    , "min"
-    , "minf"
-    , "max"
-    , "maxf"
-    , "floor"
-    , "ceil"
-    , "pow"
-    , "powf"
-    , "mod"
-    , "log"
-    ]
-
-
 -- | Parser for a reserved word.
 reserved :: String -> Parser Region
 reserved s =
     getLoc <$> lexeme ((Loc <$> string s) <* notFollowedBy alphaNumChar)
+
+
+-- | Parser for an operator.
+--
+-- This parser checks that the parsed operator is not a prefix of another
+-- valid operator.
+operator :: String -> Parser Region
+operator s = getLoc <$>
+    try (lexeme ((Loc <$> string s) <* notFollowedBy (oneOf opLetter)))
 
 
 -- | Parser for an identifier.

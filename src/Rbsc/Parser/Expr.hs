@@ -169,17 +169,17 @@ table =
 
 
 binaryLOp :: Monad m => String -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
-binaryLOp n c = binary InfixL c (op n)
+binaryLOp n c = binary InfixL c (operator n)
 
 
 binaryNOp :: Monad m => String -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
-binaryNOp n c = binary InfixN c (op n)
+binaryNOp n c = binary InfixN c (operator n)
 
 
 hasType :: Monad m => ExprOp m
 hasType =
     Postfix $ do
-        void (op ":")
+        void (operator ":")
         tyName <- identifier
         return (\e -> Loc (HasType e tyName) (getLoc e <> getLoc tyName))
 
@@ -204,11 +204,5 @@ binary assoc c p = assoc ((\l r -> Loc (c l r) (getLoc l <> getLoc r)) <$ p)
 unary :: Monad m => (Loc Expr -> Expr) -> String -> ExprOp m
 unary c s =
     Prefix $ do
-        rgn <- symbol s
+        rgn <- operator s
         return (\e -> Loc (c e) (rgn <> getLoc e))
-
-
--- | Parser for an operator.
-op :: String -> Parser Region
-op n = fmap getLoc . lexeme . try $
-    (Loc <$> string n) <* notFollowedBy punctuationChar
