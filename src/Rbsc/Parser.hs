@@ -29,12 +29,12 @@ import Rbsc.Parser.System
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import qualified Rbsc.Report.Region       as Region
 
-import Rbsc.Syntax.Model (Model)
+import Rbsc.Syntax.Untyped
 
 
 -- | Parse a source file.
 parse ::
-       MonadIO m => FilePath -> Text -> m (Either [Syntax.Error] Model)
+       MonadIO m => FilePath -> Text -> m (Either [Syntax.Error] UModel)
 parse path content = do
     (result, sourceMap) <- run modelFile path content
 

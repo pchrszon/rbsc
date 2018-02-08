@@ -18,7 +18,7 @@ import Rbsc.Parser.TH
 
 import qualified Rbsc.Report.Error.Syntax as Syntax
 
-import Rbsc.Syntax.Model
+import Rbsc.Syntax.Untyped
 
 
 spec :: Spec
@@ -55,8 +55,9 @@ spec = describe "fromModel" $ do
             [model|
                 natural type N;
 
+                const n : int = 1;
+
                 system {
-                    n : N,
                     n : N
                 }
             |]
@@ -64,7 +65,7 @@ spec = describe "fromModel" $ do
         has (_Left.traverse.Syntax._DuplicateIdentifier)
 
 
-fromModel' :: Model -> Either [Syntax.Error] SymbolTable
+fromModel' :: UModel -> Either [Syntax.Error] SymbolTable
 fromModel' m = do
     types <- CompTys.fromModel m
     fromModel types m

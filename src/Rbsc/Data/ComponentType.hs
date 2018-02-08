@@ -47,7 +47,7 @@ data ComponentType
 
 
 -- | Extract 'ComponentTypes' from a 'Model'.
-fromModel :: Model -> Either [Syntax.Error] ComponentTypes
+fromModel :: Model expr -> Either [Syntax.Error] ComponentTypes
 fromModel model =
     let (types, errors) = convert model
         moreErrors = validate types model
@@ -57,7 +57,7 @@ fromModel model =
            else Left allErrors
 
 
-convert :: Model -> (ComponentTypes, [Syntax.Error])
+convert :: Model expr -> (ComponentTypes, [Syntax.Error])
 convert model =
     over _1 (fmap fst) . flip execState (Map.empty, []) $ do
         for_ (Model.naturalTypes model) $ \(NaturalTypeDef (Loc name rgn)) ->
@@ -87,7 +87,7 @@ convert model =
     throw e = modifying _2 (++ [e])
 
 
-validate :: ComponentTypes -> Model -> [Syntax.Error]
+validate :: ComponentTypes -> Model expr -> [Syntax.Error]
 validate types model =
     validateRoleTypes (Model.roleTypes model) ++
     validateCompartmentTypes (Model.compartmentTypes model)

@@ -25,11 +25,9 @@ import Rbsc.Data.Type
 import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region       (Loc (..), Region)
 
-import           Rbsc.Syntax.Constant
-import           Rbsc.Syntax.Expr.Untyped
-import           Rbsc.Syntax.Model        (Model)
-import qualified Rbsc.Syntax.Model        as Model
-import qualified Rbsc.Syntax.Type         as Syntax
+import qualified Rbsc.Syntax.Model   as Model
+import qualified Rbsc.Syntax.Type    as Syntax
+import           Rbsc.Syntax.Untyped hiding (Model (..), Type (..))
 
 
 -- | The symbol table holds the type of each identifier in the model
@@ -48,7 +46,7 @@ makeLenses ''BuilderState
 
 
 -- | Extract a 'SymbolTable' from a 'Model'.
-fromModel :: ComponentTypes -> Model -> Either [Syntax.Error] SymbolTable
+fromModel :: ComponentTypes -> UModel -> Either [Syntax.Error] SymbolTable
 fromModel types model = runBuilder $ do
     constants (Model.constants model)
     components types (Model.system model)
@@ -64,7 +62,7 @@ runBuilder m =
         else Left errs
 
 
-constants :: [ConstantDef] -> Builder ()
+constants :: [UConstantDef] -> Builder ()
 constants defs = for_ defs $ \(ConstantDef (Loc name rgn) sTy _) ->
     insert name (fromSyntaxType sTy) rgn
 

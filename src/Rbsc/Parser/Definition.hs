@@ -17,10 +17,7 @@ import Text.Megaparsec
 
 import Rbsc.Report.Region (Loc)
 
-import Rbsc.Syntax.Constant
-import Rbsc.Syntax.ComponentType
-import Rbsc.Syntax.Expr.Untyped
-import Rbsc.Syntax.Model
+import Rbsc.Syntax.Untyped
 
 
 -- | A parse error or a definition.
@@ -29,7 +26,7 @@ type ErrorOrDef = Either (ParseError Char Dec) Definition
 
 -- | Top-level definitions of a model.
 data Definition
-    = DefConstant ConstantDef
+    = DefConstant UConstantDef
     | DefNaturalType NaturalTypeDef
     | DefRoleType RoleTypeDef
     | DefCompartmentType CompartmentTypeDef
@@ -39,7 +36,7 @@ data Definition
 makePrisms ''Definition
 
 
-toModel :: [Definition] -> Model
+toModel :: [Definition] -> UModel
 toModel defs = Model
     { constants        = def _DefConstant
     , naturalTypes     = def _DefNaturalType

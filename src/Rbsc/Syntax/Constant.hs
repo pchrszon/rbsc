@@ -8,13 +8,12 @@ import Rbsc.Data.Name
 
 import Rbsc.Report.Region
 
-import Rbsc.Syntax.Expr.Untyped
 import Rbsc.Syntax.Type
 
 
 -- | A definition of a constant.
-data ConstantDef = ConstantDef
+data ConstantDef expr = ConstantDef
     { constName :: Loc Name
     , constType :: !Type
-    , constExpr :: Loc Expr
+    , constExpr :: expr
     } deriving (Show)

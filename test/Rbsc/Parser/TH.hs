@@ -37,11 +37,7 @@ import           Rbsc.Report
 import qualified Rbsc.Report.Error.Syntax as Error
 import           Rbsc.Report.Region
 
-import           Rbsc.Syntax.ComponentType
-import           Rbsc.Syntax.Constant
-import           Rbsc.Syntax.Expr.Untyped
-import           Rbsc.Syntax.Model
-import           Rbsc.Syntax.Operators
+import           Rbsc.Syntax.Untyped hiding (Type(..))
 import qualified Rbsc.Syntax.Type as Syntax
 
 
@@ -79,7 +75,7 @@ handleText :: Text -> Maybe ExpQ
 handleText = Just . appE (varE 'Text.pack) . litE . StringL . Text.unpack
 
 
-parseIO :: String -> IO Model
+parseIO :: String -> IO UModel
 parseIO str = do
     result <- parse "splice" (Text.pack str)
     case result of
@@ -91,9 +87,9 @@ printErrors :: [Error.Error] -> [String]
 printErrors = fmap (show . render . Error.toReport)
 
 
-deriving instance Data Model
+deriving instance Data expr => Data (Model expr)
 
-deriving instance Data ConstantDef
+deriving instance Data expr => Data (ConstantDef expr)
 
 deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef

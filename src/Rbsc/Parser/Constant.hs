@@ -11,7 +11,7 @@ import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.Type
 
-import Rbsc.Syntax.Constant
+import Rbsc.Syntax.Untyped
 
 
 -- | Parser for a constant definition.
@@ -19,7 +19,7 @@ constantDef :: Parser Definition
 constantDef = DefConstant <$> constant <?> "constant definition"
 
 
-constant :: Parser ConstantDef
+constant :: Parser UConstantDef
 constant =
     ConstantDef <$>
     (reserved "const" *> identifier) <*>

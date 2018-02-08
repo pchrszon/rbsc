@@ -4,18 +4,15 @@ module Rbsc.Syntax.Model
     ) where
 
 
-import Rbsc.Report.Region (Loc)
-
 import Rbsc.Syntax.ComponentType
 import Rbsc.Syntax.Constant
-import Rbsc.Syntax.Expr.Untyped
 
 
 -- | Abstract syntax of a model.
-data Model = Model
-    { constants        :: [ConstantDef]
+data Model expr = Model
+    { constants        :: [ConstantDef expr]
     , naturalTypes     :: [NaturalTypeDef]
     , roleTypes        :: [RoleTypeDef]
     , compartmentTypes :: [CompartmentTypeDef]
-    , system           :: [Loc Expr]
+    , system           :: [expr]
     } deriving (Show)
