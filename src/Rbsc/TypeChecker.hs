@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeOperators         #-}
 
 
+-- | Type checker for 'Model's.
 module Rbsc.TypeChecker
     ( SomeExpr(..)
     , getExpr

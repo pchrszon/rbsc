@@ -39,6 +39,7 @@ import Rbsc.Syntax.Expr.Typed as T
 import Rbsc.Syntax.Operators
 
 
+-- | The recursion depth.
 type RecursionDepth = Int
 
 

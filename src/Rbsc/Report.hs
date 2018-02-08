@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 
+-- | Reports referring to a source code region.
 module Rbsc.Report
     ( Report(..)
     , Part
@@ -82,6 +83,7 @@ lineNumberStyle :: AnsiStyle
 lineNumberStyle = colorDull Blue
 
 
+-- | Render a 'Report'.
 render :: Report -> Doc AnsiStyle
 render (Report title parts) =
     annotate errorTitleStyle (pretty title) <> hardline <>

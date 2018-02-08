@@ -36,6 +36,7 @@ data Definition
 makePrisms ''Definition
 
 
+-- | Extract a 'Model' from a list of definitions.
 toModel :: [Definition] -> UModel
 toModel defs = Model
     { constants        = def _DefConstant

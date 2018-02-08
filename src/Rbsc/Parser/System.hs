@@ -1,3 +1,4 @@
+-- | Parser for system definitions.
 module Rbsc.Parser.System
     ( systemDef
     ) where

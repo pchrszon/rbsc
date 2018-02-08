@@ -37,7 +37,7 @@ data Error
 toReport :: Error -> Report
 toReport = \case
     ParseError rgn desc ->
-        Report "parse error" [errorPart rgn (Just desc)]
+        Report "syntax error" [errorPart rgn (Just desc)]
 
     UndefinedType rgn ->
         Report "undefined type" [errorPart rgn Nothing]

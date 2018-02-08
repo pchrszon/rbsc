@@ -42,7 +42,7 @@ import Rbsc.Util.NameGen
 type Cycle = [TypeName]
 
 
--- | A 'Completer' can nondeterministically choose between different
+-- | A @Completer@ can nondeterministically choose between different
 -- alternatives to generate all possible system instances. A call stack is
 -- used to detect cycles when creating new instances.
 type Completer a = ReaderT Stack (StateT CompletionState (ExceptT Cycle [])) a
