@@ -37,11 +37,12 @@ import           Rbsc.Report
 import qualified Rbsc.Report.Error.Syntax as Error
 import           Rbsc.Report.Region
 
-import Rbsc.Syntax.ComponentType
-import Rbsc.Syntax.Constant
-import Rbsc.Syntax.Expr.Untyped
-import Rbsc.Syntax.Model
-import Rbsc.Syntax.Operators
+import           Rbsc.Syntax.ComponentType
+import           Rbsc.Syntax.Constant
+import           Rbsc.Syntax.Expr.Untyped
+import           Rbsc.Syntax.Model
+import           Rbsc.Syntax.Operators
+import qualified Rbsc.Syntax.Type as Syntax
 
 
 -- | Quasi quoter that parses the given string into a 'Model'.
@@ -93,11 +94,12 @@ printErrors = fmap (show . render . Error.toReport)
 deriving instance Data Model
 
 deriving instance Data ConstantDef
-deriving instance Data ConstantType
 
 deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef
 deriving instance Data CompartmentTypeDef
+
+deriving instance Data Syntax.Type
 
 deriving instance Data Expr
 deriving instance Data FunctionSym

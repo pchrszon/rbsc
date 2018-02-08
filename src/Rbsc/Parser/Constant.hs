@@ -9,6 +9,7 @@ import Text.Megaparsec
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
+import Rbsc.Parser.Type
 
 import Rbsc.Syntax.Constant
 
@@ -22,13 +23,5 @@ constant :: Parser ConstantDef
 constant =
     ConstantDef <$>
     (reserved "const" *> identifier) <*>
-    (colon *> constantType) <*>
+    (colon *> typ) <*>
     (equals *> expr <* semi)
-
-
-constantType :: Parser ConstantType
-constantType = choice
-    [ TyBool   <$ reserved "bool"
-    , TyInt    <$ reserved "int"
-    , TyDouble <$ reserved "double"
-    ]

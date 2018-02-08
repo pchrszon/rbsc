@@ -123,6 +123,8 @@ reservedWords =
     , "bool"
     , "int"
     , "double"
+    , "array"
+    , "of"
     , "const"
     , "natural"
     , "role"
