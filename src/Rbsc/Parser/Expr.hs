@@ -28,11 +28,11 @@ import qualified Rbsc.Syntax.Operators    as Ops
 
 
 -- | Parser for 'Expr's.
-expr :: Parser (Loc Expr)
+expr :: Parser LExpr
 expr = makeExprParser term table <?> "expression"
 
 
-term :: Parser (Loc Expr)
+term :: Parser LExpr
 term = label "expression" $ quantified <|> do
     e <- atom
     postfix <- many (index <|> call)
@@ -41,7 +41,7 @@ term = label "expression" $ quantified <|> do
     apply = foldr (.) id . reverse
 
 
-atom :: Parser (Loc Expr)
+atom :: Parser LExpr
 atom = choice
     [ parens expr
     , litBool
@@ -52,7 +52,7 @@ atom = choice
     ]
 
 
-index :: Parser (Loc Expr -> Loc Expr)
+index :: Parser (LExpr -> LExpr)
 index = do
     _ <- symbol "["
     idx <- expr
@@ -60,7 +60,7 @@ index = do
     return (\e -> Loc (Index e idx) (getLoc e <> end))
 
 
-call :: Parser (Loc Expr -> Loc Expr)
+call :: Parser (LExpr -> LExpr)
 call = do
     _ <- symbol "("
     args <- expr `sepBy1` comma
@@ -68,14 +68,14 @@ call = do
     return (\e -> Loc (Call e args) (getLoc e <> end))
 
 
-litBool :: Parser (Loc Expr)
+litBool :: Parser LExpr
 litBool = choice
     [ Loc (LitBool True)  <$> reserved "true"
     , Loc (LitBool False) <$> reserved "false"
     ]
 
 
-litNumber :: Parser (Loc Expr)
+litNumber :: Parser LExpr
 litNumber = do
     n <- number
     return $ case n of
@@ -83,7 +83,7 @@ litNumber = do
         Right i -> LitInt <$> i
 
 
-array :: Parser (Loc Expr)
+array :: Parser LExpr
 array = do
     start <- symbol "{"
     e  <- expr
@@ -92,7 +92,7 @@ array = do
     return (Loc (Array (e :| es)) (start <> end))
 
 
-function :: Parser (Loc Expr)
+function :: Parser LExpr
 function = choice
     [ fn FuncMinDouble "minf"
     , fn FuncMinInt    "min"
@@ -111,11 +111,11 @@ function = choice
         return (Loc (Function sym) rgn)
 
 
-variable :: Parser (Loc Expr)
+variable :: Parser LExpr
 variable = fmap Variable <$> identifier
 
 
-quantified :: Parser (Loc Expr)
+quantified :: Parser LExpr
 quantified = do
     Loc q start <- quantifier
     name <- unLoc <$> identifier
@@ -131,7 +131,7 @@ quantified = do
 
 
 -- | Operators working on 'Expr's.
-type ExprOp m = Operator (ParsecT Dec Text (StateT ParserState m)) (Loc Expr)
+type ExprOp m = Operator (ParsecT Dec Text (StateT ParserState m)) LExpr
 
 
 -- | Operator table for expressions.

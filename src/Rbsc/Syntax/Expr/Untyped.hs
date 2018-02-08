@@ -1,6 +1,7 @@
 -- | Abstract syntax of untyped expressions.
 module Rbsc.Syntax.Expr.Untyped
     ( Expr(..)
+    , LExpr
     ) where
 
 
@@ -21,19 +22,23 @@ data Expr
     | LitInt !Integer
     | LitDouble !Double
     | Function !FunctionSym
-    | Array (NonEmpty (Loc Expr))
+    | Array (NonEmpty LExpr)
     | Variable !Name
-    | Not (Loc Expr)
-    | Negate (Loc Expr)
-    | ArithOp !ArithOp (Loc Expr) (Loc Expr)
-    | Divide (Loc Expr) (Loc Expr)
-    | EqOp !EqOp (Loc Expr) (Loc Expr)
-    | RelOp !RelOp (Loc Expr) (Loc Expr)
-    | LogicOp !LogicOp (Loc Expr) (Loc Expr)
-    | Index (Loc Expr) (Loc Expr)
-    | Call (Loc Expr) [Loc Expr]
-    | HasType (Loc Expr) (Loc TypeName)
-    | BoundTo (Loc Expr) (Loc Expr)
-    | Element (Loc Expr) (Loc Expr)
-    | Quantified !Quantifier !Name (Maybe (Loc TypeName)) (Loc Expr)
+    | Not LExpr
+    | Negate LExpr
+    | ArithOp !ArithOp LExpr LExpr
+    | Divide LExpr LExpr
+    | EqOp !EqOp LExpr LExpr
+    | RelOp !RelOp LExpr LExpr
+    | LogicOp !LogicOp LExpr LExpr
+    | Index LExpr LExpr
+    | Call LExpr [LExpr]
+    | HasType LExpr (Loc TypeName)
+    | BoundTo LExpr LExpr
+    | Element LExpr LExpr
+    | Quantified !Quantifier !Name (Maybe (Loc TypeName)) LExpr
     deriving (Show)
+
+
+-- | A location-annotated 'Expr'.
+type LExpr = Loc Expr

@@ -71,7 +71,7 @@ constants defs = for_ defs $ \(ConstantDef (Loc name rgn) sTy _) ->
 
 -- | Add component instances defined within the system block to the symbol
 -- table.
-components :: ComponentTypes -> [Loc Expr] -> Builder ()
+components :: ComponentTypes -> [LExpr] -> Builder ()
 components types es = for_ es $ \case
     Loc (HasType (Loc (Variable name) rgnVar) (Loc tyName rgnTy)) _ ->
         lookupComponentType types tyName rgnTy >>= \case
