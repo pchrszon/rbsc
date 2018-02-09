@@ -71,6 +71,7 @@ newtype Scope t = Scope (Expr t) deriving (Show)
 data SomeExpr where
     SomeExpr :: Expr t -> Type t -> SomeExpr
 
+deriving instance Show SomeExpr
 
 -- | Instantiate all variables bound by the outermost binder.
 instantiate :: forall t. Scope t -> SomeExpr -> Expr t
