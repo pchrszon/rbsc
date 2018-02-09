@@ -5,14 +5,16 @@
 -- | Type checking of expressions.
 module Rbsc.TypeChecker.Expr
     ( tcExpr
+    , hasType
     ) where
 
 
-import Control.Lens         hiding ((<|))
+import Control.Applicative
+import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
 
-import Data.List.NonEmpty (NonEmpty (..), (<|))
+import Data.List.NonEmpty (NonEmpty (..))
 
 
 import Rbsc.Data.Component
@@ -166,15 +168,11 @@ fromFunctionSym = \case
 
 
 tcArray :: NonEmpty (Loc U.Expr) -> TypeChecker SomeExpr
-tcArray (e :| []) = do
+tcArray (e :| es) = do
     SomeExpr e' ty <- tcExpr e
-    Dict <- return (dictShow ty)
-    return (SomeExpr (T.Array (e' :| [])) (TyArray ty (Just 1)))
-tcArray (e :| (x:xs)) = do
-    SomeExpr e' ty <- tcExpr e
-    SomeExpr (T.Array es') (TyArray elemTy len) <- tcArray (x :| xs)
-    Refl <- expect elemTy (getLoc e) ty
-    return (SomeExpr (T.Array (e' <| es')) (TyArray ty (succ <$> len)))
+    Dict <- pure (dictShow ty)
+    es' <- traverse (`hasType` ty) es
+    return (SomeExpr (T.Array (e' :| es')) (TyArray ty (Just (length es + 1))))
 
 
 checkCallArity :: Region -> SomeExpr -> [args] -> TypeChecker ()
@@ -227,7 +225,16 @@ binaryCast l r = (l, r)
 -- @TyDouble@ and the expression has type 'TyInt'.
 cast :: Type t -> SomeExpr -> SomeExpr
 cast TyDouble (SomeExpr e TyInt) = SomeExpr (T.Cast e) TyDouble
-cast _ e                         = e
+cast (TyArray TyDouble tLen) (SomeExpr (T.Array es) (TyArray TyInt vLen))
+    | isLenghtCompatible tLen vLen =
+        SomeExpr (T.Array (fmap T.Cast es)) (TyArray TyDouble vLen)
+cast _ e = e
+
+
+-- | @isLenghtCompatible expected actual@ returns @True@ if an array with
+-- length @actual@ can be assigned to an array with length @expected@.
+isLenghtCompatible :: Maybe Int -> Maybe Int -> Bool
+isLenghtCompatible expected actual = liftA2 (==) expected actual /= Just False
 
 
 tyComponent :: Type Component
