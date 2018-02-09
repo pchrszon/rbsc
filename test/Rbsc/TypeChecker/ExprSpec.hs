@@ -2,7 +2,7 @@
 {-# LANGUAGE QuasiQuotes       #-}
 
 
-module Rbsc.TypeCheckerSpec (spec) where
+module Rbsc.TypeChecker.ExprSpec (spec) where
 
 
 import Control.Lens
@@ -24,55 +24,56 @@ import           Rbsc.Report.Region
 
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
-import Rbsc.TypeChecker
+import Rbsc.TypeChecker.Expr
+import Rbsc.TypeChecker.Internal (runTypeChecker, extract)
 
 
 spec :: Spec
 spec = describe "typeCheck" $ do
     it "computes the correct type" $
-        typeCheck' TyBool [expr| n : N |]
+        typeCheck TyBool [expr| n : N |]
         `shouldBe`
         Right "HasType (Variable \"n\" (TyComponent Nothing)) \"N\""
 
     it "detects type errors" $
-        typeCheck' TyBool [expr| true : N |]
+        typeCheck TyBool [expr| true : N |]
         `shouldSatisfy`
         has (_Left.Type._TypeError)
 
     it "reports comparison of uncomparable values" $
-        typeCheck' TyBool [expr| n > 5 |]
+        typeCheck TyBool [expr| n > 5 |]
         `shouldSatisfy`
         has (_Left.Type._NotComparable)
 
     it "reports indexing of non-array values" $
-        typeCheck' TyBool [expr| n[1] |]
+        typeCheck TyBool [expr| n[1] |]
         `shouldSatisfy`
         has (_Left.Type._NotAnArray)
 
     it "reports invocation on a non-function value" $
-        typeCheck' TyBool [expr| n(1) |]
+        typeCheck TyBool [expr| n(1) |]
         `shouldSatisfy`
         has (_Left.Type._NotAFunction)
 
     it "detects too many arguments on a function call" $
-        typeCheck' TyBool [expr| min(1, 2, 3) |]
+        typeCheck TyBool [expr| floor(1, 2) |]
         `shouldSatisfy`
         has (_Left.Type._WrongNumberOfArguments)
 
     it "detects undefined types" $
-        typeCheck' TyBool [expr| n : Undefined |]
+        typeCheck TyBool [expr| n : Undefined |]
         `shouldSatisfy`
         has (_Left.Type._UndefinedType)
 
     it "detects undefined identifiers" $
-        typeCheck' TyBool [expr| undefined : N |]
+        typeCheck TyBool [expr| undefined : N |]
         `shouldSatisfy`
         has (_Left.Type._UndefinedIdentifier)
 
 
-typeCheck' :: Type t -> Loc U.Expr -> Either Type.Error String
-typeCheck' ty e = do
-    te <- typeCheck types symbolTable e
+typeCheck :: Type t -> Loc U.Expr -> Either Type.Error String
+typeCheck ty e = do
+    te <- runTypeChecker (tcExpr e) types symbolTable
     show <$> extract ty (getLoc e) te
 
 
