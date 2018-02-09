@@ -9,12 +9,14 @@ module Rbsc.Report.Region
     , Region(..)
     , LineRegion(..)
     , Loc(..)
+    , withLocOf
     , split
     ) where
 
 
+import Data.Ord
 import Data.Semigroup
-import Data.Text (Text)
+import Data.Text      (Text)
 
 
 -- | A position in a source file.
@@ -30,8 +32,14 @@ data Region = Region
     , source :: !Text     -- ^ content of the source file this region is referring to
     , start  :: !Position -- ^ start of the region (inclusive)
     , end    :: !Position -- ^ end of the region (exclusive)
-    } deriving (Eq, Show)
+    }
 
+instance Eq Region where
+    Region lPath _ lStart lEnd == Region rPath _ rStart rEnd =
+        lPath == rPath && lStart == rStart && lEnd == rEnd
+
+instance Show Region where
+    show r = show (path r) ++ ":" ++ show (start r) ++ "-" ++ show (end r)
 
 instance Semigroup Region where
     Region path1 source1 start1 end1 <> Region _ _ start2 end2 =
@@ -52,7 +60,21 @@ data LineRegion = LineRegion
 data Loc a = Loc
     { unLoc  :: a
     , getLoc :: !Region
-    } deriving (Eq, Show, Functor, Foldable, Traversable)
+    } deriving (Functor, Foldable, Traversable)
+
+instance Eq a => Eq (Loc a) where
+    Loc x _ == Loc y _ = x == y
+
+instance Ord a => Ord (Loc a) where
+    compare = comparing unLoc
+
+instance Show a => Show (Loc a) where
+    showsPrec d = showsPrec d . unLoc
+
+
+-- | @withLocOf x y@ annotates x with the 'Region' of @y@.
+withLocOf :: a -> Loc b -> Loc a
+withLocOf x (Loc _ rgn) = Loc x rgn
 
 
 -- | Split a 'Region' into 'LineRegion's.
