@@ -62,8 +62,8 @@ runBuilder m =
         else Left errs
 
 
-constants :: [UConstantDef] -> Builder ()
-constants defs = for_ defs $ \(ConstantDef (Loc name rgn) sTy _) ->
+constants :: [UConstant] -> Builder ()
+constants defs = for_ defs $ \(Constant (Loc name rgn) sTy _) ->
     insert name (fromSyntaxType sTy) rgn
 
 

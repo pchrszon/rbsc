@@ -89,7 +89,7 @@ printErrors = fmap (show . render . Error.toReport)
 
 deriving instance Data expr => Data (Model expr)
 
-deriving instance Data expr => Data (ConstantDef expr)
+deriving instance Data expr => Data (Constant expr)
 
 deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef

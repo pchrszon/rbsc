@@ -10,7 +10,7 @@ import Rbsc.Syntax.Constant
 
 -- | Abstract syntax of a model.
 data Model expr = Model
-    { constants        :: [ConstantDef expr]
+    { constants        :: [Constant expr]
     , naturalTypes     :: [NaturalTypeDef]
     , roleTypes        :: [RoleTypeDef]
     , compartmentTypes :: [CompartmentTypeDef]

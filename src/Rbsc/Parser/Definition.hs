@@ -26,7 +26,7 @@ type ErrorOrDef = Either (ParseError Char Dec) Definition
 
 -- | Top-level definitions of a model.
 data Definition
-    = DefConstant UConstantDef
+    = DefConstant UConstant
     | DefNaturalType NaturalTypeDef
     | DefRoleType RoleTypeDef
     | DefCompartmentType CompartmentTypeDef

@@ -19,9 +19,9 @@ constantDef :: Parser Definition
 constantDef = DefConstant <$> constant <?> "constant definition"
 
 
-constant :: Parser UConstantDef
+constant :: Parser UConstant
 constant =
-    ConstantDef <$>
+    Constant <$>
     (reserved "const" *> identifier) <*>
     (colon *> typ) <*>
     (equals *> expr <* semi)

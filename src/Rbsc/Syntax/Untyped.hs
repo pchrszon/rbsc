@@ -6,7 +6,7 @@ module Rbsc.Syntax.Untyped
     , UModel
 
       -- * Constants
-    , UConstantDef
+    , UConstant
     ) where
 
 
@@ -23,4 +23,4 @@ import Rbsc.Syntax.Type          as Syntax
 type UModel = Model LExpr
 
 
-type UConstantDef = ConstantDef LExpr
+type UConstant = Constant LExpr
