@@ -11,6 +11,7 @@
 module Rbsc.Data.Type
     ( Type(..)
     , (-->)
+    , arrayLength
 
     , SomeType(..)
 
@@ -33,8 +34,6 @@ module Rbsc.Data.Type
     ) where
 
 
-import Control.Applicative
-
 import Data.Constraint           (Dict (..))
 import Data.Text.Prettyprint.Doc
 import Data.Type.Equality        ((:~:) (..))
@@ -52,7 +51,7 @@ data Type t where
     TyInt       :: Type Integer
     TyDouble    :: Type Double
     TyComponent :: Maybe TypeName -> Type Component
-    TyArray     :: Type t -> Maybe Int -> Type (Array t)
+    TyArray     :: (Int, Int) -> Type t -> Type (Array t)
     TyFunc      :: Type a -> Type b -> Type (Fn (a -> b))
 
 deriving instance Eq (Type t)
@@ -64,8 +63,9 @@ instance Pretty (Type t) where
         TyInt    -> "int"
         TyDouble -> "double"
         TyComponent tyName -> maybe "component" pretty tyName
-        TyArray t mLen ->
-            brackets (pretty t <> maybe emptyDoc (("; " <>) . pretty) mLen)
+        TyArray (idxStart, idxEnd) t ->
+            "array" <+> brackets (pretty idxStart <> ".." <> pretty idxEnd) <+>
+            "of" <+> pretty t
         TyFunc a b -> parens (pretty a <+> "->" <+> pretty b)
 
 
@@ -73,6 +73,12 @@ infixr 9 -->
 -- | Infix operator for 'TyFunc'.
 (-->) :: Type a -> Type b -> Type (Fn (a -> b))
 (-->) = TyFunc
+
+
+-- | @arrayLength (indexStart, indexEnd)@ computes the length of an array
+-- with the given first and last element indices (@indexEnd@ is inclusive).
+arrayLength :: (Int, Int) -> Int
+arrayLength (idxStart, idxEnd) = idxEnd - idxStart + 1
 
 
 -- | Existentially quantified 'Type'.
@@ -93,9 +99,8 @@ instance Pretty SomeType where
 
 -- | Check the equality of 'Type's.
 --
--- If array types are checked for equality and both array types have
--- a known size, the size is checked for equality as well. Otherwise, the
--- array size is ignored.
+-- Array types are considered equal if they have the same length,
+-- regardless of their respective start index.
 --
 -- The user-defined type of components is not checked for equality.
 typeEq :: Type s -> Type t -> Maybe (s :~: t)
@@ -103,11 +108,11 @@ typeEq TyBool      TyBool   = Just Refl
 typeEq TyInt       TyInt    = Just Refl
 typeEq TyDouble    TyDouble = Just Refl
 typeEq (TyComponent _) (TyComponent _) = Just Refl
-typeEq (TyArray s sLen) (TyArray t tLen) = do
+typeEq (TyArray sIndices s) (TyArray tIndices t) = do
     Refl <- typeEq s t
-    case liftA2 (==) sLen tLen of
-        Just False -> Nothing
-        _ ->          Just Refl
+    if arrayLength sIndices == arrayLength tIndices
+        then Just Refl
+        else Nothing
 typeEq (TyFunc a b) (TyFunc c d) = do
     Refl <- typeEq a c
     Refl <- typeEq b d
@@ -122,7 +127,7 @@ dictShow = \case
     TyInt         -> Dict
     TyDouble      -> Dict
     TyComponent _ -> Dict
-    TyArray ty _  -> case dictShow ty of Dict -> Dict
+    TyArray _ ty  -> case dictShow ty of Dict -> Dict
     TyFunc _ _    -> Dict
 
 
@@ -133,7 +138,7 @@ checkEq = \case
     TyInt         -> return Dict
     TyDouble      -> return Dict
     TyComponent _ -> return Dict
-    TyArray ty _  -> do
+    TyArray _ ty  -> do
         Dict <- checkEq ty
         return Dict
     _ -> Nothing
@@ -157,7 +162,7 @@ checkOrd :: Type t -> Maybe (Dict (Ord t))
 checkOrd = \case
     TyInt        -> return Dict
     TyDouble     -> return Dict
-    TyArray ty _ -> do
+    TyArray _ ty -> do
         Dict <- checkOrd ty
         return Dict
     _ -> Nothing

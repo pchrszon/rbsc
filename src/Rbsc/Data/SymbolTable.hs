@@ -6,8 +6,6 @@
 module Rbsc.Data.SymbolTable
     ( SymbolTable
     , fromModel
-
-    , fromSyntaxType
     ) where
 
 
@@ -26,7 +24,6 @@ import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region       (Loc (..), Region)
 
 import qualified Rbsc.Syntax.Model   as Model
-import qualified Rbsc.Syntax.Type    as Syntax
 import           Rbsc.Syntax.Untyped hiding (Model (..), Type (..))
 
 
@@ -47,9 +44,7 @@ makeLenses ''BuilderState
 
 -- | Extract a 'SymbolTable' from a 'Model'.
 fromModel :: ComponentTypes -> UModel -> Either [Syntax.Error] SymbolTable
-fromModel types model = runBuilder $ do
-    constants (Model.constants model)
-    components types (Model.system model)
+fromModel types model = runBuilder (components types (Model.system model))
 
 
 type Builder a = State BuilderState a
@@ -60,11 +55,6 @@ runBuilder m =
     in if null errs
         then Right (Map.map fst syms)
         else Left errs
-
-
-constants :: [UConstant] -> Builder ()
-constants defs = for_ defs $ \(Constant (Loc name rgn) sTy _) ->
-    insert name (fromSyntaxType sTy) rgn
 
 
 -- | Add component instances defined within the system block to the symbol
@@ -101,14 +91,3 @@ insert name ty rgn =
 
 throw :: Syntax.Error -> Builder ()
 throw e = modifying errors (++ [e])
-
-
--- | Convert the syntactical representation of a type into the internal
--- type representation.
-fromSyntaxType :: Syntax.Type -> SomeType
-fromSyntaxType = \case
-    Syntax.TyBool         -> SomeType TyBool
-    Syntax.TyInt          -> SomeType TyInt
-    Syntax.TyDouble       -> SomeType TyDouble
-    Syntax.TyArray elemTy -> case fromSyntaxType elemTy of
-        SomeType ty -> SomeType (TyArray ty Nothing)

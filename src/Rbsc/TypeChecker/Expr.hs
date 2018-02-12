@@ -9,12 +9,11 @@ module Rbsc.TypeChecker.Expr
     ) where
 
 
-import Control.Applicative
 import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
 
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.List.NonEmpty (NonEmpty (..), fromList)
 
 
 import Rbsc.Data.Component
@@ -105,7 +104,7 @@ tcExpr (Loc e rgn) = case e of
     U.Index inner idx -> do
         SomeExpr inner' ty <- tcExpr inner
         case ty of
-            TyArray elemTy _ -> do
+            TyArray _ elemTy -> do
                 idx' <- idx `hasType` TyInt
                 Dict <- return (dictShow elemTy)
                 T.Index inner' (Loc idx' (getLoc idx)) `withType` elemTy
@@ -172,7 +171,7 @@ tcArray (e :| es) = do
     SomeExpr e' ty <- tcExpr e
     Dict <- pure (dictShow ty)
     es' <- traverse (`hasType` ty) es
-    return (SomeExpr (T.Array (e' :| es')) (TyArray ty (Just (length es + 1))))
+    return (SomeExpr (T.Array (e' :| es')) (TyArray (0, length es) ty))
 
 
 checkCallArity :: Region -> SomeExpr -> [args] -> TypeChecker ()
@@ -221,20 +220,20 @@ binaryCast (SomeExpr l TyInt) (SomeExpr r TyDouble) =
 binaryCast l r = (l, r)
 
 
--- | @cast expected e@ casts expression @t@ to 'TyDouble' if @expected@ is
--- @TyDouble@ and the expression has type 'TyInt'.
+-- | @cast expected e@ inserts 'Cast's if a dynamic cast to type @expected@
+-- is possible. Otherwise, the original expression is returned.
 cast :: Type t -> SomeExpr -> SomeExpr
 cast TyDouble (SomeExpr e TyInt) = SomeExpr (T.Cast e) TyDouble
-cast (TyArray TyDouble tLen) (SomeExpr (T.Array es) (TyArray TyInt vLen))
-    | isLenghtCompatible tLen vLen =
-        SomeExpr (T.Array (fmap T.Cast es)) (TyArray TyDouble vLen)
+cast (TyArray tIndices TyDouble) (SomeExpr (T.Array es) (TyArray vIndices TyInt))
+    | arrayLength tIndices == arrayLength vIndices =
+        SomeExpr (T.Array (fmap T.Cast es)) (TyArray vIndices TyDouble)
+cast arrTy@(TyArray tIndices ty) e@(SomeExpr e' elemTy) =
+    case typeEq ty elemTy of
+        Just Refl -> case dictShow ty of
+            Dict -> SomeExpr
+                (T.Array (fromList (replicate (arrayLength tIndices) e'))) arrTy
+        Nothing   -> e
 cast _ e = e
-
-
--- | @isLenghtCompatible expected actual@ returns @True@ if an array with
--- length @actual@ can be assigned to an array with length @expected@.
-isLenghtCompatible :: Maybe Int -> Maybe Int -> Bool
-isLenghtCompatible expected actual = liftA2 (==) expected actual /= Just False
 
 
 tyComponent :: Type Component

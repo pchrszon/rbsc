@@ -38,7 +38,7 @@ compile path = do
                     print symTable
                     putStrLn ""
 
-                    case typeCheck types symTable model of
+                    case typeCheck types symTable model undefined of
                         Right model' -> return (Just model')
                         Left err     -> printErrors Type.toReport [err]
 
