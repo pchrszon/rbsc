@@ -26,7 +26,7 @@ import Language.Haskell.TH       hiding (Loc)
 import Language.Haskell.TH.Quote
 
 
-import Rbsc.Data.Function (FunctionSym (..))
+import Rbsc.Data.Function (FunctionName (..))
 import Rbsc.Data.Name
 
 import           Rbsc.Parser
@@ -91,6 +91,9 @@ deriving instance Data expr => Data (Model expr)
 
 deriving instance Data expr => Data (Constant expr)
 
+deriving instance Data expr => Data (Function expr)
+deriving instance Data Parameter
+
 deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef
 deriving instance Data CompartmentTypeDef
@@ -98,7 +101,7 @@ deriving instance Data CompartmentTypeDef
 deriving instance Data Syntax.Type
 
 deriving instance Data Expr
-deriving instance Data FunctionSym
+deriving instance Data FunctionName
 deriving instance Data ArithOp
 deriving instance Data EqOp
 deriving instance Data RelOp

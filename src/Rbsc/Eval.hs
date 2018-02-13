@@ -105,7 +105,7 @@ toLiteral e = case e of
         Just arr -> Literal arr
         Nothing  -> e
 
-    Function func ->
+    LitFunction func ->
         return (Literal (Fn (function func)))
 
     Cast (Literal x) ->

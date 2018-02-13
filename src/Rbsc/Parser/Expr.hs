@@ -19,7 +19,7 @@ import Text.Megaparsec
 import Text.Megaparsec.Expr
 
 
-import Rbsc.Data.Function (FunctionSym (..))
+import Rbsc.Data.Function (FunctionName (..))
 
 import Rbsc.Parser.Lexer
 
@@ -108,7 +108,7 @@ function = choice
   where
     fn sym name = do
         rgn <- reserved name
-        return (Loc (Function sym) rgn)
+        return (Loc (LitFunction sym) rgn)
 
 
 variable :: Parser LExpr

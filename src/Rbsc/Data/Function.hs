@@ -7,8 +7,8 @@
 module Rbsc.Data.Function
     ( Fn(..)
 
-    , FunctionSym(..)
-    , Function(..)
+    , FunctionName(..)
+    , TypedFunction(..)
     , function
     ) where
 
@@ -24,7 +24,7 @@ instance Show (Fn a) where
 
 
 -- | Abstract syntax for built-in functions.
-data FunctionSym
+data FunctionName
     = FuncMinInt
     | FuncMinDouble
     | FuncMaxInt
@@ -39,24 +39,24 @@ data FunctionSym
 
 
 -- | Typed abstract syntax for built-in functions.
-data Function t where
-    MinInt    :: Function (Integer -> Fn (Integer -> Integer))
-    MinDouble :: Function (Double -> Fn (Double -> Double))
-    MaxInt    :: Function (Integer -> Fn (Integer -> Integer))
-    MaxDouble :: Function (Double -> Fn (Double -> Double))
-    Floor     :: Function (Double -> Integer)
-    Ceil      :: Function (Double -> Integer)
-    PowInt    :: Function (Integer -> Fn (Integer -> Integer))
-    PowDouble :: Function (Double -> Fn (Double -> Double))
-    Mod       :: Function (Integer -> Fn (Integer -> Integer))
-    Log       :: Function (Double -> Fn (Double -> Double))
+data TypedFunction t where
+    MinInt    :: TypedFunction (Integer -> Fn (Integer -> Integer))
+    MinDouble :: TypedFunction (Double -> Fn (Double -> Double))
+    MaxInt    :: TypedFunction (Integer -> Fn (Integer -> Integer))
+    MaxDouble :: TypedFunction (Double -> Fn (Double -> Double))
+    Floor     :: TypedFunction (Double -> Integer)
+    Ceil      :: TypedFunction (Double -> Integer)
+    PowInt    :: TypedFunction (Integer -> Fn (Integer -> Integer))
+    PowDouble :: TypedFunction (Double -> Fn (Double -> Double))
+    Mod       :: TypedFunction (Integer -> Fn (Integer -> Integer))
+    Log       :: TypedFunction (Double -> Fn (Double -> Double))
 
-deriving instance Eq (Function t)
-deriving instance Show (Function t)
+deriving instance Eq (TypedFunction t)
+deriving instance Show (TypedFunction t)
 
 
 -- | Semantics of a built-in function.
-function :: Function t -> t
+function :: TypedFunction t -> t
 function = \case
     MinInt    -> Fn . min
     MinDouble -> Fn . min

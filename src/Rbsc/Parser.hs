@@ -20,9 +20,11 @@ import System.FilePath
 import Text.Megaparsec       hiding (parse)
 import Text.Megaparsec.Error (parseErrorTextPretty)
 
+
 import Rbsc.Parser.ComponentType
 import Rbsc.Parser.Constant
 import Rbsc.Parser.Definition
+import Rbsc.Parser.Function
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
 
@@ -56,6 +58,7 @@ modelFile =
 definition :: Parser ErrorOrDef
 definition = withRecoveryOn (semi <|> symbol "}") . choice $
     [ constantDef
+    , functionDef
     , componentTypeDef
     , systemDef
     ]

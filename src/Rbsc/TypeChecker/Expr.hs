@@ -43,8 +43,8 @@ tcExpr (Loc e rgn) = case e of
     U.LitDouble d ->
         T.Literal d `withType` TyDouble
 
-    U.Function f ->
-        return (fromFunctionSym f)
+    U.LitFunction f ->
+        return (fromFunctionName f)
 
     U.Array es ->
         tcArray es
@@ -142,28 +142,28 @@ tcExpr (Loc e rgn) = case e of
         T.Quantified q (fmap unLoc mTyName) (T.Scope body') `withType` TyBool
 
 
-fromFunctionSym :: FunctionSym -> SomeExpr
-fromFunctionSym = \case
+fromFunctionName :: FunctionName -> SomeExpr
+fromFunctionName = \case
     FuncMinInt ->
-        SomeExpr (T.Function MinInt) (TyInt --> TyInt --> TyInt)
+        SomeExpr (T.LitFunction MinInt) (TyInt --> TyInt --> TyInt)
     FuncMinDouble ->
-        SomeExpr (T.Function MinDouble) (TyDouble --> TyDouble --> TyDouble)
+        SomeExpr (T.LitFunction MinDouble) (TyDouble --> TyDouble --> TyDouble)
     FuncMaxInt ->
-        SomeExpr (T.Function MaxInt) (TyInt --> TyInt --> TyInt)
+        SomeExpr (T.LitFunction MaxInt) (TyInt --> TyInt --> TyInt)
     FuncMaxDouble ->
-        SomeExpr (T.Function MaxDouble) (TyDouble --> TyDouble --> TyDouble)
+        SomeExpr (T.LitFunction MaxDouble) (TyDouble --> TyDouble --> TyDouble)
     FuncFloor ->
-        SomeExpr (T.Function Floor) (TyDouble --> TyInt)
+        SomeExpr (T.LitFunction Floor) (TyDouble --> TyInt)
     FuncCeil ->
-        SomeExpr (T.Function Ceil) (TyDouble --> TyInt)
+        SomeExpr (T.LitFunction Ceil) (TyDouble --> TyInt)
     FuncPowInt ->
-        SomeExpr (T.Function PowInt) (TyInt --> TyInt --> TyInt)
+        SomeExpr (T.LitFunction PowInt) (TyInt --> TyInt --> TyInt)
     FuncPowDouble ->
-        SomeExpr (T.Function PowDouble) (TyDouble --> TyDouble --> TyDouble)
+        SomeExpr (T.LitFunction PowDouble) (TyDouble --> TyDouble --> TyDouble)
     FuncMod ->
-        SomeExpr (T.Function Mod) (TyInt --> TyInt --> TyInt)
+        SomeExpr (T.LitFunction Mod) (TyInt --> TyInt --> TyInt)
     FuncLog ->
-        SomeExpr (T.Function Log) (TyDouble --> TyDouble --> TyDouble)
+        SomeExpr (T.LitFunction Log) (TyDouble --> TyDouble --> TyDouble)
 
 
 tcArray :: NonEmpty (Loc U.Expr) -> TypeChecker SomeExpr

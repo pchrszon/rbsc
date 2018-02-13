@@ -27,6 +27,7 @@ type ErrorOrDef = Either (ParseError Char Dec) Definition
 -- | Top-level definitions of a model.
 data Definition
     = DefConstant UConstant
+    | DefFunction UFunction
     | DefNaturalType NaturalTypeDef
     | DefRoleType RoleTypeDef
     | DefCompartmentType CompartmentTypeDef
@@ -40,6 +41,7 @@ makePrisms ''Definition
 toModel :: [Definition] -> UModel
 toModel defs = Model
     { constants        = def _DefConstant
+    , functions        = def _DefFunction
     , naturalTypes     = def _DefNaturalType
     , roleTypes        = def _DefRoleType
     , compartmentTypes = def _DefCompartmentType

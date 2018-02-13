@@ -21,7 +21,7 @@ data Expr
     = LitBool !Bool
     | LitInt !Integer
     | LitDouble !Double
-    | Function !FunctionSym
+    | LitFunction !FunctionName
     | Array (NonEmpty LExpr)
     | Variable !Name
     | Not LExpr

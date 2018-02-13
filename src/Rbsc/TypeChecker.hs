@@ -35,14 +35,16 @@ typeCheck ::
     -> SymbolTable
     -> UModel
     -> [TConstant]
+    -> [TFunction]
     -> Either Type.Error TModel
-typeCheck types symTable m consts =
-    runTypeChecker (tcModel m consts) types symTable
+typeCheck types symTable m consts funcs =
+    runTypeChecker (tcModel m consts funcs) types symTable
 
 
-tcModel :: UModel -> [TConstant] -> TypeChecker TModel
-tcModel Model{..} consts = Model consts naturalTypes roleTypes compartmentTypes
-    <$> traverse tcConstraint system
+tcModel :: UModel -> [TConstant] -> [TFunction] -> TypeChecker TModel
+tcModel Model{..} consts funcs =
+    Model consts funcs naturalTypes roleTypes compartmentTypes <$>
+    traverse tcConstraint system
 
 
 tcConstraint :: LExpr -> TypeChecker LSomeExpr

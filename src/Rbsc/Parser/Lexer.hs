@@ -26,6 +26,7 @@ module Rbsc.Parser.Lexer
     , parens
     , braces
     , brackets
+    , commaSepNonEmpty
     , stringLiteral
     , dot
     , comma
@@ -53,10 +54,11 @@ import Control.Lens
 import Control.Monad       (void)
 import Control.Monad.State
 
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
+import           Data.List.NonEmpty (NonEmpty (..))
+import           Data.Map.Strict    (Map)
+import qualified Data.Map.Strict    as Map
 import           Data.String
-import           Data.Text       (Text)
+import           Data.Text          (Text)
 
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as Lexer
@@ -161,6 +163,14 @@ braces = between (symbol "{") (symbol "}")
 -- | Parser for surrounding brackets.
 brackets :: Monad m => ParserT m a -> ParserT m a
 brackets = between (symbol "[") (symbol "]")
+
+
+-- | @commaSepNonEmpty p@ parses a comma separated list of @p@s.
+commaSepNonEmpty :: Monad m => ParserT m a -> ParserT m (NonEmpty a)
+commaSepNonEmpty p = do
+    x <- p
+    xs <- many (comma *> p)
+    return (x :| xs)
 
 
 -- | Parser for a string literal (in double quotes).

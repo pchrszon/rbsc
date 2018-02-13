@@ -15,6 +15,7 @@ reservedWords =
     , "array"
     , "of"
     , "const"
+    , "function"
     , "natural"
     , "role"
     , "compartment"

@@ -37,26 +37,26 @@ import Rbsc.Syntax.Operators
 
 -- | Typed abstract syntax of expressions.
 data Expr t where
-    Literal    :: Show t => t -> Expr t
-    Array      :: Show t => NonEmpty (Expr t) -> Expr (Array t)
-    Function   :: Function t -> Expr (Fn t)
-    Variable   :: Name -> Type t -> Expr t
-    Cast       :: Expr Integer -> Expr Double
-    Not        :: Expr Bool -> Expr Bool
-    Negate     :: Num t => Expr t -> Expr t
-    ArithOp    :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
-    Divide     :: Region -> Expr Double -> Expr Double -> Expr Double
-    EqOp       :: Eq t => EqOp -> Expr t -> Expr t -> Expr Bool
-    RelOp      :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool
-    LogicOp    :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
-    Index      :: Show t => Expr (Array t) -> Loc (Expr Integer) -> Expr t
-    Apply      :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
-    HasType    :: Expr Component -> TypeName -> Expr Bool
-    BoundTo    :: Expr Component -> Expr Component -> Expr Bool
-    Element    :: Expr Component -> Expr Component -> Expr Bool
-    Bound      :: Int -> Type t -> Expr t
-    Lambda     :: Type a -> Scope b -> Expr (Fn (a -> b))
-    Quantified :: Quantifier -> Maybe TypeName -> Scope Bool -> Expr Bool
+    Literal     :: Show t => t -> Expr t
+    Array       :: Show t => NonEmpty (Expr t) -> Expr (Array t)
+    LitFunction :: TypedFunction t -> Expr (Fn t)
+    Variable    :: Name -> Type t -> Expr t
+    Cast        :: Expr Integer -> Expr Double
+    Not         :: Expr Bool -> Expr Bool
+    Negate      :: Num t => Expr t -> Expr t
+    ArithOp     :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
+    Divide      :: Region -> Expr Double -> Expr Double -> Expr Double
+    EqOp        :: Eq t => EqOp -> Expr t -> Expr t -> Expr Bool
+    RelOp       :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool
+    LogicOp     :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
+    Index       :: Show t => Expr (Array t) -> Loc (Expr Integer) -> Expr t
+    Apply       :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
+    HasType     :: Expr Component -> TypeName -> Expr Bool
+    BoundTo     :: Expr Component -> Expr Component -> Expr Bool
+    Element     :: Expr Component -> Expr Component -> Expr Bool
+    Bound       :: Int -> Type t -> Expr t
+    Lambda      :: Type a -> Scope b -> Expr (Fn (a -> b))
+    Quantified  :: Quantifier -> Maybe TypeName -> Scope Bool -> Expr Bool
 
 deriving instance Show (Expr t)
 
@@ -81,7 +81,7 @@ instantiate (Scope body) (SomeExpr s ty) = go 0 body
     go i = \case
         Literal x         -> Literal x
         Array es          -> Array (fmap (go i) es)
-        Function f        -> Function f
+        LitFunction f     -> LitFunction f
         Variable name ty' -> Variable name ty'
         Cast e            -> Cast (go i e)
         Not e             -> Not (go i e)
@@ -129,7 +129,7 @@ descend ::
 descend f = \case
     Literal x        -> pure (Literal x)
     Array es         -> Array <$> traverse f es
-    Function g       -> pure (Function g)
+    LitFunction g    -> pure (LitFunction g)
     Variable name ty -> pure (Variable name ty)
     Cast e           -> Cast <$> f e
     Not e            -> Not <$> f e
