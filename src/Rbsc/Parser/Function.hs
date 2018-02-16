@@ -28,5 +28,5 @@ function = Function
     <*> (equals *> expr <* semi)
 
 
-parameter :: Parser Parameter
+parameter :: Parser UParameter
 parameter = Parameter <$> identifier <*> (colon *> typ)

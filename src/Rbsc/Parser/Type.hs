@@ -7,16 +7,17 @@ module Rbsc.Parser.Type
 import Text.Megaparsec
 
 
+import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
 
-import Rbsc.Syntax.Type
+import Rbsc.Syntax.Untyped
 
 
 -- | Parser for types.
-typ :: Parser Type
+typ :: Parser UType
 typ = label "type" $ choice
     [ TyBool   <$ reserved "bool"
     , TyInt    <$ reserved "int"
     , TyDouble <$ reserved "double"
-    , TyArray  <$> (reserved "array" *> reserved "of" *> typ)
+    , TyArray  <$> (reserved "array" *> range) <*> (reserved "of" *> typ)
     ]

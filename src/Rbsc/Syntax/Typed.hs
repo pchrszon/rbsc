@@ -10,6 +10,7 @@ module Rbsc.Syntax.Typed
 
       -- * Functions
     , TFunction
+    , TParameter
 
       -- * Expressions
     , LSomeExpr
@@ -22,8 +23,8 @@ import Rbsc.Report.Region (Loc)
 
 import Rbsc.Syntax.ComponentType as Syntax
 import Rbsc.Syntax.Constant      as Syntax
-import Rbsc.Syntax.Function as Syntax
 import Rbsc.Syntax.Expr.Typed    as Syntax
+import Rbsc.Syntax.Function      as Syntax
 import Rbsc.Syntax.Model         as Syntax
 import Rbsc.Syntax.Operators     as Syntax
 import Rbsc.Syntax.Type          as Syntax
@@ -35,7 +36,8 @@ type TModel = Model LSomeExpr
 type TConstant = Constant LSomeExpr
 
 
-type TFunction = Function LSomeExpr
+type TFunction  = Function LSomeExpr
+type TParameter = Parameter LSomeExpr
 
 
 type LSomeExpr = Loc SomeExpr

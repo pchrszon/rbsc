@@ -4,6 +4,7 @@
 -- | Parser for expressions.
 module Rbsc.Parser.Expr
     ( expr
+    , range
     ) where
 
 
@@ -25,6 +26,11 @@ import Rbsc.Parser.Lexer
 
 import           Rbsc.Syntax.Expr.Untyped
 import qualified Rbsc.Syntax.Operators    as Ops
+
+
+-- | Parser for ranges.
+range :: Parser (LExpr, LExpr)
+range = brackets ((,) <$> expr <*> (operator ".." *> expr))
 
 
 -- | Parser for 'Expr's.

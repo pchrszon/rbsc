@@ -4,6 +4,10 @@ module Rbsc.Syntax.Constant
     ) where
 
 
+import Data.Function
+import Data.Ord
+
+
 import Rbsc.Data.Name
 
 import Rbsc.Report.Region
@@ -14,6 +18,12 @@ import Rbsc.Syntax.Type
 -- | A constant definition.
 data Constant expr = Constant
     { constName :: Loc Name
-    , constType :: !Type
+    , constType :: Type expr
     , constExpr :: expr
     } deriving (Show)
+
+instance Eq (Constant expr) where
+    (==) = (==) `on` constName
+
+instance Ord (Constant expr) where
+    compare = comparing constName

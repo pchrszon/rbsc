@@ -10,6 +10,10 @@ module Rbsc.Syntax.Untyped
 
       -- * Functions
     , UFunction
+    , UParameter
+
+      -- * Types
+    , UType
     ) where
 
 
@@ -30,4 +34,8 @@ type UModel = Model LExpr
 type UConstant = Constant LExpr
 
 
-type UFunction = Function LExpr
+type UFunction  = Function LExpr
+type UParameter = Parameter LExpr
+
+
+type UType = Type LExpr

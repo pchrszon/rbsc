@@ -5,7 +5,9 @@ module Rbsc.Syntax.Function
     ) where
 
 
+import Data.Function
 import Data.List.NonEmpty (NonEmpty)
+import Data.Ord
 
 
 import Rbsc.Data.Name
@@ -17,12 +19,21 @@ import Rbsc.Syntax.Type
 
 -- | A function definition.
 data Function expr = Function
-    { functionName :: Loc Name
-    , functionArgs :: NonEmpty Parameter
-    , functionType :: Type
-    , functionBody :: expr
+    { functionName   :: Loc Name
+    , functionParams :: NonEmpty (Parameter expr)
+    , functionType   :: Type expr
+    , functionBody   :: expr
     } deriving (Show)
+
+instance Eq (Function expr) where
+    (==) = (==) `on` functionName
+
+instance Ord (Function expr) where
+    compare = comparing functionName
 
 
 -- | A function parameter.
-data Parameter = Parameter (Loc Name) Type deriving (Show)
+data Parameter expr = Parameter
+    { paramName :: Loc Name
+    , paramType :: Type expr
+    } deriving (Show)
