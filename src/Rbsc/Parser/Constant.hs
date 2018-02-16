@@ -23,5 +23,5 @@ constant :: Parser UConstant
 constant =
     Constant <$>
     (reserved "const" *> identifier) <*>
-    (colon *> typ) <*>
+    option TyInt (colon *> typ) <*>
     (equals *> expr <* semi)
