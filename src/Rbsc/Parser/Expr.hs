@@ -48,7 +48,7 @@ atom = choice
     , litNumber
     , array
     , function
-    , variable
+    , ident
     ]
 
 
@@ -89,7 +89,7 @@ array = do
     e  <- expr
     es <- many (comma *> expr)
     end <- symbol "}"
-    return (Loc (Array (e :| es)) (start <> end))
+    return (Loc (LitArray (e :| es)) (start <> end))
 
 
 function :: Parser LExpr
@@ -111,8 +111,8 @@ function = choice
         return (Loc (LitFunction sym) rgn)
 
 
-variable :: Parser LExpr
-variable = fmap Variable <$> identifier
+ident :: Parser LExpr
+ident = fmap Identifier <$> identifier
 
 
 quantified :: Parser LExpr

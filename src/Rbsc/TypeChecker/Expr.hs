@@ -46,17 +46,17 @@ tcExpr (Loc e rgn) = case e of
     U.LitFunction f ->
         return (fromFunctionName f)
 
-    U.Array es ->
+    U.LitArray es ->
         tcArray es
 
-    U.Variable name ->
+    U.Identifier name ->
         lookupBoundVar name >>= \case
             Just (i, SomeType ty) -> do
                 Refl <- expect tyComponent rgn ty
                 T.Bound i ty `withType` ty
             Nothing -> do
                 SomeType ty <- getIdentifierType name rgn
-                T.Variable name ty `withType` ty
+                T.Identifier name ty `withType` ty
 
     U.Not inner -> do
         inner' <- inner `hasType` TyBool
@@ -171,7 +171,7 @@ tcArray (e :| es) = do
     SomeExpr e' ty <- tcExpr e
     Dict <- pure (dictShow ty)
     es' <- traverse (`hasType` ty) es
-    return (SomeExpr (T.Array (e' :| es')) (TyArray (0, length es) ty))
+    return (SomeExpr (T.LitArray (e' :| es')) (TyArray (0, length es) ty))
 
 
 checkCallArity :: Region -> SomeExpr -> [args] -> TypeChecker ()
@@ -224,14 +224,15 @@ binaryCast l r = (l, r)
 -- is possible. Otherwise, the original expression is returned.
 cast :: Type t -> SomeExpr -> SomeExpr
 cast TyDouble (SomeExpr e TyInt) = SomeExpr (T.Cast e) TyDouble
-cast (TyArray tIndices TyDouble) (SomeExpr (T.Array es) (TyArray vIndices TyInt))
+cast (TyArray tIndices TyDouble) (SomeExpr (T.LitArray es) (TyArray vIndices TyInt))
     | arrayLength tIndices == arrayLength vIndices =
-        SomeExpr (T.Array (fmap T.Cast es)) (TyArray vIndices TyDouble)
+        SomeExpr (T.LitArray (fmap T.Cast es)) (TyArray vIndices TyDouble)
 cast arrTy@(TyArray tIndices ty) e@(SomeExpr e' elemTy) =
     case typeEq ty elemTy of
         Just Refl -> case dictShow ty of
             Dict -> SomeExpr
-                (T.Array (fromList (replicate (arrayLength tIndices) e'))) arrTy
+                (T.LitArray (fromList (replicate (arrayLength tIndices) e')))
+                arrTy
         Nothing   -> e
 cast _ e = e
 

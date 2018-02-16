@@ -93,15 +93,15 @@ reduce' e = case e of
 
 toLiteral :: Expr t -> Reducer (Expr t)
 toLiteral e = case e of
-    Variable name ty -> do
+    Identifier name ty -> do
         value <- view (constants.at name)
         case value of
-            Just (Value v ty') -> case typeEq ty ty' of -- if the variable is a constant ...
+            Just (Value v ty') -> case typeEq ty ty' of -- if the identifier is a constant ...
                 Just Refl -> return (Literal v) -- ... then replace by constant value
                 Nothing   -> error "toLiteral: type error"
             Nothing -> return e
 
-    Array es -> return $ case toArray es of
+    LitArray es -> return $ case toArray es of
         Just arr -> Literal arr
         Nothing  -> e
 

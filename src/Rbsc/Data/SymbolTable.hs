@@ -61,7 +61,7 @@ runBuilder m =
 -- table.
 components :: ComponentTypes -> [LExpr] -> Builder ()
 components types es = for_ es $ \case
-    Loc (HasType (Loc (Variable name) rgnVar) (Loc tyName rgnTy)) _ ->
+    Loc (HasType (Loc (Identifier name) rgnVar) (Loc tyName rgnTy)) _ ->
         lookupComponentType types tyName rgnTy >>= \case
             Just ty -> insert name ty rgnVar
             Nothing -> return ()
