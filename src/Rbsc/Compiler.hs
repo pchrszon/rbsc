@@ -1,6 +1,3 @@
-{-# LANGUAGE GADTs #-}
-
-
 module Rbsc.Compiler where
 
 
@@ -9,20 +6,16 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal
 
 
 import qualified Rbsc.Data.ComponentType as CompTy
-import qualified Rbsc.Data.SymbolTable   as SymbolTable
 
 import Rbsc.Parser
 
 import           Rbsc.Report
 import qualified Rbsc.Report.Error.Syntax as Syntax
-import qualified Rbsc.Report.Error.Type   as Type
 
-import Rbsc.Syntax.Typed
-
-import Rbsc.TypeChecker
+import Rbsc.Syntax.Untyped
 
 
-compile :: FilePath -> IO (Maybe TModel)
+compile :: FilePath -> IO (Maybe UModel)
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
@@ -30,18 +23,9 @@ compile path = do
         Left errors -> printErrors Syntax.toReport errors
         Right model -> case CompTy.fromModel model of
             Left errors -> printErrors Syntax.toReport errors
-            Right types -> case SymbolTable.fromModel types model of
-                Left errors -> printErrors Syntax.toReport errors
-                Right symTable -> do
-                    print types
-                    putStrLn ""
-                    print symTable
-                    putStrLn ""
-
-                    case typeCheck types symTable model undefined undefined of
-                        Right model' -> return (Just model')
-                        Left err     -> printErrors Type.toReport [err]
-
+            Right types -> do
+                print types
+                return (Just model)
 
 
 printErrors :: (a -> Report) -> [a] -> IO (Maybe b)

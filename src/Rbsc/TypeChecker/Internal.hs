@@ -49,7 +49,6 @@ import           Data.Text.Prettyprint.Doc (pretty)
 
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name
-import Rbsc.Data.SymbolTable
 import Rbsc.Data.Type
 
 import qualified Rbsc.Report.Error.Type as Type

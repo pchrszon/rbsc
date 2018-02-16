@@ -14,7 +14,6 @@ module Rbsc.TypeChecker
 
 
 import Rbsc.Data.ComponentType
-import Rbsc.Data.SymbolTable
 import Rbsc.Data.Type
 
 import qualified Rbsc.Report.Error.Type as Type

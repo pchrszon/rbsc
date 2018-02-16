@@ -9,13 +9,22 @@
 -- | The type system of the modeling language and its embedding into the
 -- Haskell type system.
 module Rbsc.Data.Type
-    ( Type(..)
+    ( -- * Representation of types
+      Type(..)
     , (-->)
     , arrayLength
 
     , SomeType(..)
 
+      -- * Symbol tables
+    , SymbolTable
+
+      -- * Type equality
+    , (:~:)(..)
     , typeEq
+
+      -- * Type class dictionaries
+    , Dict(..)
 
     , dictShow
 
@@ -27,14 +36,12 @@ module Rbsc.Data.Type
     , checkOrd
     , ordTypes
 
-    , (:~:)(..)
-    , Dict(..)
-
     , module Rbsc.Data.Name
     ) where
 
 
 import Data.Constraint           (Dict (..))
+import Data.Map.Strict           (Map)
 import Data.Text.Prettyprint.Doc
 import Data.Type.Equality        ((:~:) (..))
 
@@ -95,6 +102,11 @@ deriving instance Show SomeType
 
 instance Pretty SomeType where
     pretty (SomeType ty) = pretty ty
+
+
+-- | The symbol table holds the type of each identifier in the model
+-- source.
+type SymbolTable = Map Name SomeType
 
 
 -- | Check the equality of 'Type's.
