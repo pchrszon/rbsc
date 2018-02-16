@@ -14,7 +14,6 @@ import Test.Hspec
 
 import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
-import Rbsc.Data.SymbolTable
 import Rbsc.Data.Type
 
 import Rbsc.Parser.TH
@@ -33,7 +32,7 @@ spec = describe "typeCheck" $ do
     it "computes the correct type" $
         typeCheck TyBool [expr| n : N |]
         `shouldBe`
-        Right "HasType (Variable \"n\" (TyComponent Nothing)) \"N\""
+        Right "HasType (Identifier \"n\" (TyComponent Nothing)) \"N\""
 
     it "detects type errors" $
         typeCheck TyBool [expr| true : N |]

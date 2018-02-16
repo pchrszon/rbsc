@@ -15,7 +15,6 @@ import Test.Hspec
 
 import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
-import Rbsc.Data.SymbolTable
 import Rbsc.Data.Type
 import Rbsc.Data.Value
 
@@ -61,7 +60,7 @@ spec = do
         it "evaluates constant sub-expressions" $
             reduce' TyBool [expr| y + 1 < x * 2 |]
             `shouldBe`
-            Right "RelOp Lt (ArithOp Add (Variable \"y\" TyInt) (Literal 1)) (Literal 2)"
+            Right "RelOp Lt (ArithOp Add (Identifier \"y\" TyInt) (Literal 1)) (Literal 2)"
 
 
 constants :: Constants
