@@ -12,13 +12,17 @@ module Rbsc.Report.Error.Syntax
     , _UndefinedType
     , _DuplicateType
     , _NonRoleInCompartment
+    , _UndefinedIdentifier
     , _DuplicateIdentifier
+    , _CyclicDefinition
     ) where
 
 
 import Control.Lens
 
-import Data.Text (Text)
+import Data.Monoid
+import Data.Text   (Text)
+
 
 import Rbsc.Report
 import Rbsc.Report.Region
@@ -30,7 +34,9 @@ data Error
     | UndefinedType !Region
     | DuplicateType !Region !Region
     | NonRoleInCompartment !Region
+    | UndefinedIdentifier !Region
     | DuplicateIdentifier !Region !Region
+    | CyclicDefinition !Text !Region [Region]
     deriving (Eq, Show)
 
 
@@ -53,6 +59,9 @@ toReport = \case
             [ errorPart rgn (Just "this is not a role type")
             ]
 
+    UndefinedIdentifier rgn ->
+        Report "undefined identifier" [errorPart rgn Nothing]
+
     DuplicateIdentifier second first ->
         Report "duplicate definition"
             [ errorPart second
@@ -60,5 +69,10 @@ toReport = \case
             , hintPart first (Just "first definition was here")
             ]
 
+    CyclicDefinition construct rgn rgns ->
+        Report "cyclic definition" $
+            (errorPart rgn (Just $
+                "this " <> construct <> " is defined in terms of itself")) :
+            fmap (\r -> hintPart r Nothing) rgns
 
 makePrisms ''Error

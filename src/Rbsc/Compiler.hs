@@ -12,10 +12,11 @@ import Rbsc.Parser
 import           Rbsc.Report
 import qualified Rbsc.Report.Error.Syntax as Syntax
 
-import Rbsc.Syntax.Untyped
+import Rbsc.TypeChecker.Identifiers
+import Rbsc.TypeChecker.Dependencies
 
 
-compile :: FilePath -> IO (Maybe UModel)
+compile :: FilePath -> IO (Maybe [Dependency])
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
@@ -23,9 +24,11 @@ compile path = do
         Left errors -> printErrors Syntax.toReport errors
         Right model -> case CompTy.fromModel model of
             Left errors -> printErrors Syntax.toReport errors
-            Right types -> do
-                print types
-                return (Just model)
+            Right types -> case identifierDefs model of
+                Left errors -> printErrors Syntax.toReport errors
+                Right idents -> case sortDefinitions idents of
+                    Left err -> printErrors Syntax.toReport [err]
+                    Right deps -> return (Just deps)
 
 
 printErrors :: (a -> Report) -> [a] -> IO (Maybe b)

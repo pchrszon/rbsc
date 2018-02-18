@@ -38,6 +38,9 @@ instance Eq Region where
     Region lPath _ lStart lEnd == Region rPath _ rStart rEnd =
         lPath == rPath && lStart == rStart && lEnd == rEnd
 
+instance Ord Region where
+    compare = comparing path <> comparing start <> comparing end
+
 instance Show Region where
     show r = show (path r) ++ ":" ++ show (start r) ++ "-" ++ show (end r)
 

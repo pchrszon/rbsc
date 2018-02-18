@@ -51,9 +51,9 @@ makeLenses ''BuilderState
 -- a list of 'DuplicateIdentifier' errors is returned.
 identifierDefs :: UModel -> Either [Syntax.Error] Identifiers
 identifierDefs m = runBuilder $ do
-    insertConstants (constants m)
-    insertFunctions (functions m)
-    insertComponents (system m)
+    insertConstants (modelConstants m)
+    insertFunctions (modelFunctions m)
+    insertComponents (modelSystem m)
 
 
 insertConstants :: [UConstant] -> Builder ()
@@ -69,6 +69,7 @@ insertComponents es = for_ es $ \case
     Loc (HasType (Loc (Identifier name) rgn) (Loc tyName _)) _ ->
         insert (Loc name rgn) (DefComponent name tyName)
     _ -> return ()
+
 
 type Builder a = State BuilderState a
 

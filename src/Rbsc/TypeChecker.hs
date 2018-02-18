@@ -42,8 +42,8 @@ typeCheck types symTable m consts funcs =
 
 tcModel :: UModel -> [TConstant] -> [TFunction] -> TypeChecker TModel
 tcModel Model{..} consts funcs =
-    Model consts funcs naturalTypes roleTypes compartmentTypes <$>
-    traverse tcConstraint system
+    Model consts funcs modelNaturalTypes modelRoleTypes modelCompartmentTypes
+    <$> traverse tcConstraint modelSystem
 
 
 tcConstraint :: LExpr -> TypeChecker LSomeExpr

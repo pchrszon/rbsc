@@ -27,8 +27,7 @@ import qualified Rbsc.Report.Error.Syntax as Syntax
 import           Rbsc.Report.Region
 
 import           Rbsc.Syntax.ComponentType
-import           Rbsc.Syntax.Model         (Model)
-import qualified Rbsc.Syntax.Model         as Model
+import           Rbsc.Syntax.Model
 
 
 -- | User-defined component types indexed by their name.
@@ -60,17 +59,17 @@ fromModel model =
 convert :: Model expr -> (ComponentTypes, [Syntax.Error])
 convert model =
     over _1 (fmap fst) . flip execState (Map.empty, []) $ do
-        for_ (Model.naturalTypes model) $ \(NaturalTypeDef (Loc name rgn)) ->
+        for_ (modelNaturalTypes model) $ \(NaturalTypeDef (Loc name rgn)) ->
             insertType name NaturalType rgn
 
-        for_ (Model.roleTypes model) $
+        for_ (modelRoleTypes model) $
             \(RoleTypeDef (Loc name rgn) playerTyNames) ->
                 insertType
                     name
                     (RoleType (Set.fromList (fmap unLoc playerTyNames)))
                     rgn
 
-        for_ (Model.compartmentTypes model) $
+        for_ (modelCompartmentTypes model) $
             \(CompartmentTypeDef (Loc name rgn) roleTyNames) ->
                 insertType name (CompartmentType (fmap unLoc roleTyNames)) rgn
   where
@@ -89,8 +88,8 @@ convert model =
 
 validate :: ComponentTypes -> Model expr -> [Syntax.Error]
 validate types model =
-    validateRoleTypes (Model.roleTypes model) ++
-    validateCompartmentTypes (Model.compartmentTypes model)
+    validateRoleTypes (modelRoleTypes model) ++
+    validateCompartmentTypes (modelCompartmentTypes model)
   where
     validateRoleTypes = concatMap $ \(RoleTypeDef _ playerTyNames) ->
         mapMaybe exists playerTyNames

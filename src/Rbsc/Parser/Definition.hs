@@ -40,12 +40,12 @@ makePrisms ''Definition
 -- | Extract a 'Model' from a list of definitions.
 toModel :: [Definition] -> UModel
 toModel defs = Model
-    { constants        = def _DefConstant
-    , functions        = def _DefFunction
-    , naturalTypes     = def _DefNaturalType
-    , roleTypes        = def _DefRoleType
-    , compartmentTypes = def _DefCompartmentType
-    , system           = concat (def _DefSystem)
+    { modelConstants        = def _DefConstant
+    , modelFunctions        = def _DefFunction
+    , modelNaturalTypes     = def _DefNaturalType
+    , modelRoleTypes        = def _DefRoleType
+    , modelCompartmentTypes = def _DefCompartmentType
+    , modelSystem           = concat (def _DefSystem)
     }
   where
     def p = toListOf (traverse.p) defs

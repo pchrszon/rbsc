@@ -11,10 +11,10 @@ import Rbsc.Syntax.Function
 
 -- | Abstract syntax of a model.
 data Model expr = Model
-    { constants        :: [Constant expr]
-    , functions        :: [Function expr]
-    , naturalTypes     :: [NaturalTypeDef]
-    , roleTypes        :: [RoleTypeDef]
-    , compartmentTypes :: [CompartmentTypeDef]
-    , system           :: [expr]
+    { modelConstants        :: [Constant expr]
+    , modelFunctions        :: [Function expr]
+    , modelNaturalTypes     :: [NaturalTypeDef]
+    , modelRoleTypes        :: [RoleTypeDef]
+    , modelCompartmentTypes :: [CompartmentTypeDef]
+    , modelSystem           :: [expr]
     } deriving (Show)
