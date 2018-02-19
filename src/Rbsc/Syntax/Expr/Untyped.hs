@@ -38,6 +38,7 @@ data Expr
     | LogicOp !LogicOp LExpr LExpr
     | Index LExpr LExpr
     | Call LExpr [LExpr]
+    | IfThenElse LExpr LExpr LExpr
     | HasType LExpr (Loc TypeName)
     | BoundTo LExpr LExpr
     | Element LExpr LExpr
@@ -61,6 +62,7 @@ instance Plated LExpr where
         LogicOp lOp l r -> LogicOp lOp <$> f l <*> f r
         Index e' idx -> Index <$> f e' <*> f idx
         Call e' args -> Call <$> f e' <*> traverse f args
+        IfThenElse c t e' -> IfThenElse <$> f c <*> f t <*> f e'
         HasType e' tyName -> HasType <$> f e' <*> pure tyName
         BoundTo l r -> BoundTo <$> f l <*> f r
         Element l r -> Element <$> f l <*> f r

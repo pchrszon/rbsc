@@ -87,6 +87,15 @@ reduce' e = case e of
             _ -> do
                 r' <- reduce' r
                 return (LogicOp lOp l' r')
+    IfThenElse cond _then _else -> do
+        cond' <- reduce' cond
+        case cond' of
+            Literal True  -> reduce' _then
+            Literal False -> reduce' _else
+            _ -> do
+                _then' <- reduce' _then
+                _else' <- reduce' _else
+                return (IfThenElse cond' _then' _else')
     _ -> descend reduce' e >>= toLiteral
 
 

@@ -114,6 +114,13 @@ tcExpr (Loc e rgn) = case e of
         checkCallArity rgn f' args
         tcCall (Loc f' (getLoc f)) args
 
+    U.IfThenElse cond _then _else -> do
+        cond' <- cond `hasType` TyBool
+        (SomeExpr _then' tyT, SomeExpr _else' tyE) <-
+            binaryCast <$> tcExpr _then <*> tcExpr _else
+        Refl <- expect tyT (getLoc _else) tyE
+        T.IfThenElse cond' _then' _else' `withType` tyT
+
     U.HasType inner tyName ->
         whenTypeExists tyName $ do
             inner' <- inner `hasType` tyComponent

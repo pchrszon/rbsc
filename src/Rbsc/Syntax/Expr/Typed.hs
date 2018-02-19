@@ -51,6 +51,7 @@ data Expr t where
     LogicOp     :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
     Index       :: Show t => Expr (Array t) -> Loc (Expr Integer) -> Expr t
     Apply       :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
+    IfThenElse  :: Expr Bool -> Expr t -> Expr t -> Expr t
     HasType     :: Expr Component -> TypeName -> Expr Bool
     BoundTo     :: Expr Component -> Expr Component -> Expr Bool
     Element     :: Expr Component -> Expr Component -> Expr Bool
@@ -93,6 +94,7 @@ instantiate (Scope body) (SomeExpr s ty) = go 0 body
         LogicOp lOp l r     -> LogicOp lOp (go i l) (go i r)
         Index e idx         -> Index (go i e) (fmap (go i) idx)
         Apply f e           -> Apply (go i f) (go i e)
+        IfThenElse c t e    -> IfThenElse (go i c) (go i t) (go i e)
         HasType e tyName    -> HasType (go i e) tyName
         BoundTo l r         -> BoundTo (go i l) (go i r)
         Element l r         -> Element (go i l) (go i r)
@@ -141,6 +143,7 @@ descend f = \case
     LogicOp lOp l r    -> LogicOp lOp <$> f l <*> f r
     Index e idx        -> Index <$> f e <*> traverse f idx
     Apply g e          -> Apply <$> f g <*> f e
+    IfThenElse c t e   -> IfThenElse <$> f c <*> f t <*> f e
     HasType e tyName   -> HasType <$> f e <*> pure tyName
     BoundTo l r        -> BoundTo <$> f l <*> f r
     Element l r        -> Element <$> f l <*> f r

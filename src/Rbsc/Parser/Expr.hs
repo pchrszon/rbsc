@@ -13,7 +13,7 @@ import Control.Monad
 import Control.Monad.State
 
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Semigroup
+import Data.Semigroup hiding (option)
 import Data.Text          (Text)
 
 import Text.Megaparsec
@@ -52,7 +52,8 @@ atom = choice
     [ parens expr
     , litBool
     , litNumber
-    , array
+    , litArray
+    , ifThenElse
     , function
     , ident
     ]
@@ -89,13 +90,23 @@ litNumber = do
         Right i -> LitInt <$> i
 
 
-array :: Parser LExpr
-array = do
+litArray :: Parser LExpr
+litArray = do
     start <- symbol "{"
     e  <- expr
     es <- many (comma *> expr)
     end <- symbol "}"
     return (Loc (LitArray (e :| es)) (start <> end))
+
+
+ifThenElse :: Parser LExpr
+ifThenElse = mkIfThenElse
+    <$> reserved "if"
+    <*> expr
+    <*> (reserved "then" *> expr)
+    <*> (reserved "else" *> expr)
+  where
+    mkIfThenElse start c t e = Loc (IfThenElse c t e) (start <> getLoc e)
 
 
 function :: Parser LExpr

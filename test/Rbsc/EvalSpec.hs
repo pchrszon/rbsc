@@ -45,6 +45,11 @@ spec = do
             `shouldBe`
             Right True
 
+        it "does short-circuit evaluation" $
+            eval' TyDouble [expr| if true | (1 / 0 > 0) then 1 else 1 / 0 |]
+            `shouldBe`
+            Right 1.0
+
         it "detects division by zero" $
             eval' TyDouble [expr| 1.0 / 0 |]
             `shouldSatisfy`
