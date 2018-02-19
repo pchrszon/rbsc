@@ -30,11 +30,11 @@ import           Rbsc.Data.Component
 import           Rbsc.Data.Function  (Fn (..), function)
 import           Rbsc.Data.Name
 import           Rbsc.Data.Type
-import           Rbsc.Data.Value
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 
+import Rbsc.Syntax.Expr.Typed (Constants)
 import Rbsc.Syntax.Expr.Typed as T
 import Rbsc.Syntax.Operators
 
@@ -102,10 +102,9 @@ reduce' e = case e of
 toLiteral :: Expr t -> Reducer (Expr t)
 toLiteral e = case e of
     Identifier name ty -> do
-        value <- view (constants.at name)
-        case value of
-            Just (Value v ty') -> case typeEq ty ty' of -- if the identifier is a constant ...
-                Just Refl -> return (Literal v) -- ... then replace by constant value
+        view (constants.at name) >>= \case
+            Just (SomeExpr e' ty') -> case typeEq ty ty' of -- if the identifier is a constant ...
+                Just Refl -> return e' -- ... then replace by constant value
                 Nothing   -> error "toLiteral: type error"
             Nothing -> return e
 
@@ -229,9 +228,9 @@ isNeutralElement Exists = \case
 components :: Maybe TypeName -> Constants -> [Component]
 components mTyName = mapMaybe getComponent . Map.elems
   where
-    getComponent :: Value -> Maybe Component
+    getComponent :: SomeExpr -> Maybe Component
     getComponent = \case
-        Value comp (TyComponent tyName)
+        SomeExpr (Literal comp) (TyComponent tyName)
             | matchType tyName -> Just comp
         _ -> Nothing
 

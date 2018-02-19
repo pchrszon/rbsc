@@ -16,7 +16,6 @@ import Test.Hspec
 import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Type
-import Rbsc.Data.Value
 
 import Rbsc.Eval
 
@@ -25,6 +24,8 @@ import Rbsc.Parser.TH
 import Rbsc.Report.Error
 import Rbsc.Report.Region
 
+import           Rbsc.Syntax.Expr.Typed   (Constants, SomeExpr (..))
+import qualified Rbsc.Syntax.Expr.Typed   as T
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
 import Rbsc.TypeChecker
@@ -74,10 +75,12 @@ spec = do
 
 constants :: Constants
 constants = Map.fromList
-    [ ("x", Value 1 TyInt)
-    , ("n", Value (Component "n" "N" Nothing Nothing) (TyComponent (Just "N")))
-    , ("r", Value
-        (Component "r" "R" (Just "n") Nothing)
+    [ ("x", SomeExpr (T.Literal 1) TyInt)
+    , ("n", SomeExpr
+        (T.Literal (Component "n" "N" Nothing Nothing))
+        (TyComponent (Just "N")))
+    , ("r", SomeExpr
+        (T.Literal (Component "r" "R" (Just "n") Nothing))
         (TyComponent (Just "R")))
     ]
 

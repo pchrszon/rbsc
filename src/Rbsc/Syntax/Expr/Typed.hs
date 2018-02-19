@@ -12,6 +12,8 @@ module Rbsc.Syntax.Expr.Typed
 
     , SomeExpr(..)
 
+    , Constants
+
     , instantiate
 
     , transform
@@ -23,6 +25,7 @@ module Rbsc.Syntax.Expr.Typed
 import Control.Monad.Identity
 
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map.Strict (Map)
 
 
 import Rbsc.Data.Array
@@ -73,6 +76,11 @@ data SomeExpr where
     SomeExpr :: Expr t -> Type t -> SomeExpr
 
 deriving instance Show SomeExpr
+
+
+-- | The table of constants.
+type Constants = Map Name SomeExpr
+
 
 -- | Instantiate all variables bound by the outermost binder.
 instantiate :: forall t. Scope t -> SomeExpr -> Expr t

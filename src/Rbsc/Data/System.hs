@@ -12,19 +12,14 @@ module Rbsc.Data.System
     , instancesOfType
     , boundRoles
     , containedRoles
-
-    , toConstants
     ) where
 
 
 import Control.Lens
-import Data.Map.Strict           (Map, assocs, mapWithKey)
+import Data.Map.Strict           (Map, assocs)
 import Data.Text.Prettyprint.Doc
 
-import Rbsc.Data.Component
 import Rbsc.Data.Name
-import Rbsc.Data.Type
-import Rbsc.Data.Value
 
 import Rbsc.Util
 
@@ -76,17 +71,3 @@ boundRoles name = inverseLookup name . view boundTo
 -- | Get all roles contained in a given compartment.
 containedRoles :: Name -> System -> [RoleName]
 containedRoles name = inverseLookup name . view containedIn
-
-
--- | Transform a 'System' instance into a 'Constant' table containing
--- a constant 'Value' for each 'Component' instance.
-toConstants :: System -> Constants
-toConstants sys = mapWithKey toValue (view instances sys)
-  where
-    toValue :: Name -> TypeName -> Value
-    toValue name tyName =
-        let ty = TyComponent (Just tyName)
-            comp = Component name tyName playerName compartmentName
-            playerName = view (boundTo.at name) sys
-            compartmentName = view (containedIn.at name) sys
-        in Value comp ty
