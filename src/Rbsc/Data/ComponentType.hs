@@ -12,7 +12,7 @@ module Rbsc.Data.ComponentType
 
 
 import Control.Lens
-import Control.Monad.State
+import Control.Monad.State.Strict
 
 import           Data.Foldable   (for_)
 import           Data.Map.Strict (Map)

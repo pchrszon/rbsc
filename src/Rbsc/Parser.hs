@@ -4,7 +4,7 @@ module Rbsc.Parser
 
 
 import Control.Lens
-import Control.Monad.State
+import Control.Monad.State.Strict
 
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict    as Map

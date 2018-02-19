@@ -16,7 +16,7 @@ module Rbsc.Util.NameGen
 
 
 import Control.Lens
-import Control.Monad.State
+import Control.Monad.State.Strict
 
 import           Data.Map   (Map)
 import qualified Data.Map   as Map

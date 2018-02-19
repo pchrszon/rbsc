@@ -12,7 +12,7 @@ module Rbsc.Util
 import Control.Lens
 
 import Control.Monad.Except
-import Control.Monad.State
+import Control.Monad.State.Strict
 
 import           Data.Foldable
 import           Data.List.NonEmpty (NonEmpty, fromList)

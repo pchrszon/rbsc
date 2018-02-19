@@ -51,8 +51,8 @@ module Rbsc.Parser.Lexer
 
 import Control.Applicative
 import Control.Lens
-import Control.Monad       (void)
-import Control.Monad.State
+import Control.Monad              (void)
+import Control.Monad.State.Strict
 
 import           Data.List.NonEmpty (NonEmpty (..))
 import           Data.Map.Strict    (Map)

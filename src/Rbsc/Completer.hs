@@ -16,7 +16,7 @@ module Rbsc.Completer
 import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
-import Control.Monad.State
+import Control.Monad.State.Strict
 
 import           Data.Char       (isUpper)
 import           Data.Foldable   (find, for_)
