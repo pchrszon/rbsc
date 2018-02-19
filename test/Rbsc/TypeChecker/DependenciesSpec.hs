@@ -16,8 +16,8 @@ import Test.Hspec
 
 import Rbsc.Parser.TH
 
-import qualified Rbsc.Report.Error.Syntax as Syntax
-import           Rbsc.Report.Region
+import Rbsc.Report.Error
+import Rbsc.Report.Region
 
 import Rbsc.Syntax.Untyped
 
@@ -52,10 +52,10 @@ spec = describe "sortDefinitions" $ do
                 const k = n + 1;
             |]
         `shouldSatisfy`
-        has (_Left.traverse.Syntax._CyclicDefinition)
+        has (_Left.traverse.errorDesc._CyclicDefinition)
 
 
-dependencies :: UModel -> Either [Syntax.Error] [Name]
+dependencies :: UModel -> Either [Error] [Name]
 dependencies m = do
     idents <- identifierDefs m
     (: []) +++ fmap getName $ sortDefinitions idents

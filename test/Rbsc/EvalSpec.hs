@@ -22,9 +22,8 @@ import Rbsc.Eval
 
 import Rbsc.Parser.TH
 
-import qualified Rbsc.Report.Error.Eval as Eval
-import qualified Rbsc.Report.Error.Type as Type
-import           Rbsc.Report.Region     (Loc (..))
+import Rbsc.Report.Error
+import Rbsc.Report.Region
 
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
@@ -49,7 +48,7 @@ spec = do
         it "detects division by zero" $
             eval' TyDouble [expr| 1.0 / 0 |]
             `shouldSatisfy`
-            has (_Left._Right.Eval._DivisionByZero)
+            has (_Left.errorDesc._DivisionByZero)
 
     describe "reduce" $ do
         it "evaluates constant expressions" $
@@ -88,20 +87,18 @@ componentTypes = Map.fromList
     ]
 
 
-eval' :: Type t -> Loc U.Expr -> Either (Either Type.Error Eval.Error) t
-eval' ty e =
-    case runTypeChecker (tcExpr e) componentTypes symbolTable >>= extract ty (getLoc e) of
-        Left err -> Left (Left err)
-        Right e' -> case eval constants 100 (Loc e' (getLoc e)) of
-            Left err -> Left (Right err)
-            Right x  -> Right x
+eval' :: Type t -> Loc U.Expr -> Either Error t
+eval' ty e = do
+    e' <-
+        runTypeChecker (tcExpr e) componentTypes symbolTable >>=
+        extract ty (getLoc e)
+    eval constants 10 (e' `withLocOf` e)
 
 
-reduce' ::
-       Type t -> Loc U.Expr -> Either (Either Type.Error Eval.Error) String
-reduce' ty e =
-    case runTypeChecker (tcExpr e) Map.empty symbolTable >>= extract ty (getLoc e) of
-        Left err -> Left (Left err)
-        Right e' -> case reduce constants 100 (Loc e' (getLoc e)) of
-            Left err  -> Left (Right err)
-            Right e'' -> Right (show e'')
+reduce' :: Type t -> Loc U.Expr -> Either Error String
+reduce' ty e = do
+    e' <-
+        runTypeChecker (tcExpr e) Map.empty symbolTable >>=
+        extract ty (getLoc e)
+    e'' <- reduce constants 10 (e' `withLocOf` e)
+    return (show e'')

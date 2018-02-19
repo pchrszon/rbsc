@@ -28,15 +28,16 @@ import Rbsc.Parser.Function
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
 
-import qualified Rbsc.Report.Error.Syntax as Syntax
-import qualified Rbsc.Report.Region       as Region
+import           Rbsc.Report.Error  (Error (..))
+import qualified Rbsc.Report.Error  as Error
+import qualified Rbsc.Report.Region as Region
 
 import Rbsc.Syntax.Untyped
 
 
 -- | Parse a source file.
 parse ::
-       MonadIO m => FilePath -> Text -> m (Either [Syntax.Error] UModel)
+       MonadIO m => FilePath -> Text -> m (Either [Error] UModel)
 parse path content = do
     (result, sourceMap) <- run modelFile path content
 
@@ -111,8 +112,8 @@ fromParseError ::
        (Ord t, ShowToken t, ShowErrorComponent e)
     => SourceMap
     -> ParseError t e
-    -> Syntax.Error
-fromParseError sourceMap err = Syntax.ParseError rgn msg
+    -> Error
+fromParseError sourceMap err = Error rgn (Error.ParseError msg)
   where
     rgn = Region.Region path content start end
     msg = fromString (parseErrorTextPretty err)

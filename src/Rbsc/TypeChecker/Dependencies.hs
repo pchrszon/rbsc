@@ -26,8 +26,8 @@ import           Data.Set           (Set)
 import qualified Data.Set           as Set
 
 
-import qualified Rbsc.Report.Error.Syntax as Syntax
-import           Rbsc.Report.Region
+import Rbsc.Report.Error
+import Rbsc.Report.Region
 
 import Rbsc.Syntax.Untyped
 
@@ -61,7 +61,7 @@ makeLenses ''AnalyzerInfo
 -- to definitions that are before it in the list. If such an ordering of the
 -- definitions cannot be given (because the definitions contain a cycle),
 -- then a 'CyclicDefinition' error is returned.
-sortDefinitions :: Identifiers -> Either Syntax.Error [Dependency]
+sortDefinitions :: Identifiers -> Either Error [Dependency]
 sortDefinitions idents = do
     depGraph <- runAnalyzer idents (traverse_ insert (Map.elems idents))
     case topoSort (Map.keys depGraph) (lookupEdges depGraph) of
@@ -72,7 +72,7 @@ sortDefinitions idents = do
         toList (Map.findWithDefault Set.empty dep depGraph)
 
     buildError (Loc dep rgn :| deps) =
-        Syntax.CyclicDefinition (getConstructName dep) rgn (fmap getLoc deps)
+        Error rgn (CyclicDefinition (getConstructName dep) (fmap getLoc deps))
 
     getConstructName = \case
         DepConstant _          -> "constant"
@@ -138,7 +138,7 @@ dependOnIdentifier (Loc name rgn) = do
             deps <- depsFromIdentifierDef def
             for_ deps $ \dep ->
                 dependOn dep rgn
-        Nothing  -> throwError (Syntax.UndefinedIdentifier rgn)
+        Nothing -> throw rgn UndefinedIdentifier
 
 
 depsFromIdentifierDef :: IdentifierDef -> Analyzer [Dependency]
@@ -207,10 +207,10 @@ parameterSet = Set.fromList . fmap (unLoc . paramName) . toList . functionParams
 
 
 type Analyzer a
-     = ReaderT AnalyzerInfo (StateT DependencyGraph (Either Syntax.Error)) a
+     = ReaderT AnalyzerInfo (StateT DependencyGraph (Either Error)) a
 
 
-runAnalyzer :: Identifiers -> Analyzer () -> Either Syntax.Error DependencyGraph
+runAnalyzer :: Identifiers -> Analyzer () -> Either Error DependencyGraph
 runAnalyzer idents m =
     execStateT (runReaderT m info) Map.empty
   where

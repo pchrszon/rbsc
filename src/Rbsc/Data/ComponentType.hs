@@ -23,8 +23,8 @@ import qualified Data.Set        as Set
 
 import Rbsc.Data.Name
 
-import qualified Rbsc.Report.Error.Syntax as Syntax
-import           Rbsc.Report.Region
+import Rbsc.Report.Error
+import Rbsc.Report.Region
 
 import           Rbsc.Syntax.ComponentType
 import           Rbsc.Syntax.Model
@@ -46,7 +46,7 @@ data ComponentType
 
 
 -- | Extract 'ComponentTypes' from a 'Model'.
-fromModel :: Model expr -> Either [Syntax.Error] ComponentTypes
+fromModel :: Model expr -> Either [Error] ComponentTypes
 fromModel model =
     let (types, errors) = convert model
         moreErrors = validate types model
@@ -56,7 +56,7 @@ fromModel model =
            else Left allErrors
 
 
-convert :: Model expr -> (ComponentTypes, [Syntax.Error])
+convert :: Model expr -> (ComponentTypes, [Error])
 convert model =
     over _1 (fmap fst) . flip execState (Map.empty, []) $ do
         for_ (modelNaturalTypes model) $ \(NaturalTypeDef (Loc name rgn)) ->
@@ -77,16 +77,16 @@ convert model =
            TypeName
         -> ComponentType
         -> Region
-        -> State (Map TypeName (ComponentType, Region), [Syntax.Error]) ()
+        -> State (Map TypeName (ComponentType, Region), [Error]) ()
     insertType name ty rgn =
         use (_1.at name) >>= \case
-            Just (_, rgnFirst) -> throw (Syntax.DuplicateType rgn rgnFirst)
+            Just (_, rgnFirst) -> throw' (Error rgn (DuplicateType rgnFirst))
             Nothing -> _1.at name .= Just (ty, rgn)
 
-    throw e = modifying _2 (++ [e])
+    throw' e = modifying _2 (++ [e])
 
 
-validate :: ComponentTypes -> Model expr -> [Syntax.Error]
+validate :: ComponentTypes -> Model expr -> [Error]
 validate types model =
     validateRoleTypes (modelRoleTypes model) ++
     validateCompartmentTypes (modelCompartmentTypes model)
@@ -100,9 +100,9 @@ validate types model =
 
     exists (Loc tyName rgn)
         | Map.member tyName types = Nothing
-        | otherwise = Just (Syntax.UndefinedType rgn)
+        | otherwise = Just (Error rgn UndefinedType)
 
     isRoleType (Loc tyName rgn) = case Map.lookup tyName types of
         Just (RoleType _) -> Nothing
-        Just _            -> Just (Syntax.NonRoleInCompartment rgn)
-        Nothing           -> Just (Syntax.UndefinedType rgn)
+        Just _            -> Just (Error rgn NonRoleInCompartment)
+        Nothing           -> Just (Error rgn UndefinedType)

@@ -10,9 +10,9 @@ import Control.Lens
 
 import Test.Hspec
 
-import           Rbsc.Data.ComponentType
-import           Rbsc.Parser.TH
-import qualified Rbsc.Report.Error.Syntax as Syntax
+import Rbsc.Data.ComponentType
+import Rbsc.Parser.TH
+import Rbsc.Report.Error
 
 
 spec :: Spec
@@ -34,7 +34,7 @@ spec = describe "fromModel" $ do
     it "detects undefined types" $
         fromModel [model| role type R(Undefined); |]
         `shouldSatisfy`
-        has (_Left.traverse.Syntax._UndefinedType)
+        has (_Left.traverse.errorDesc._UndefinedType)
 
     it "detects duplicate type definitions" $
         fromModel
@@ -43,7 +43,7 @@ spec = describe "fromModel" $ do
                 natural type N;
             |]
         `shouldSatisfy`
-        has (_Left.traverse.Syntax._DuplicateType)
+        has (_Left.traverse.errorDesc._DuplicateType)
 
     it "detects non-role types in compartments" $
         fromModel
@@ -52,4 +52,4 @@ spec = describe "fromModel" $ do
                 compartment type C(N);
             |]
         `shouldSatisfy`
-        has (_Left.traverse.Syntax._NonRoleInCompartment)
+        has (_Left.traverse.errorDesc._NonRoleInCompartment)

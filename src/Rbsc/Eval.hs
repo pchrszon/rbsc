@@ -32,8 +32,8 @@ import           Rbsc.Data.Name
 import           Rbsc.Data.Type
 import           Rbsc.Data.Value
 
-import qualified Rbsc.Report.Error.Eval as Eval
-import           Rbsc.Report.Region     (Loc (..), Region)
+import Rbsc.Report.Error
+import Rbsc.Report.Region (Loc (..), Region)
 
 import Rbsc.Syntax.Expr.Typed as T
 import Rbsc.Syntax.Operators
@@ -52,26 +52,25 @@ data ReducerInfo = ReducerInfo
 makeLenses ''ReducerInfo
 
 
-type Reducer a = ReaderT ReducerInfo (Either Eval.Error) a
+type Reducer a = ReaderT ReducerInfo (Either Error) a
 
 runReducer ::
-       Reducer a -> Constants -> RecursionDepth -> Region -> Either Eval.Error a
+       Reducer a -> Constants -> RecursionDepth -> Region -> Either Error a
 runReducer m cs depth rgn = runReaderT m (ReducerInfo cs depth rgn)
 
 
 -- | Evaluate an expression under a given set of constants.
-eval :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Eval.Error t
+eval :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Error t
 eval cs depth e = do
     e' <- reduce cs depth e
     case e' of
         Literal x -> return x
-        _         -> throwError (Eval.NotConstant (getLoc e))
+        _         -> throw (getLoc e) NotConstant
 
 
 -- | Reduce an expression as far as possible by evaluating constant
 -- sub-expressions.
-reduce ::
-       Constants -> RecursionDepth -> Loc (Expr t) -> Either Eval.Error (Expr t)
+reduce :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Error (Expr t)
 reduce cs depth (Loc e rgn) = runReducer (reduce' e) cs depth rgn
 
 
@@ -121,7 +120,7 @@ toLiteral e = case e of
         return (Literal (arithOp aOp l r))
 
     Divide rgn (Literal l) (Literal r)
-        | r == 0.0  -> throwError (Eval.DivisionByZero rgn)
+        | r == 0.0  -> throw rgn DivisionByZero
         | otherwise -> return (Literal (l / r))
 
     EqOp eOp (Literal l) (Literal r) ->
@@ -136,8 +135,7 @@ toLiteral e = case e of
     Index (Literal arr) (Loc (Literal (fromIntegral -> i)) rgn) ->
         case Array.index arr i of
             Just x  -> return (Literal x)
-            Nothing ->
-                throwError (Eval.IndexOutOfBounds (Array.length arr) i rgn)
+            Nothing -> throw rgn (IndexOutOfBounds (Array.length arr) i) -- TODO: check array bounds
 
     Apply (Literal (Fn f)) (Literal arg) ->
         return (Literal (f arg))
@@ -186,8 +184,7 @@ checkDepth :: Reducer ()
 checkDepth = do
     depth <- view remainingDepth
     rgn   <- view region
-    when (depth <= 0) $
-        throwError (Eval.ExceededDepth rgn)
+    when (depth <= 0) (throw rgn ExceededDepth)
 
 
 filterLiterals :: Quantifier -> [Expr Bool] -> [Expr Bool]

@@ -34,7 +34,8 @@ import           Rbsc.Parser.Lexer          (run, sc)
 import qualified Rbsc.Parser.Expr as Parser
 
 import           Rbsc.Report
-import qualified Rbsc.Report.Error.Syntax as Error
+import           Rbsc.Report.Error          (Error(..))
+import qualified Rbsc.Report.Error as Error
 import           Rbsc.Report.Region
 
 import           Rbsc.Syntax.Untyped hiding (Type(..))
@@ -83,7 +84,7 @@ parseIO str = do
         Right m     -> return m
 
 
-printErrors :: [Error.Error] -> [String]
+printErrors :: [Error] -> [String]
 printErrors = fmap (show . render . Error.toReport)
 
 

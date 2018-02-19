@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE OverloadedLists   #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 
 
 module Rbsc.TypeChecker.IdentifiersSpec (spec) where
@@ -8,7 +8,7 @@ module Rbsc.TypeChecker.IdentifiersSpec (spec) where
 
 import Control.Lens
 
-import Data.Map.Strict (Map)
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 import Test.Hspec
@@ -16,8 +16,8 @@ import Test.Hspec
 
 import Rbsc.Parser.TH
 
+import Rbsc.Report.Error
 import Rbsc.Report.Region
-import qualified Rbsc.Report.Error.Syntax as Syntax
 
 import Rbsc.Syntax.Untyped
 
@@ -61,12 +61,12 @@ spec = describe "identifierDefs" $ do
                 }
             |]
         `shouldSatisfy`
-        has (_Left.traverse.Syntax._DuplicateIdentifier)
+        has (_Left.traverse.errorDesc._DuplicateIdentifier)
 
 
 shouldBeLike ::
-       Either [Syntax.Error] Identifiers
-    -> Either [Syntax.Error] (Map Name IdentifierDef)
+       Either [Error] Identifiers
+    -> Either [Error] (Map Name IdentifierDef)
     -> Expectation
 shouldBeLike x y = over _Right (Map.map unLoc) x `shouldBe` y
 

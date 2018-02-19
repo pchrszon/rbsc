@@ -18,13 +18,13 @@ import Rbsc.Data.Type
 
 import Rbsc.Parser.TH
 
-import qualified Rbsc.Report.Error.Type as Type
-import           Rbsc.Report.Region
+import Rbsc.Report.Error
+import Rbsc.Report.Region
 
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
 import Rbsc.TypeChecker.Expr
-import Rbsc.TypeChecker.Internal (runTypeChecker, extract)
+import Rbsc.TypeChecker.Internal (extract, runTypeChecker)
 
 
 spec :: Spec
@@ -37,40 +37,40 @@ spec = describe "typeCheck" $ do
     it "detects type errors" $
         typeCheck TyBool [expr| true : N |]
         `shouldSatisfy`
-        has (_Left.Type._TypeError)
+        has (_Left.errorDesc._TypeError)
 
     it "reports comparison of uncomparable values" $
         typeCheck TyBool [expr| n > 5 |]
         `shouldSatisfy`
-        has (_Left.Type._NotComparable)
+        has (_Left.errorDesc._NotComparable)
 
     it "reports indexing of non-array values" $
         typeCheck TyBool [expr| n[1] |]
         `shouldSatisfy`
-        has (_Left.Type._NotAnArray)
+        has (_Left.errorDesc._NotAnArray)
 
     it "reports invocation on a non-function value" $
         typeCheck TyBool [expr| n(1) |]
         `shouldSatisfy`
-        has (_Left.Type._NotAFunction)
+        has (_Left.errorDesc._NotAFunction)
 
     it "detects too many arguments on a function call" $
         typeCheck TyBool [expr| floor(1, 2) |]
         `shouldSatisfy`
-        has (_Left.Type._WrongNumberOfArguments)
+        has (_Left.errorDesc._WrongNumberOfArguments)
 
     it "detects undefined types" $
         typeCheck TyBool [expr| n : Undefined |]
         `shouldSatisfy`
-        has (_Left.Type._UndefinedType)
+        has (_Left.errorDesc._UndefinedType)
 
     it "detects undefined identifiers" $
         typeCheck TyBool [expr| undefined : N |]
         `shouldSatisfy`
-        has (_Left.Type._UndefinedIdentifier)
+        has (_Left.errorDesc._UndefinedIdentifier)
 
 
-typeCheck :: Type t -> Loc U.Expr -> Either Type.Error String
+typeCheck :: Type t -> Loc U.Expr -> Either Error String
 typeCheck ty e = do
     te <- runTypeChecker (tcExpr e) types symbolTable
     show <$> extract ty (getLoc e) te

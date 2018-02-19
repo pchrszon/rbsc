@@ -20,8 +20,8 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
-import qualified Rbsc.Report.Error.Syntax as Syntax
-import           Rbsc.Report.Region
+import Rbsc.Report.Error
+import Rbsc.Report.Region
 
 import Rbsc.Syntax.Untyped
 
@@ -40,7 +40,7 @@ data IdentifierDef
 
 data BuilderState = BuilderState
     { _identifiers :: Identifiers
-    , _errors      :: [Syntax.Error]
+    , _errors      :: [Error]
     }
 
 makeLenses ''BuilderState
@@ -49,7 +49,7 @@ makeLenses ''BuilderState
 -- | Extract all identifiers together with their definition from the
 -- 'Model'. In case one or more identifiers are defined multiple times,
 -- a list of 'DuplicateIdentifier' errors is returned.
-identifierDefs :: UModel -> Either [Syntax.Error] Identifiers
+identifierDefs :: UModel -> Either [Error] Identifiers
 identifierDefs m = runBuilder $ do
     insertConstants (modelConstants m)
     insertFunctions (modelFunctions m)
@@ -74,7 +74,7 @@ insertComponents es = for_ es $ \case
 type Builder a = State BuilderState a
 
 
-runBuilder :: Builder a -> Either [Syntax.Error] Identifiers
+runBuilder :: Builder a -> Either [Error] Identifiers
 runBuilder m
     | null errs = Right idents
     | otherwise = Left errs
@@ -84,9 +84,9 @@ runBuilder m
 
 insert :: Loc Name -> IdentifierDef -> Builder ()
 insert (Loc name rgn) def = use (identifiers.at name) >>= \case
-    Just ident -> throw (Syntax.DuplicateIdentifier rgn (getLoc ident))
+    Just ident -> throw' (Error rgn (DuplicateIdentifier (getLoc ident)))
     Nothing -> identifiers.at name .= Just (Loc def rgn)
 
 
-throw :: Syntax.Error -> Builder ()
-throw e = modifying errors (++ [e])
+throw' :: Error -> Builder ()
+throw' e = modifying errors (++ [e])

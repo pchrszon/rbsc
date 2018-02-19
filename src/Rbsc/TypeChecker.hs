@@ -16,8 +16,8 @@ module Rbsc.TypeChecker
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Type
 
-import qualified Rbsc.Report.Error.Type as Type
-import           Rbsc.Report.Region     (withLocOf)
+import Rbsc.Report.Error
+import Rbsc.Report.Region (withLocOf)
 
 import Rbsc.Syntax.Expr.Typed (SomeExpr (..))
 import Rbsc.Syntax.Typed      hiding (Type (..))
@@ -35,7 +35,7 @@ typeCheck ::
     -> UModel
     -> [TConstant]
     -> [TFunction]
-    -> Either Type.Error TModel
+    -> Either Error TModel
 typeCheck types symTable m consts funcs =
     runTypeChecker (tcModel m consts funcs) types symTable
 

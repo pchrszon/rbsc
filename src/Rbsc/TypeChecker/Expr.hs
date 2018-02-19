@@ -10,7 +10,6 @@ module Rbsc.TypeChecker.Expr
 
 
 import Control.Lens
-import Control.Monad.Except
 import Control.Monad.Reader
 
 import Data.List.NonEmpty (NonEmpty (..), fromList)
@@ -20,8 +19,8 @@ import Rbsc.Data.Component
 import Rbsc.Data.Function
 import Rbsc.Data.Type
 
-import qualified Rbsc.Report.Error.Type as Type
-import           Rbsc.Report.Region     (Loc (..), Region)
+import Rbsc.Report.Error
+import Rbsc.Report.Region (Loc (..), Region)
 
 import           Rbsc.Syntax.Expr.Typed   (SomeExpr (..))
 import qualified Rbsc.Syntax.Expr.Typed   as T
@@ -108,7 +107,7 @@ tcExpr (Loc e rgn) = case e of
                 idx' <- idx `hasType` TyInt
                 Dict <- return (dictShow elemTy)
                 T.Index inner' (Loc idx' (getLoc idx)) `withType` elemTy
-            _ -> throwError (Type.NotAnArray (renderType ty) (getLoc inner))
+            _ -> throw (getLoc inner) (NotAnArray (renderType ty))
 
     U.Call f args -> do
         f' <- tcExpr f
@@ -177,7 +176,7 @@ tcArray (e :| es) = do
 checkCallArity :: Region -> SomeExpr -> [args] -> TypeChecker ()
 checkCallArity rgn (SomeExpr _ ty) args
     | numParams > 0 && numParams < numArgs =
-        throwError (Type.WrongNumberOfArguments numParams numArgs rgn)
+        throw rgn (WrongNumberOfArguments numParams numArgs)
     | otherwise = return ()
   where
     numParams = paramsLength ty
@@ -196,13 +195,13 @@ tcCall (Loc (SomeExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
     Dict <- return (dictShow tyRes)
     tcCall (Loc (SomeExpr (T.Apply f arg') tyRes) rgn) args
 tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
-    throwError (Type.NotAFunction (renderType ty) rgn)
+    throw rgn (NotAFunction (renderType ty))
 
 
 -- | Assume that a given untyped expression has a given 'Type'.
 --
--- If the expected type is 'TyDouble' but the expression has type 'TyInt',
--- a 'Cast' is inserted automatically.
+-- If the expression has not the given type, but a dynamic cast is
+-- possible, then the dynamic cast will be performed.
 hasType :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t)
 hasType e expected = do
     SomeExpr e' actual <- cast expected <$> tcExpr e
