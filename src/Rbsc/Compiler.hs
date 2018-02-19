@@ -7,13 +7,12 @@ import qualified Data.Text.IO                              as Text
 import           Data.Text.Prettyprint.Doc.Render.Terminal
 
 
-import qualified Rbsc.Data.ComponentType as CompTy
-
 import Rbsc.Parser
 
 import Rbsc.Report
 import Rbsc.Report.Error
 
+import Rbsc.TypeChecker.ComponentTypes
 import Rbsc.TypeChecker.Dependencies
 import Rbsc.TypeChecker.Identifiers
 
@@ -24,7 +23,7 @@ compile path = do
     parseResult <- parse path content
     case parseResult of
         Left errors -> printErrors errors
-        Right model -> case CompTy.fromModel model of
+        Right model -> case getComponentTypes model of
             Left errors -> printErrors errors
             Right types -> case identifierDefs model of
                 Left errors -> printErrors errors
