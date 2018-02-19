@@ -50,6 +50,11 @@ spec = do
             `shouldSatisfy`
             has (_Left.errorDesc._DivisionByZero)
 
+        it "detects out-of-bound array accesses" $
+            eval' TyInt [expr| {0, 1, 2}[3] |]
+            `shouldSatisfy`
+            has (_Left.errorDesc._IndexOutOfBounds)
+
     describe "reduce" $ do
         it "evaluates constant expressions" $
             reduce' TyBool [expr| (x + 1) * 2 = 4 |]

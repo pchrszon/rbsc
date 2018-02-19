@@ -135,7 +135,7 @@ toLiteral e = case e of
     Index (Literal arr) (Loc (Literal (fromIntegral -> i)) rgn) ->
         case Array.index arr i of
             Just x  -> return (Literal x)
-            Nothing -> throw rgn (IndexOutOfBounds (Array.length arr) i) -- TODO: check array bounds
+            Nothing -> throw rgn (IndexOutOfBounds (Array.bounds arr) i)
 
     Apply (Literal (Fn f)) (Literal arg) ->
         return (Literal (f arg))

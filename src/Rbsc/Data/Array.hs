@@ -8,39 +8,32 @@ module Rbsc.Data.Array
     ( Array
     , fromList
     , toList
+    , bounds
     , index
-    , length
     ) where
 
 
-import qualified Data.List as List
-
-import Prelude hiding (length)
-
-
 -- | An array.
-newtype Array a =
-    Array [a]
+data Array a = Array (Int, Int) [a]
     deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 
 -- | Create a new array from a list.
 fromList :: [a] -> Array a
-fromList = Array
+fromList xs = Array (0, length xs - 1) xs
 
 
 -- | Convert an array to a list.
 toList :: Array a -> [a]
-toList (Array xs) = xs
+toList (Array _ xs) = xs
+
+
+bounds :: Array a -> (Int, Int)
+bounds (Array b _) = b
 
 
 -- | Safe indexing into an array.
 index :: Array a -> Int -> Maybe a
-index (Array arr) i
-    | i < 0 || i > List.length arr - 1 = Nothing
-    | otherwise = Just (arr !! i)
-
-
--- | Returns the length of an array.
-length :: Integral b => Array a -> b
-length (Array arr) = List.genericLength arr
+index (Array (lower, upper) arr) i
+    | i < lower || i > upper = Nothing
+    | otherwise = Just (arr !! (i - lower))
