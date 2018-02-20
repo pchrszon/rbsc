@@ -14,27 +14,20 @@ import Rbsc.Parser
 import Rbsc.Report
 import Rbsc.Report.Error
 
-import Rbsc.TypeChecker.ModelInfo
+import Rbsc.TypeChecker
 
 import Rbsc.Syntax.Typed
 
 
-compile :: FilePath -> IO (Maybe (ModelInfo, [TConstant]))
+compile :: FilePath -> IO (Maybe (TModel, ModelInfo))
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
     case parseResult of
         Left errors -> printErrors errors
-        Right model -> case getModelInfo 10 model of
+        Right model -> case typeCheck 10 model of
             Left errors -> printErrors errors
             Right result -> return (Just result)
-        -- Right model -> case getComponentTypes model of
-        --     Left errors -> printErrors errors
-        --     Right types -> case identifierDefs model of
-        --         Left errors -> printErrors errors
-        --         Right idents -> case sortDefinitions idents of
-        --             Left err   -> printErrors [err]
-        --             Right deps -> return (Just deps)
 
 
 printErrors :: [Error] -> IO (Maybe a)

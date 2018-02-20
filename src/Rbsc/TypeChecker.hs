@@ -5,16 +5,15 @@
 
 -- | Type checker for 'Model's.
 module Rbsc.TypeChecker
-    ( SomeExpr(..)
-    , getExpr
-
-    , typeCheck
-    , extract
+    ( typeCheck
     ) where
 
+import Control.Lens
 
-import Rbsc.Data.ComponentType
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
+
+import Rbsc.Eval
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region (withLocOf)
@@ -24,25 +23,25 @@ import Rbsc.Syntax.Typed      hiding (Type (..))
 import Rbsc.Syntax.Untyped    hiding (Type (..))
 
 import Rbsc.TypeChecker.Expr
-import Rbsc.TypeChecker.Internal
+import Rbsc.TypeChecker.Internal (runTypeChecker, TypeChecker)
+import Rbsc.TypeChecker.ModelInfo
 
 
--- | Type check a 'Model'. All untyped expressions in the model are type
--- checked and replaced by 'SomeExpr'.
-typeCheck ::
-       ComponentTypes
-    -> SymbolTable
-    -> UModel
-    -> [TConstant]
-    -> [TFunction]
-    -> Either Error TModel
-typeCheck types symTable m consts funcs =
-    runTypeChecker (tcModel m consts funcs) types symTable
+typeCheck :: RecursionDepth -> UModel -> Either [Error] (TModel, ModelInfo)
+typeCheck depth model = do
+    (info, consts') <- getModelInfo depth model
+    let compTys  = view componentTypes info
+        symTable = view symbolTable info
+
+    model' <- over _Left (: []) $
+        runTypeChecker (tcModel model consts') compTys symTable
+
+    return (model', info)
 
 
-tcModel :: UModel -> [TConstant] -> [TFunction] -> TypeChecker TModel
-tcModel Model{..} consts funcs =
-    Model consts funcs modelNaturalTypes modelRoleTypes modelCompartmentTypes
+tcModel :: UModel -> [TConstant] -> TypeChecker TModel
+tcModel Model{..} consts =
+    Model consts [] modelNaturalTypes modelRoleTypes modelCompartmentTypes
     <$> traverse tcConstraint modelSystem
 
 
