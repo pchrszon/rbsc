@@ -68,17 +68,25 @@ addDependency = \case
 
 
 addConstant :: UConstant -> Builder ()
-addConstant (U.Constant (Loc name rgn) sTy e) = do
-    (sTy', SomeType ty) <- fromSyntaxType sTy
-    Dict <- return (dictShow ty)
+addConstant (U.Constant (Loc name rgn) msTy e) = do
+    (msTy', SomeExpr e' ty) <- case msTy of
+        Just sTy -> do
+            -- if an explicit type annotation is given, check if type of
+            -- the definition matches
+            (sTy', SomeType ty) <- fromSyntaxType sTy
+            e' <- typeCheckExpr ty e
+            return (Just sTy', SomeExpr e' ty)
+        Nothing -> do
+            e' <- runTypeChecker (tcExpr e)
+            return (Nothing, e')
 
-    e' <- typeCheckExpr ty e
-    v  <- evalExpr (e' `withLocOf` e)
+    Dict <- return (dictShow ty)
+    v <- evalExpr (e' `withLocOf` e)
 
     insertSymbol name (SomeType ty)
     insertConstant name (SomeExpr (T.Literal v) ty)
 
-    let c' = T.Constant (Loc name rgn) sTy' (SomeExpr e' ty `withLocOf` e)
+    let c' = T.Constant (Loc name rgn) msTy' (SomeExpr e' ty `withLocOf` e)
     modifying constantDefs (c' :)
 
 

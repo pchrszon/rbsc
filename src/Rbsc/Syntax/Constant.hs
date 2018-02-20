@@ -18,7 +18,7 @@ import Rbsc.Syntax.Type
 -- | A constant definition.
 data Constant expr = Constant
     { constName :: Loc Name
-    , constType :: Type expr
+    , constType :: Maybe (Type expr)
     , constExpr :: expr
     } deriving (Show)
 

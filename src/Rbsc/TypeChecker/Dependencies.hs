@@ -102,7 +102,7 @@ insertConstant :: UConstant -> Analyzer ()
 insertConstant c@(Constant (Loc _ rgn) sTy e) =
     newDependency (DepConstant c) rgn (dependOnIdentifiers idents)
   where
-    idents = identsInExpr e `Set.union` identsInType sTy
+    idents = identsInExpr e `Set.union` maybe Set.empty identsInType sTy
 
 
 insertFunction :: UFunction -> Analyzer ()

@@ -40,7 +40,7 @@ spec = describe "identifierDefs" $ do
         `shouldBeLike`
         Right
             [ ("n", DefConstant
-                (Constant (dummyLoc "n") TyInt (dummyLoc (LitInt 5))))
+                (Constant (dummyLoc "n") (Just TyInt) (dummyLoc (LitInt 5))))
             , ("f", DefFunction
                 (Function
                     (dummyLoc "f")
