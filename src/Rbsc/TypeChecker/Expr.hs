@@ -5,6 +5,7 @@
 -- | Type checking of expressions.
 module Rbsc.TypeChecker.Expr
     ( tcExpr
+    , tcFunctionDef
     , hasType
     ) where
 
@@ -145,6 +146,22 @@ tcExpr (Loc e rgn) = case e of
             body `hasType` TyBool
 
         T.Quantified q (fmap unLoc mTyName) (T.Scope body') `withType` TyBool
+
+
+-- | @tcFunctionDef params tyRes body@ checks an untyped function
+-- definition. The parameter list @params@ is transformed into a sequence
+-- of lambda abstractions.
+tcFunctionDef ::
+       [(Name, SomeType)] -> SomeType -> Loc U.Expr -> TypeChecker SomeExpr
+tcFunctionDef params (SomeType tyRes) body =
+    -- params must be reversed because the first parameter corresponds
+    -- to the outermost lambda and thus has the highest De-Bruijn index.
+    local (over boundVars (reverse params ++)) $ do
+        body' <- body `hasType` tyRes
+        return (foldr mkLambda (SomeExpr body' tyRes) params)
+  where
+    mkLambda (_, SomeType ty) (SomeExpr e tyRes') =
+        SomeExpr (T.Lambda ty (T.Scope e)) (ty --> tyRes')
 
 
 fromFunctionName :: FunctionName -> SomeExpr

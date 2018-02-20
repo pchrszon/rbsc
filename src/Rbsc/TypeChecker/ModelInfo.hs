@@ -33,7 +33,7 @@ import Rbsc.TypeChecker.ComponentTypes
 import Rbsc.TypeChecker.Dependencies
 import Rbsc.TypeChecker.Expr
 import Rbsc.TypeChecker.Identifiers
-import Rbsc.TypeChecker.Internal       (runTypeCheckerWithVars)
+import qualified Rbsc.TypeChecker.Internal as TC
 
 
 data BuilderState = BuilderState
@@ -92,25 +92,16 @@ addFunctionSignature (U.Function (Loc name _) params sTy _) = do
 
 
 addFunction :: UFunction -> Builder ()
-addFunction (U.Function (Loc name _) params sTy e) = do
+addFunction (U.Function (Loc name _) params sTy body) = do
     paramSyms <- toList <$> traverse paramToSym params
-    SomeType resultTy <- snd <$> fromSyntaxType sTy
+    tyResult <- snd <$> fromSyntaxType sTy
 
-    -- paramSyms must be reversed because the first parameter corresponds
-    -- to the outermost lambda and thus has the highest De-Bruijn index.
-    -- In the resulting expression e' all Identifiers refering to
-    -- parameters will already be replaced by Bound expressions.
-    e' <- typeCheckExprWith (reverse paramSyms) resultTy e
-
-    let f = foldr mkLambda (SomeExpr e' resultTy) paramSyms
+    f <- runTypeChecker (tcFunctionDef paramSyms tyResult body)
     insertConstant name f
   where
     paramToSym (U.Parameter n psTy) = do
         ty <- snd <$> fromSyntaxType psTy
         return (unLoc n, ty)
-
-    mkLambda (_, SomeType ty) (SomeExpr body tyRes) =
-        SomeExpr (T.Lambda ty (T.Scope body)) (ty --> tyRes)
 
 
 addComponent :: Name -> Loc TypeName -> Builder ()
@@ -166,14 +157,14 @@ evalExpr e = do
 
 
 typeCheckExpr :: Type t -> Loc U.Expr -> Builder (T.Expr t)
-typeCheckExpr = typeCheckExprWith []
+typeCheckExpr ty e = runTypeChecker (e `hasType` ty)
 
 
-typeCheckExprWith :: [(Name, SomeType)] -> Type t -> Loc U.Expr -> Builder (T.Expr t)
-typeCheckExprWith vars ty e = do
-    compTys <- use (modelInfo.componentTypes)
-    symTbl  <- use (modelInfo.symbolTable)
-    lift (runTypeCheckerWithVars (e `hasType` ty) compTys symTbl vars)
+runTypeChecker :: TC.TypeChecker a -> Builder a
+runTypeChecker m = do
+    compTys  <- use (modelInfo.componentTypes)
+    symTable <- use (modelInfo.symbolTable)
+    lift (TC.runTypeChecker m compTys symTable)
 
 
 insertSymbol :: Name -> SomeType -> Builder ()
