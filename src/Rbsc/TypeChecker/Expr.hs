@@ -50,8 +50,7 @@ tcExpr (Loc e rgn) = case e of
 
     U.Identifier name ->
         lookupBoundVar name >>= \case
-            Just (i, SomeType ty) -> do
-                Refl <- expect tyComponent rgn ty
+            Just (i, SomeType ty) ->
                 T.Bound i ty `withType` ty
             Nothing -> do
                 SomeType ty <- getIdentifierType name rgn

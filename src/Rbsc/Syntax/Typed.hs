@@ -12,6 +12,9 @@ module Rbsc.Syntax.Typed
     , TFunction
     , TParameter
 
+      -- * Types
+    , TType
+
       -- * Expressions
     , LSomeExpr
     ) where
@@ -38,6 +41,9 @@ type TConstant = Constant LSomeExpr
 
 type TFunction  = Function LSomeExpr
 type TParameter = Parameter LSomeExpr
+
+
+type TType = Type LSomeExpr
 
 
 type LSomeExpr = Loc SomeExpr

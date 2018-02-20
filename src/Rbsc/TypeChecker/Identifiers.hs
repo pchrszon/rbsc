@@ -34,7 +34,7 @@ type Identifiers = Map Name (Loc IdentifierDef)
 data IdentifierDef
     = DefConstant UConstant -- ^ the identifier represents a constant
     | DefFunction UFunction -- ^ the identifier represents a function
-    | DefComponent !Name !TypeName -- ^ the identifier represents a component
+    | DefComponent !Name !(Loc TypeName) -- ^ the identifier represents a component
     deriving (Eq, Show)
 
 
@@ -66,7 +66,7 @@ insertFunctions = traverse_ (insert <$> functionName <*> DefFunction)
 
 insertComponents :: [LExpr] -> Builder ()
 insertComponents es = for_ es $ \case
-    Loc (HasType (Loc (Identifier name) rgn) (Loc tyName _)) _ ->
+    Loc (HasType (Loc (Identifier name) rgn) tyName) _ ->
         insert (Loc name rgn) (DefComponent name tyName)
     _ -> return ()
 

@@ -6,7 +6,7 @@
 module Rbsc.Data.ModelInfo
     ( ModelInfo(..)
 
-    , ComponentType(..)
+    , ComponentTypes
     , SymbolTable
     , Constants
 
@@ -28,7 +28,7 @@ import Rbsc.Syntax.Expr.Typed
 -- | The @ModelInfo@ holds the types of identifiers, the user-defined types
 -- and the values of constants defined in the model.
 data ModelInfo = ModelInfo
-    { _componentTypes :: !ComponentType
+    { _componentTypes :: !ComponentTypes
     , _symbolTable    :: !SymbolTable
     , _constants      :: !Constants
     } deriving (Show)

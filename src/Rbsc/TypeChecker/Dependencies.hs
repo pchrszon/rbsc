@@ -42,7 +42,7 @@ data Dependency
     = DepConstant UConstant
     | DepFunctionSignature UFunction
     | DepFunction UFunction
-    | DepComponent !Name !TypeName
+    | DepComponent !Name !(Loc TypeName)
     deriving (Eq, Ord, Show)
 
 
@@ -115,7 +115,7 @@ insertFunction f@(Function (Loc _ rgn) _ _ e) = do
             dependOnIdentifiers (identsInExpr e)
 
 
-insertComponent :: Name -> TypeName -> Region -> Analyzer ()
+insertComponent :: Name -> Loc TypeName -> Region -> Analyzer ()
 insertComponent name tyName rgn =
     newDependency (DepComponent name tyName) rgn $
         return ()

@@ -17,6 +17,7 @@ module Rbsc.TypeChecker.Internal
     , boundVars
 
     , runTypeChecker
+    , runTypeCheckerWithVars
 
     , getIdentifierType
     , lookupBoundVar
@@ -75,7 +76,21 @@ makeLenses ''TcInfo
 -- | Run a type checker action.
 runTypeChecker ::
        TypeChecker a -> ComponentTypes -> SymbolTable -> Either Error a
-runTypeChecker m types symTable = runReaderT m (TcInfo types symTable [])
+runTypeChecker m types symTable = runTypeCheckerWithVars m types symTable []
+
+
+-- | Run a type checker action with a list of bound variables.
+--
+-- The variable bound by the innermost binder should come first in the
+-- bound-variables list.
+runTypeCheckerWithVars ::
+       TypeChecker a
+    -> ComponentTypes
+    -> SymbolTable
+    -> [(Name, SomeType)]
+    -> Either Error a
+runTypeCheckerWithVars m types symTable vars =
+    runReaderT m (TcInfo types symTable vars)
 
 
 -- | Looks up the type of a given identifier in the symbol table. If the

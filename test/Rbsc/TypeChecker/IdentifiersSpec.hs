@@ -48,7 +48,7 @@ spec = describe "identifierDefs" $ do
                     TyInt
                     (dummyLoc (Identifier "x"))))
 
-            , ("c", DefComponent "c" "Comp")
+            , ("c", DefComponent "c" (dummyLoc "Comp"))
             ]
 
     it "detects duplicated identifiers" $

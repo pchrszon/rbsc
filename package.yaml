@@ -2,7 +2,7 @@ name: roles
 version: 0.1.0.0
 author: Philipp Chrszon
 maintainer: philipp.chrszon@tu-dresden.de
-copyright: ! 'Copyright: (c) 2017 Philipp Chrszon'
+copyright: ! 'Copyright: (c) 2018 Philipp Chrszon'
 license: BSD3
 synopsis: Modeling and analysis of role-based systems
 description:
