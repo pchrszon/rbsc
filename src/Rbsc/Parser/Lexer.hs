@@ -138,10 +138,13 @@ operator s = getLoc <$>
 -- | Parser for an identifier.
 identifier :: IsString a => Parser (Loc a)
 identifier = lexeme . try $ do
-    ident <- (:) <$> letterChar <*> many alphaNumChar
+    ident <- (:) <$> identStart <*> many identLetter
     if ident `elem` reservedWords
         then fail ("unexpected reserved word " ++ ident)
         else return (Loc (fromString ident))
+  where
+    identStart  = letterChar <|> char '_'
+    identLetter = alphaNumChar <|> char '_'
 
 
 -- | @block name p@ is a parser for named blocks. A block starts with
