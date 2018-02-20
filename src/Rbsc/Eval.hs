@@ -170,7 +170,7 @@ toLiteral e = case e of
             compExprs = fmap (\c -> T.SomeExpr (Literal c) ty) comps
 
         -- instantiate quantified expression and reduce
-        es <- traverse (T.transformM toLiteral . instantiate sc) compExprs
+        es <- traverse (reduce' . instantiate sc) compExprs
 
         -- remove all literals that do not influence the truth value
         let es' = filterLiterals q es
