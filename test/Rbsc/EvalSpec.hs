@@ -47,9 +47,9 @@ spec = do
             Right True
 
         it "does short-circuit evaluation" $
-            eval' TyDouble [expr| if true | (1 / 0 > 0) then 1 else 1 / 0 |]
+            eval' TyInt [expr| if true | (1 / 0 > 0) then 1 else f(1) |]
             `shouldBe`
-            Right 1.0
+            Right 1
 
         it "detects division by zero" $
             eval' TyDouble [expr| 1.0 / 0 |]
@@ -60,6 +60,11 @@ spec = do
             eval' TyInt [expr| {0, 1, 2}[3] |]
             `shouldSatisfy`
             has (_Left.errorDesc._IndexOutOfBounds)
+
+        it "stops after exceeding the maximum recursion depth" $
+            eval' TyInt [expr| f(1) |]
+            `shouldSatisfy`
+            has (_Left.errorDesc._ExceededDepth)
 
     describe "reduce" $ do
         it "evaluates constant expressions" $
@@ -82,6 +87,11 @@ constants = Map.fromList
     , ("r", SomeExpr
         (T.Literal (Component "r" "R" (Just "n") Nothing))
         (TyComponent (Just "R")))
+    , ("f", SomeExpr -- f(i : int) : int = f(i)
+        (T.Lambda TyInt (T.Scope (T.Apply
+            (T.Identifier "f" (TyInt --> TyInt))
+            (T.Bound 0 TyInt))))
+        (TyInt --> TyInt))
     ]
 
 
@@ -91,6 +101,7 @@ symbolTable = Map.fromList
     , ("y", SomeType TyInt)
     , ("n", SomeType (TyComponent (Just "N")))
     , ("r", SomeType (TyComponent (Just "R")))
+    , ("f", SomeType (TyInt --> TyInt))
     ]
 
 componentTypes :: ComponentTypes

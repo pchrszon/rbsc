@@ -151,7 +151,7 @@ toLiteral e = case e of
     Apply (Lambda ty body) arg -> do
         checkDepth
         let body' = instantiate body (SomeExpr arg ty)
-        local (remainingDepth %~ (-) 1) $
+        local (remainingDepth %~ subtract 1) $
             reduce' body'
 
     HasType (Literal comp) tyName ->
