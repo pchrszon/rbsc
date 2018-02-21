@@ -8,11 +8,11 @@ module Rbsc.TypeChecker.ExprSpec (spec) where
 import Control.Lens
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Set        as Set
 
 import Test.Hspec
 
 
-import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Type
 
@@ -32,7 +32,7 @@ spec = describe "typeCheck" $ do
     it "computes the correct type" $
         typeCheck TyBool [expr| n : N |]
         `shouldBe`
-        Right "HasType (Identifier \"n\" (TyComponent Nothing)) \"N\""
+        Right "HasType (Identifier \"n\" (TyComponent (fromList [\"N\"]))) \"N\""
 
     it "detects type errors" $
         typeCheck TyBool [expr| true : N |]
@@ -83,8 +83,5 @@ types = Map.fromList
 
 symbolTable :: SymbolTable
 symbolTable = Map.fromList
-    [ ("n", SomeType tyComponent)
+    [ ("n", SomeType (TyComponent (Set.singleton "N")))
     ]
-
-tyComponent :: Type Component
-tyComponent = TyComponent Nothing

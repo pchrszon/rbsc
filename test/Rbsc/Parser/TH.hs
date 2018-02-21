@@ -26,6 +26,7 @@ import Language.Haskell.TH       hiding (Loc)
 import Language.Haskell.TH.Quote
 
 
+import Rbsc.Data.ComponentType
 import Rbsc.Data.Function (FunctionName (..))
 import Rbsc.Data.Name
 
@@ -108,6 +109,8 @@ deriving instance Data EqOp
 deriving instance Data RelOp
 deriving instance Data LogicOp
 deriving instance Data Quantifier
+
+deriving instance Data ComponentTypeSet
 
 deriving instance Data Position
 deriving instance Data Region

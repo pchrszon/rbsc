@@ -28,7 +28,6 @@ import           Rbsc.Syntax.Expr.Typed   (Constants, SomeExpr (..))
 import qualified Rbsc.Syntax.Expr.Typed   as T
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
-import Rbsc.TypeChecker
 import Rbsc.TypeChecker.Expr
 import Rbsc.TypeChecker.Internal hiding (componentTypes, symbolTable)
 
@@ -83,10 +82,10 @@ constants = Map.fromList
     [ ("x", SomeExpr (T.Literal 1) TyInt)
     , ("n", SomeExpr
         (T.Literal (Component "n" "N" Nothing Nothing))
-        (TyComponent (Just "N")))
+        (TyComponent (Set.singleton "N")))
     , ("r", SomeExpr
         (T.Literal (Component "r" "R" (Just "n") Nothing))
-        (TyComponent (Just "R")))
+        (TyComponent (Set.singleton "R")))
     , ("f", SomeExpr -- f(i : int) : int = f(i)
         (T.Lambda TyInt (T.Scope (T.Apply
             (T.Identifier "f" (TyInt --> TyInt))
@@ -99,8 +98,8 @@ symbolTable :: SymbolTable
 symbolTable = Map.fromList
     [ ("x", SomeType TyInt)
     , ("y", SomeType TyInt)
-    , ("n", SomeType (TyComponent (Just "N")))
-    , ("r", SomeType (TyComponent (Just "R")))
+    , ("n", SomeType (TyComponent (Set.singleton "N")))
+    , ("r", SomeType (TyComponent (Set.singleton "R")))
     , ("f", SomeType (TyInt --> TyInt))
     ]
 

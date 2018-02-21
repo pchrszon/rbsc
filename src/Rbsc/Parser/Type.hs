@@ -16,8 +16,9 @@ import Rbsc.Syntax.Untyped
 -- | Parser for types.
 typ :: Parser UType
 typ = label "type" $ choice
-    [ TyBool   <$ reserved "bool"
-    , TyInt    <$ reserved "int"
-    , TyDouble <$ reserved "double"
-    , TyArray  <$> (reserved "array" *> range) <*> (reserved "of" *> typ)
+    [ TyBool      <$  reserved "bool"
+    , TyInt       <$  reserved "int"
+    , TyDouble    <$  reserved "double"
+    , TyComponent <$> componentTypeSet
+    , TyArray     <$> (reserved "array" *> range) <*> (reserved "of" *> typ)
     ]

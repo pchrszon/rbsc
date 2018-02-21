@@ -25,7 +25,8 @@ module Rbsc.Syntax.Expr.Typed
 import Control.Monad.Identity
 
 import Data.List.NonEmpty (NonEmpty)
-import Data.Map.Strict (Map)
+import Data.Map.Strict    (Map)
+import Data.Set           (Set)
 
 
 import Rbsc.Data.Array
@@ -60,7 +61,7 @@ data Expr t where
     Element     :: Expr Component -> Expr Component -> Expr Bool
     Bound       :: Int -> Type t -> Expr t
     Lambda      :: Type a -> Scope b -> Expr (Fn (a -> b))
-    Quantified  :: Quantifier -> Maybe TypeName -> Scope Bool -> Expr Bool
+    Quantified  :: Quantifier -> Set TypeName -> Scope Bool -> Expr Bool
 
 deriving instance Show (Expr t)
 
@@ -112,8 +113,8 @@ instantiate (Scope body) (SomeExpr s ty) = go 0 body
                 Nothing   -> error "instantiate: type error"
             | otherwise -> Bound i' ty'
         Lambda ty' (Scope body') -> Lambda ty' (Scope (go (succ i) body'))
-        Quantified q mTyName (Scope body') ->
-            Quantified q mTyName (Scope (go (succ i) body'))
+        Quantified q tySet (Scope body') ->
+            Quantified q tySet (Scope (go (succ i) body'))
 
 
 -- | Transform every element in an expression tree, in a bottom-up manner.
@@ -157,4 +158,4 @@ descend f = \case
     Element l r        -> Element <$> f l <*> f r
     Bound i ty         -> pure (Bound i ty)
     Lambda ty (Scope body) -> Lambda ty . Scope <$> f body
-    Quantified q mTyName (Scope body) -> Quantified q mTyName . Scope <$> f body
+    Quantified q tySet (Scope body) -> Quantified q tySet . Scope <$> f body

@@ -1,5 +1,7 @@
-{-# LANGUAGE GADTs      #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE ViewPatterns     #-}
 
 
 -- | Type checking of expressions.
@@ -13,10 +15,13 @@ module Rbsc.TypeChecker.Expr
 import Control.Lens
 import Control.Monad.Reader
 
-import Data.List.NonEmpty (NonEmpty (..), fromList)
+import           Data.List.NonEmpty (NonEmpty (..), fromList)
+import qualified Data.Map.Strict    as Map
+import qualified Data.Set           as Set
 
 
 import Rbsc.Data.Component
+import Rbsc.Data.ComponentType
 import Rbsc.Data.Function
 import Rbsc.Data.Type
 
@@ -119,33 +124,40 @@ tcExpr (Loc e rgn) = case e of
         (SomeExpr _then' tyT, SomeExpr _else' tyE) <-
             binaryCast <$> tcExpr _then <*> tcExpr _else
         Refl <- expect tyT (getLoc _else) tyE
-        T.IfThenElse cond' _then' _else' `withType` tyT
+
+        -- The branches of the if expression may return different component
+        -- types. Therefore, we generate the union of those types as result
+        -- type of the if expression.
+        let ty = typeUnion tyT tyE
+        T.IfThenElse cond' _then' _else' `withType` ty
 
     U.HasType inner tyName ->
         whenTypeExists tyName $ do
+            tyComponent <- getTyComponent
             inner' <- inner `hasType` tyComponent
             T.HasType inner' (unLoc tyName) `withType` TyBool
 
     U.BoundTo l r -> do
+        tyComponent <- getTyComponent
         l' <- l `hasType` tyComponent
         r' <- r `hasType` tyComponent
         T.BoundTo l' r' `withType` TyBool
 
     U.Element l r -> do
+        tyComponent <- getTyComponent
         l' <- l `hasType` tyComponent
         r' <- r `hasType` tyComponent
         T.Element l' r' `withType` TyBool
 
-    U.Quantified q varName mTyName body -> do
-        varTy <- case mTyName of
-            Just tyName -> whenTypeExists tyName $
-                return (TyComponent (Just (unLoc tyName)))
-            Nothing -> return (TyComponent Nothing)
+    U.Quantified q varName tySet body -> do
+        compTys <- view componentTypes
+        tySet' <- lift (normalizeTypeSet compTys tySet)
+        let varTy = TyComponent tySet'
 
         body' <- local (over boundVars ((varName, SomeType varTy) :)) $
             body `hasType` TyBool
 
-        T.Quantified q (fmap unLoc mTyName) (T.Scope body') `withType` TyBool
+        T.Quantified q tySet' (T.Scope body') `withType` TyBool
 
 
 -- | @tcFunctionDef params tyRes body@ checks an untyped function
@@ -229,6 +241,7 @@ hasType :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t)
 hasType e expected = do
     SomeExpr e' actual <- cast expected <$> tcExpr e
     Refl <- expect expected (getLoc e) actual
+    checkComponentType expected (getLoc e) actual
     return e'
 
 
@@ -259,5 +272,26 @@ cast arrTy@(TyArray tIndices ty) e@(SomeExpr e' elemTy) =
 cast _ e = e
 
 
-tyComponent :: Type Component
-tyComponent = TyComponent Nothing
+-- | If @expected@ and @actual@ are 'TyComponent',
+-- @checkComponentType expected rgn actual@ checks if @actual@ is equal to
+-- @expected@ or a subtype of @expected@.
+checkComponentType :: Type t -> Region -> Type t -> TypeChecker ()
+checkComponentType expected@(TyComponent tySetExp) rgn actual@(TyComponent tySetAct)
+    | tySetAct `Set.isSubsetOf` tySetExp = return ()
+    | otherwise = throw rgn (typeError [SomeType expected] actual)
+checkComponentType _ _ _ = return ()
+
+
+-- | If @l@ and @r@ are 'TyComponent', then @typeUnion l r@ returns the
+-- component type subsuming both @l@ and @r@. Otherwise, the type @l@ is
+-- returned unmodified.
+typeUnion :: Type t -> Type t -> Type t
+typeUnion (TyComponent tySetL) (TyComponent tySetR) =
+    TyComponent (tySetL `Set.union` tySetR)
+typeUnion l _ = l
+
+
+-- | Get the most general 'Type' of components. This type subsumes all user
+-- defined component types.
+getTyComponent :: TypeChecker (Type Component)
+getTyComponent = TyComponent <$> view (componentTypes.to Map.keysSet)

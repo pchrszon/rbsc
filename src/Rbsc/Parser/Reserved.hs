@@ -16,6 +16,7 @@ reservedWords =
     , "of"
     , "const"
     , "function"
+    , "component"
     , "natural"
     , "role"
     , "compartment"

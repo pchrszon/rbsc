@@ -1,16 +1,19 @@
 {-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 
 -- | Array data type.
 module Rbsc.Data.Array
     ( Array
     , fromList
-    , toList
     , bounds
     , index
     ) where
+
+
+import GHC.Exts (IsList (..))
 
 
 -- | An array.
@@ -18,14 +21,11 @@ data Array a = Array (Int, Int) [a]
     deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 
--- | Create a new array from a list.
-fromList :: [a] -> Array a
-fromList xs = Array (0, length xs - 1) xs
+instance IsList (Array a) where
+    type Item (Array a) = a
 
-
--- | Convert an array to a list.
-toList :: Array a -> [a]
-toList (Array _ xs) = xs
+    fromList xs = Array (0, length xs - 1) xs
+    toList (Array _ xs) = xs
 
 
 bounds :: Array a -> (Int, Int)

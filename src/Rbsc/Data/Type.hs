@@ -41,9 +41,11 @@ module Rbsc.Data.Type
 
 
 import Data.Constraint           (Dict (..))
+import Data.Foldable (toList)
 import Data.Map.Strict           (Map)
 import Data.Text.Prettyprint.Doc
 import Data.Type.Equality        ((:~:) (..))
+import Data.Set (Set)
 
 
 import Rbsc.Data.Array
@@ -57,7 +59,7 @@ data Type t where
     TyBool      :: Type Bool
     TyInt       :: Type Integer
     TyDouble    :: Type Double
-    TyComponent :: Maybe TypeName -> Type Component
+    TyComponent :: Set TypeName -> Type Component
     TyArray     :: (Int, Int) -> Type t -> Type (Array t)
     TyFunc      :: Type a -> Type b -> Type (Fn (a -> b))
 
@@ -69,7 +71,8 @@ instance Pretty (Type t) where
         TyBool   -> "bool"
         TyInt    -> "int"
         TyDouble -> "double"
-        TyComponent tyName -> maybe "component" pretty tyName
+        TyComponent tySet ->
+            braces (sep (punctuate comma (fmap pretty (toList tySet))))
         TyArray (idxStart, idxEnd) t ->
             "array" <+> brackets (pretty idxStart <> ".." <> pretty idxEnd) <+>
             "of" <+> pretty t

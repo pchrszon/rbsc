@@ -13,6 +13,7 @@ import Control.Lens
 import Data.List.NonEmpty (NonEmpty)
 
 
+import Rbsc.Data.ComponentType
 import Rbsc.Data.Function
 import Rbsc.Data.Name
 
@@ -42,7 +43,7 @@ data Expr
     | HasType LExpr (Loc TypeName)
     | BoundTo LExpr LExpr
     | Element LExpr LExpr
-    | Quantified !Quantifier !Name (Maybe (Loc TypeName)) LExpr
+    | Quantified !Quantifier !Name ComponentTypeSet LExpr
     deriving (Show)
 
 instance Plated LExpr where
@@ -66,7 +67,7 @@ instance Plated LExpr where
         HasType e' tyName -> HasType <$> f e' <*> pure tyName
         BoundTo l r -> BoundTo <$> f l <*> f r
         Element l r -> Element <$> f l <*> f r
-        Quantified q varName mTyName e' -> Quantified q varName mTyName <$> f e'
+        Quantified q varName tySet e' -> Quantified q varName tySet <$> f e'
 
 
 -- | A location-annotated 'Expr'.

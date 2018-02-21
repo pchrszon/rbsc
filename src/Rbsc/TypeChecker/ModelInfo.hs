@@ -13,6 +13,7 @@ import Control.Monad.State.Strict
 
 import           Data.Foldable
 import qualified Data.Map.Strict as Map
+import qualified Data.Set        as Set
 
 
 import Rbsc.Data.ComponentType
@@ -29,11 +30,11 @@ import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped (UConstant, UFunction, UModel, UType)
 import qualified Rbsc.Syntax.Untyped as U
 
-import Rbsc.TypeChecker.ComponentTypes
-import Rbsc.TypeChecker.Dependencies
-import Rbsc.TypeChecker.Expr
-import Rbsc.TypeChecker.Identifiers
-import qualified Rbsc.TypeChecker.Internal as TC
+import           Rbsc.TypeChecker.ComponentTypes
+import           Rbsc.TypeChecker.Dependencies
+import           Rbsc.TypeChecker.Expr
+import           Rbsc.TypeChecker.Identifiers
+import qualified Rbsc.TypeChecker.Internal       as TC
 
 
 data BuilderState = BuilderState
@@ -93,8 +94,8 @@ addConstant (U.Constant (Loc name rgn) msTy e) = do
 addFunctionSignature :: UFunction -> Builder ()
 addFunctionSignature (U.Function (Loc name _) params sTy _) = do
     paramTys <- traverse (fmap snd . fromSyntaxType . U.paramType) params
-    resultTy <- snd <$> fromSyntaxType sTy
-    insertSymbol name (foldr mkTyFunc resultTy paramTys)
+    tyResult <- snd <$> fromSyntaxType sTy
+    insertSymbol name (foldr mkTyFunc tyResult paramTys)
   where
     mkTyFunc (SomeType a) (SomeType b) = SomeType (a --> b)
 
@@ -116,7 +117,7 @@ addComponent :: Name -> Loc TypeName -> Builder ()
 addComponent name (Loc tyName rgn) = do
     types <- use (modelInfo.componentTypes)
     if tyName `Map.member` types
-        then insertSymbol name (SomeType (TyComponent (Just tyName)))
+        then insertSymbol name (SomeType (TyComponent (Set.singleton tyName)))
         else throw rgn UndefinedType
 
 
@@ -125,6 +126,10 @@ fromSyntaxType = \case
     U.TyBool   -> return (T.TyBool  , SomeType TyBool)
     U.TyInt    -> return (T.TyInt   , SomeType TyInt)
     U.TyDouble -> return (T.TyDouble, SomeType TyDouble)
+    U.TyComponent tySet -> do
+        compTys <- use (modelInfo.componentTypes)
+        tySet' <- lift (normalizeTypeSet compTys tySet)
+        return (T.TyComponent tySet, SomeType (TyComponent tySet'))
     U.TyArray (lower, upper) sTy -> do
         (lowerVal, lower') <- evalIntegerExpr lower
         (upperVal, upper') <- evalIntegerExpr upper

@@ -1,23 +1,36 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE ViewPatterns     #-}
 
 
 -- | User-defined natural types, role types and compartment types.
 module Rbsc.Data.ComponentType
-    ( ComponentTypes
-    , ComponentType(..)
+    ( ComponentType(..)
+    , _NaturalType
+    , _RoleType
+    , _CompartmentType
+
+    , ComponentTypes
+
+    , ComponentTypeSet(..)
+    , normalizeTypeSet
     ) where
 
 
-import Data.Map.Strict (Map)
-import Data.Set        (Set)
+import Control.Lens
+
+import           Data.Foldable   (toList, traverse_)
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+import           Data.Set        (Set)
+import qualified Data.Set        as Set
 
 
 import Rbsc.Data.Name
 
-
--- | User-defined component types indexed by their name.
-type ComponentTypes = Map TypeName ComponentType
+import Rbsc.Report.Error
+import Rbsc.Report.Region
 
 
 -- | Represents a user-defined component type.
@@ -29,3 +42,40 @@ data ComponentType
       -- | A compartment type with its list of required role types.
     | CompartmentType [TypeName]
     deriving (Eq, Show)
+
+makePrisms ''ComponentType
+
+
+-- | User-defined component types indexed by their name.
+type ComponentTypes = Map TypeName ComponentType
+
+
+-- | A set of component types.
+data ComponentTypeSet
+    = AllComponents
+    | AllNaturals
+    | AllRoles
+    | AllCompartments
+    | ComponentTypeSet (Set (Loc TypeName))
+    deriving (Show)
+
+
+-- | Convert a 'ComponentTypeSet' into a list of 'TypeName's. If one of the
+-- types does not exist, an 'UndefinedType' error is thrown.
+normalizeTypeSet ::
+       ComponentTypes -> ComponentTypeSet -> Either Error (Set TypeName)
+normalizeTypeSet compTys =
+    \case
+        AllComponents   -> return (Map.keysSet compTys)
+        AllNaturals     -> return (filterType _NaturalType)
+        AllRoles        -> return (filterType _RoleType)
+        AllCompartments -> return (filterType _CompartmentType)
+        ComponentTypeSet (toList -> tyNames) -> do
+            traverse_ exists tyNames
+            return (Set.fromList (fmap unLoc tyNames))
+  where
+    exists (Loc tyName rgn)
+        | Map.member tyName compTys = return ()
+        | otherwise = throw rgn UndefinedType
+
+    filterType p = Map.keysSet (Map.filter (has p) compTys)

@@ -22,6 +22,8 @@ import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict    as Map
 import           Data.Maybe         (mapMaybe)
+import           Data.Set           (Set)
+import qualified Data.Set           as Set
 
 
 import           Rbsc.Data.Array     (Array)
@@ -164,13 +166,11 @@ toLiteral e = case e of
         return (Literal
             (view compContainedIn role == Just (view compName compartment)))
 
-    Quantified q mTyName sc -> do
-        comps <- components mTyName <$> view constants
-        let ty        = TyComponent mTyName
-            compExprs = fmap (\c -> T.SomeExpr (Literal c) ty) comps
+    Quantified q tySet sc -> do
+        comps <- components tySet <$> view constants
 
         -- instantiate quantified expression and reduce
-        es <- traverse (reduce' . instantiate sc) compExprs
+        es <- traverse (reduce' . instantiate sc) comps
 
         -- remove all literals that do not influence the truth value
         let es' = filterLiterals q es
@@ -223,18 +223,12 @@ isNeutralElement Exists = \case
     _             -> False
 
 
--- | Get the list of all constants of type 'Component'. If a 'TypeName' is
--- given, only the 'Component's of this type are returned.
-components :: Maybe TypeName -> Constants -> [Component]
-components mTyName = mapMaybe getComponent . Map.elems
+-- | Get a list of all constants that have a component type contained in
+-- the given set.
+components :: Set TypeName -> Constants -> [SomeExpr]
+components tySet = mapMaybe f . Map.elems
   where
-    getComponent :: SomeExpr -> Maybe Component
-    getComponent = \case
-        SomeExpr (Literal comp) (TyComponent tyName)
-            | matchType tyName -> Just comp
+    f = \case
+        e@(SomeExpr _ (TyComponent ty))
+            | ty `Set.isSubsetOf` tySet -> Just e
         _ -> Nothing
-
-    matchType tyName =
-        case mTyName of
-            Just tyName' -> tyName == Just tyName'
-            Nothing      -> True

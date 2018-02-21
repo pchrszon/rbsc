@@ -32,6 +32,7 @@ module Rbsc.TypeChecker.Internal
     , isEqType
     , isOrdType
     , isNumType
+    , typeError
     , renderType
     ) where
 

@@ -5,6 +5,7 @@
 module Rbsc.Parser.Expr
     ( expr
     , range
+    , componentTypeSet
     ) where
 
 
@@ -12,15 +13,17 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.State.Strict
 
-import Data.List.NonEmpty (NonEmpty (..))
-import Data.Semigroup hiding (option)
-import Data.Text          (Text)
+import           Data.List.NonEmpty (NonEmpty (..))
+import           Data.Semigroup     hiding (option)
+import qualified Data.Set           as Set
+import           Data.Text          (Text)
 
 import Text.Megaparsec
 import Text.Megaparsec.Expr
 
 
-import Rbsc.Data.Function (FunctionName (..))
+import Rbsc.Data.ComponentType
+import Rbsc.Data.Function      (FunctionName (..))
 
 import Rbsc.Parser.Lexer
 
@@ -36,6 +39,20 @@ range = brackets ((,) <$> expr <*> (operator ".." *> expr))
 -- | Parser for 'Expr's.
 expr :: Parser LExpr
 expr = makeExprParser term table <?> "expression"
+
+
+componentTypeSet :: Parser ComponentTypeSet
+componentTypeSet = choice
+    [ AllComponents    <$  reserved "component"
+    , AllNaturals      <$  reserved "natural"
+    , AllRoles         <$  reserved "role"
+    , AllCompartments  <$  reserved "compartment"
+    , ComponentTypeSet <$> singleType
+    , ComponentTypeSet <$> typeSet
+    ]
+  where
+    singleType = Set.singleton <$> identifier
+    typeSet    = Set.fromList <$> braces (identifier `sepBy1` comma)
 
 
 term :: Parser LExpr
@@ -136,10 +153,10 @@ quantified :: Parser LExpr
 quantified = do
     Loc q start <- quantifier
     name <- unLoc <$> identifier
-    tyName <- optional (colon *> identifier)
+    tySet <- option AllComponents (colon *> componentTypeSet)
     e@(Loc _ end) <- dot *> expr
 
-    return (Loc (Quantified q name tyName e) (start <> end))
+    return (Loc (Quantified q name tySet e) (start <> end))
   where
     quantifier = choice
         [ Loc Ops.Forall <$> reserved "forall"
