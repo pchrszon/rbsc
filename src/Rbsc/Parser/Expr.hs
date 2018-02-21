@@ -175,6 +175,7 @@ table =
       ]
     , [ binary InfixN BoundTo (reserved "boundto")
       , binary InfixN Element (reserved "in")
+      , infixFunction
       , hasType
       ]
     , [ binaryLOp "*" (ArithOp Ops.Mul)
@@ -216,6 +217,13 @@ hasType =
         void (operator ":")
         tyName <- identifier
         return (\e -> Loc (HasType e tyName) (getLoc e <> getLoc tyName))
+
+
+infixFunction :: Monad m => ExprOp m
+infixFunction =
+    InfixN $ do
+        funcIdent <- fmap Identifier <$> identifier
+        return (\l r -> Loc (Call funcIdent [l, r]) (getLoc l <> getLoc r))
 
 
 -- | @binary assoc c p@ creates a binary infix 'Operator' with associativity
