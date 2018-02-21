@@ -138,6 +138,11 @@ fromSyntaxType = \case
             ( T.TyArray (lower', upper') sTy'
             , SomeType (TyArray (lowerVal, upperVal) ty)
             )
+    U.TyFunc sTyL sTyR -> do
+        (sTyL', SomeType tyL) <- fromSyntaxType sTyL
+        (sTyR', SomeType tyR) <- fromSyntaxType sTyR
+        return (T.TyFunc sTyL' sTyR', SomeType (tyL --> tyR))
+
 
 type Builder a = StateT BuilderState (Either Error) a
 

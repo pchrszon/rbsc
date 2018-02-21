@@ -19,4 +19,5 @@ data Type expr
     | TyDouble
     | TyComponent ComponentTypeSet
     | TyArray (expr, expr) (Type expr)
+    | TyFunc (Type expr) (Type expr)
     deriving (Show, Functor, Foldable, Traversable)
