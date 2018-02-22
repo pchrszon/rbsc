@@ -33,9 +33,9 @@ data Report = Report
 
 -- | A reference to a code region with an optional description.
 data Part = Part
-    { _type :: !PartType
-    , _region   :: !Region
-    , _message  :: Maybe Text
+    { _type    :: !PartType
+    , _region  :: !Region
+    , _message :: Maybe Text
     }
 
 

@@ -146,7 +146,7 @@ dictShow = \case
     TyFunc _ _    -> Dict
 
 
--- | Check if for a given 'Type' @t@ whether @t@ is an instance of 'Eq'.
+-- | Check if a given 'Type' @t@ is an instance of 'Eq'.
 checkEq :: Type t -> Maybe (Dict (Eq t))
 checkEq = \case
     TyBool        -> return Dict
@@ -159,7 +159,7 @@ checkEq = \case
     _ -> Nothing
 
 
--- | Check if for a given 'Type' @t@ whether @t@ is an instance of 'Num'.
+-- | Check if a given 'Type' @t@ is an instance of 'Num'.
 checkNum :: Type t -> Maybe (Dict (Num t))
 checkNum = \case
     TyInt    -> return Dict
@@ -172,7 +172,7 @@ numTypes :: [SomeType]
 numTypes = [SomeType TyInt, SomeType TyDouble]
 
 
--- | Check if for a given 'Type' @t@ whether @t@ is an instance of 'Ord'.
+-- | Check if a given 'Type' @t@ is an instance of 'Ord'.
 checkOrd :: Type t -> Maybe (Dict (Ord t))
 checkOrd = \case
     TyInt        -> return Dict

@@ -26,7 +26,7 @@ import Rbsc.Data.Function
 import Rbsc.Data.Type
 
 import Rbsc.Report.Error
-import Rbsc.Report.Region (Loc (..), Region)
+import Rbsc.Report.Region (Loc (..), Region, withLocOf)
 
 import           Rbsc.Syntax.Expr.Typed   (SomeExpr (..))
 import qualified Rbsc.Syntax.Expr.Typed   as T
@@ -141,13 +141,13 @@ tcExpr (Loc e rgn) = case e of
         tyComponent <- getTyComponent
         l' <- l `hasType` tyComponent
         r' <- r `hasType` tyComponent
-        T.BoundTo l' r' `withType` TyBool
+        T.BoundTo (l' `withLocOf` l) r' `withType` TyBool
 
     U.Element l r -> do
         tyComponent <- getTyComponent
         l' <- l `hasType` tyComponent
         r' <- r `hasType` tyComponent
-        T.Element l' r' `withType` TyBool
+        T.Element (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 
     U.Quantified q varName tySet body -> do
         compTys <- view componentTypes

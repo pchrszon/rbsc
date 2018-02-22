@@ -7,7 +7,9 @@ import qualified Data.Text.IO                              as Text
 import           Data.Text.Prettyprint.Doc.Render.Terminal
 
 
-import Rbsc.Data.ModelInfo
+import Rbsc.Data.System
+
+import Rbsc.Instancing
 
 import Rbsc.Parser
 
@@ -16,10 +18,11 @@ import Rbsc.Report.Error
 
 import Rbsc.TypeChecker
 
+
 import Rbsc.Syntax.Typed
 
 
-compile :: FilePath -> IO (Maybe (TModel, ModelInfo))
+compile :: FilePath -> IO (Maybe (System, [LSomeExpr]))
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
@@ -27,7 +30,9 @@ compile path = do
         Left errors -> printErrors errors
         Right model -> case typeCheck 10 model of
             Left errors -> printErrors errors
-            Right result -> return (Just result)
+            Right (model', info) -> case buildSystem model' info of
+                Left err -> printErrors [err]
+                Right result -> return (Just result)
 
 
 printErrors :: [Error] -> IO (Maybe a)

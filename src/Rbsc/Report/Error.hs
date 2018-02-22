@@ -40,6 +40,8 @@ data ErrorDesc
     | NotAnArray !Text
     | NotAFunction !Text
     | WrongNumberOfArguments !Int !Int
+    | NotARole
+    | NotACompartment
 
     | DivisionByZero
     | NotConstant
@@ -118,6 +120,18 @@ toReport (Error rgn desc) = case desc of
             [ errorPart rgn . Just $
                 "arguments given: " <> Text.pack (show actual) <>
                 "\nexpected: " <> Text.pack (show expected)
+            ]
+
+    NotARole ->
+        Report "component is not a role"
+            [ errorPart rgn . Just $
+                "only roles can be bound to players and\n" <>
+                "be contained in compartments"
+            ]
+
+    NotACompartment ->
+        Report "component is not a compartment"
+            [ errorPart rgn (Just "only compartments can contain roles")
             ]
 
     DivisionByZero ->

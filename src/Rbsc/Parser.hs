@@ -6,6 +6,7 @@ module Rbsc.Parser
 import Control.Lens
 import Control.Monad.State.Strict
 
+import           Data.Either        (partitionEithers)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict    as Map
 import           Data.Maybe         (fromMaybe)
@@ -44,8 +45,7 @@ parse path content = do
     return $ case result of
         Left err -> Left [fromParseError sourceMap err]
         Right errorOrDefs ->
-            let errors = toListOf (traverse._Left) errorOrDefs
-                defs   = toListOf (traverse._Right) errorOrDefs
+            let (errors, defs) = partitionEithers errorOrDefs
             in if null errors
                    then Right (toModel defs)
                    else Left (fmap (fromParseError sourceMap) errors)

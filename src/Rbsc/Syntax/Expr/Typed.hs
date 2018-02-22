@@ -57,8 +57,8 @@ data Expr t where
     Apply       :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
     IfThenElse  :: Expr Bool -> Expr t -> Expr t -> Expr t
     HasType     :: Expr Component -> TypeName -> Expr Bool
-    BoundTo     :: Expr Component -> Expr Component -> Expr Bool
-    Element     :: Expr Component -> Expr Component -> Expr Bool
+    BoundTo     :: Loc (Expr Component) -> Expr Component -> Expr Bool
+    Element     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound       :: Int -> Type t -> Expr t
     Lambda      :: Type a -> Scope b -> Expr (Fn (a -> b))
     Quantified  :: Quantifier -> Set TypeName -> Scope Bool -> Expr Bool
@@ -105,8 +105,8 @@ instantiate (Scope body) (SomeExpr s ty) = go 0 body
         Apply f e           -> Apply (go i f) (go i e)
         IfThenElse c t e    -> IfThenElse (go i c) (go i t) (go i e)
         HasType e tyName    -> HasType (go i e) tyName
-        BoundTo l r         -> BoundTo (go i l) (go i r)
-        Element l r         -> Element (go i l) (go i r)
+        BoundTo l r         -> BoundTo (fmap (go i) l) (go i r)
+        Element l r         -> Element (fmap (go i) l) (fmap (go i) r)
         Bound i' ty'
             | i == i' -> case typeEq ty ty' of
                 Just Refl -> s
@@ -154,8 +154,8 @@ descend f = \case
     Apply g e          -> Apply <$> f g <*> f e
     IfThenElse c t e   -> IfThenElse <$> f c <*> f t <*> f e
     HasType e tyName   -> HasType <$> f e <*> pure tyName
-    BoundTo l r        -> BoundTo <$> f l <*> f r
-    Element l r        -> Element <$> f l <*> f r
+    BoundTo l r        -> BoundTo <$> traverse f l <*> f r
+    Element l r        -> Element <$> traverse f l <*> traverse f r
     Bound i ty         -> pure (Bound i ty)
     Lambda ty (Scope body) -> Lambda ty . Scope <$> f body
     Quantified q tySet (Scope body) -> Quantified q tySet . Scope <$> f body
