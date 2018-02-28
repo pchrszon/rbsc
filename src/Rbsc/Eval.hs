@@ -168,15 +168,7 @@ toLiteral e = case e of
 
     Quantified q tySet sc -> do
         comps <- components tySet <$> view constants
-
-        -- instantiate quantified expression and reduce
-        es <- traverse (reduce' . instantiate sc) comps
-
-        -- remove all literals that do not influence the truth value
-        let es' = filterLiterals q es
-
-        -- connect instantiated expressions
-        return (quantifier q es')
+        reduce' (quantifier q (fmap (removeBinder . instantiate sc) comps))
 
     _ -> return e
 
@@ -195,32 +187,22 @@ checkDepth = do
     when (depth <= 0) (throw rgn ExceededDepth)
 
 
-filterLiterals :: Quantifier -> [Expr Bool] -> [Expr Bool]
-filterLiterals q = filter (not . isNeutralElement q)
+removeBinder :: Expr t -> Expr t
+removeBinder = T.transform $ \case
+    Bound i ty -> Bound (i - 1) ty
+    e -> e
+
 
 quantifier :: Quantifier -> [Expr Bool] -> Expr Bool
-quantifier q = \case
-    [] -> neutralElement q
-    es -> foldr1 (LogicOp lOp) es
+quantifier q = foldr (LogicOp lOp) neutralElement
   where
     lOp = case q of
         Forall -> And
         Exists -> Or
 
-
-neutralElement :: Quantifier -> Expr Bool
-neutralElement = \case
-    Forall -> Literal True
-    Exists -> Literal False
-
-
-isNeutralElement :: Quantifier -> Expr Bool -> Bool
-isNeutralElement Forall = \case
-    Literal True -> True
-    _            -> False
-isNeutralElement Exists = \case
-    Literal False -> True
-    _             -> False
+    neutralElement = case q of
+        Forall -> Literal True
+        Exists -> Literal False
 
 
 -- | Get a list of all constants that have a component type contained in
