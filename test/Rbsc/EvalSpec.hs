@@ -7,27 +7,24 @@ module Rbsc.EvalSpec (spec) where
 
 import Control.Lens
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set        as Set
-
 import Test.Hspec
 
 
-import Rbsc.Data.Component
-import Rbsc.Data.ComponentType
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
 
 import Rbsc.Eval
+
+import Rbsc.Instancing
 
 import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
 
-import           Rbsc.Syntax.Expr.Typed   (Constants, SomeExpr (..))
-import qualified Rbsc.Syntax.Expr.Typed   as T
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
+import Rbsc.TypeChecker
 import Rbsc.TypeChecker.Expr
 import Rbsc.TypeChecker.Internal hiding (componentTypes, symbolTable)
 
@@ -42,6 +39,11 @@ spec = do
 
         it "evaluates quantified expressions" $
             eval' TyBool [expr| forall x : R. x boundto n |]
+            `shouldBe`
+            Right True
+
+        it "evaluates functions containing quantified expressions" $
+            eval' TyBool [expr| n playerIn c |]
             `shouldBe`
             Right True
 
@@ -77,51 +79,51 @@ spec = do
             Right "RelOp Lt (ArithOp Add (Identifier \"y\" TyInt) (Literal 1)) (Literal 2)"
 
 
-constants :: Constants
-constants = Map.fromList
-    [ ("x", SomeExpr (T.Literal 1) TyInt)
-    , ("n", SomeExpr
-        (T.Literal (Component "n" "N" Nothing Nothing))
-        (TyComponent (Set.singleton "N")))
-    , ("r", SomeExpr
-        (T.Literal (Component "r" "R" (Just "n") Nothing))
-        (TyComponent (Set.singleton "R")))
-    , ("f", SomeExpr -- f(i : int) : int = f(i)
-        (T.Lambda TyInt (T.Scope (T.Apply
-            (T.Identifier "f" (TyInt --> TyInt))
-            (T.Bound 0 TyInt))))
-        (TyInt --> TyInt))
-    ]
+modelInfo :: ModelInfo
+modelInfo =
+    let Right (model', info) = typeCheck 10
+            [model|
+                natural type N;
+                role type R(N);
+                compartment type C(R);
 
+                const x: int = 1;
 
-symbolTable :: SymbolTable
-symbolTable = Map.fromList
-    [ ("x", SomeType TyInt)
-    , ("y", SomeType TyInt)
-    , ("n", SomeType (TyComponent (Set.singleton "N")))
-    , ("r", SomeType (TyComponent (Set.singleton "R")))
-    , ("f", SomeType (TyInt --> TyInt))
-    ]
+                function f(i: int) : int = f(i);
 
-componentTypes :: ComponentTypes
-componentTypes = Map.fromList
-    [ ("N", NaturalType)
-    , ("R", RoleType (Set.fromList ["N"]))
-    ]
+                function playerIn(p: component, c: compartment) : bool =
+                    exists r: role. r in c & r boundto p;
+
+                system {
+                    n : N,
+                    r : R,
+                    c : C,
+                    r boundto n,
+                    r in c
+                }
+            |]
+        Right [(_, info')] = generateInstances 10 model' info
+    in info' & symbolTable.at "y" .~ Just (SomeType TyInt)
 
 
 eval' :: Type t -> Loc U.Expr -> Either Error t
 eval' ty e = do
     e' <-
-        runTypeChecker (tcExpr e) componentTypes symbolTable >>=
-        extract ty (getLoc e)
-    eval constants 10 (e' `withLocOf` e)
+        runTypeChecker
+            (tcExpr e)
+            (view componentTypes modelInfo)
+            (view symbolTable modelInfo) >>=
+            extract ty (getLoc e)
+    eval (view constants modelInfo) 10 (e' `withLocOf` e)
 
 
 reduce' :: Type t -> Loc U.Expr -> Either Error String
 reduce' ty e = do
     e' <-
-        runTypeChecker (tcExpr e) Map.empty symbolTable >>=
-        extract ty (getLoc e)
-    e'' <- reduce constants 10 (e' `withLocOf` e)
+        runTypeChecker
+            (tcExpr e)
+            (view componentTypes modelInfo)
+            (view symbolTable modelInfo) >>=
+            extract ty (getLoc e)
+    e'' <- reduce (view constants modelInfo) 10 (e' `withLocOf` e)
     return (show e'')
