@@ -73,34 +73,54 @@ eval cs depth e = do
 -- | Reduce an expression as far as possible by evaluating constant
 -- sub-expressions.
 reduce :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Error (Expr t)
-reduce cs depth (Loc e rgn) = runReducer (reduce' e) cs depth rgn
+reduce cs depth (Loc e rgn) = runReducer (go e) cs depth rgn
+  where
+    go :: Expr t -> Reducer (Expr t)
+    go e' = case e' of
+        LogicOp lOp l r -> do
+            l' <- go l
+            case l' of
+                Literal x -> case logicOpShortcut lOp x of
+                    Just b -> return (Literal b)
+                    Nothing -> do
+                        r' <- go r
+                        toLiteral (LogicOp lOp l' r')
+                _ -> do
+                    r' <- go r
+                    return (LogicOp lOp l' r')
+
+        Apply f arg -> do
+            f' <- go f
+            case f' of
+                Lambda ty body -> do
+                    checkDepth
+                    let body' = instantiate body (SomeExpr arg ty)
+                    local (remainingDepth %~ subtract 1) $
+                        go body'
+                _ -> do
+                    arg' <- go arg
+                    toLiteral (Apply f' arg')
+
+        IfThenElse cond _then _else -> do
+            cond' <- go cond
+            case cond' of
+                Literal True  -> go _then
+                Literal False -> go _else
+                _ -> do
+                    _then' <- go _then
+                    _else' <- go _else
+                    return (IfThenElse cond' _then' _else')
+
+        Quantified q tySet sc -> do
+            comps <- components tySet <$> view constants
+            go (quantifier q (fmap (removeBinder . instantiate sc) comps))
+
+        _ -> descend go e' >>= toLiteral
 
 
-reduce' :: Expr t -> Reducer (Expr t)
-reduce' e = case e of
-    LogicOp lOp l r -> do
-        l' <- reduce' l
-        case l' of
-            Literal x -> case logicOpShortcut lOp x of
-                Just b -> return (Literal b)
-                Nothing -> do
-                    r' <- reduce' r
-                    toLiteral (LogicOp lOp l' r')
-            _ -> do
-                r' <- reduce' r
-                return (LogicOp lOp l' r')
-    IfThenElse cond _then _else -> do
-        cond' <- reduce' cond
-        case cond' of
-            Literal True  -> reduce' _then
-            Literal False -> reduce' _else
-            _ -> do
-                _then' <- reduce' _then
-                _else' <- reduce' _else
-                return (IfThenElse cond' _then' _else')
-    _ -> descend reduce' e >>= toLiteral
-
-
+-- | Reduces an expression to a literal if possible, otherwise the original
+-- expression is returned. An expression can only be reduced if all
+-- sub-expressions are literals.
 toLiteral :: Expr t -> Reducer (Expr t)
 toLiteral e = case e of
     Identifier name ty -> do
@@ -150,12 +170,6 @@ toLiteral e = case e of
     Apply (Literal (Fn f)) (Literal arg) ->
         return (Literal (f arg))
 
-    Apply (Lambda ty body) arg -> do
-        checkDepth
-        let body' = instantiate body (SomeExpr arg ty)
-        local (remainingDepth %~ subtract 1) $
-            reduce' body'
-
     HasType (Literal comp) tyName ->
         return (Literal (view compTypeName comp == tyName))
 
@@ -166,13 +180,11 @@ toLiteral e = case e of
         return (Literal
             (view compContainedIn role == Just (view compName compartment)))
 
-    Quantified q tySet sc -> do
-        comps <- components tySet <$> view constants
-        reduce' (quantifier q (fmap (removeBinder . instantiate sc) comps))
-
     _ -> return e
 
 
+-- | Transforms an array into an array value if the array only consists of
+-- literals.
 toArray :: NonEmpty (Expr t) -> Maybe (Array t)
 toArray = fmap Array.fromList . traverse f . NonEmpty.toList
   where
@@ -180,6 +192,8 @@ toArray = fmap Array.fromList . traverse f . NonEmpty.toList
     f _           = Nothing
 
 
+-- | Check whether the maximum recursion depth has been reached. If so, an
+-- 'ExceededDepth' error is thrown.
 checkDepth :: Reducer ()
 checkDepth = do
     depth <- view remainingDepth
@@ -187,6 +201,8 @@ checkDepth = do
     when (depth <= 0) (throw rgn ExceededDepth)
 
 
+-- | Removes a binder by decrementing every de-Bruijn index in the
+-- expression.
 removeBinder :: Expr t -> Expr t
 removeBinder = T.transform $ \case
     Bound i ty -> Bound (i - 1) ty

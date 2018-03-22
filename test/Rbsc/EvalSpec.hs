@@ -47,6 +47,11 @@ spec = do
             `shouldBe`
             Right True
 
+        it "evaluates built-in functions" $
+            eval' TyInt [expr| min(2, x) |]
+            `shouldBe`
+            Right 1
+
         it "does short-circuit evaluation" $
             eval' TyInt [expr| if true | (1 / 0 > 0) then 1 else f(1) |]
             `shouldBe`

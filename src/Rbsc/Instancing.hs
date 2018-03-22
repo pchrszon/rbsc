@@ -36,7 +36,8 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 
 
 -- | Generate all system instances that fulfill the constraints defined in
--- the system block of the model.
+-- the system block of the model. For each system, an extended 'ModelInfo'
+-- is returned that contains constants for each component instance.
 generateInstances ::
        RecursionDepth
     -> TModel
