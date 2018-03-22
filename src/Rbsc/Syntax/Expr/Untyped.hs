@@ -1,10 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase        #-}
 
 
 -- | Abstract syntax of untyped expressions.
 module Rbsc.Syntax.Expr.Untyped
     ( Expr(..)
     , LExpr
+    , clauses
     ) where
 
 
@@ -72,3 +74,10 @@ instance Plated LExpr where
 
 -- | A location-annotated 'Expr'.
 type LExpr = Loc Expr
+
+
+clauses :: LExpr -> [LExpr]
+clauses = \case
+    Loc (LogicOp And l r) _ -> clauses l ++ clauses r
+    Loc (LitBool True) _ -> []
+    e -> [e]
