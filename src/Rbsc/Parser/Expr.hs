@@ -152,16 +152,25 @@ ident = fmap Identifier <$> identifier
 quantified :: Parser LExpr
 quantified = do
     Loc q start <- quantifier
-    name <- unLoc <$> identifier
-    tySet <- option AllComponents (colon *> componentTypeSet)
+    ((name, tySet) : vars) <- variable `sepBy1` comma
     e@(Loc _ end) <- dot *> expr
 
-    return (Loc (Quantified q name tySet e) (start <> end))
+    let e' = apply (fmap (mkQuantified q end) vars) e
+    return (Loc (Quantified q (unLoc name) tySet e') (start <> end))
   where
+    mkQuantified q end (Loc name start, tySet) e =
+        Loc (Quantified q name tySet e) (start <> end)
+
+    variable = (,)
+        <$> identifier
+        <*> option AllComponents (colon *> componentTypeSet)
+
     quantifier = choice
         [ Loc Ops.Forall <$> reserved "forall"
         , Loc Ops.Exists <$> reserved "exists"
         ]
+
+    apply = foldr (.) id
 
 
 -- | Operators working on 'Expr's.
