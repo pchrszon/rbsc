@@ -42,6 +42,15 @@ spec = do
             `shouldBe`
             Right True
 
+        it "evaluates nested quantified expressions" $
+            eval' TyBool
+                [expr|
+                    forall x: component, r1: role, r2: role.
+                        r1 boundto x & r2 boundto x => r1 = r2
+                |]
+            `shouldBe`
+            Right True
+
         it "evaluates functions containing quantified expressions" $
             eval' TyBool [expr| n playerIn c |]
             `shouldBe`

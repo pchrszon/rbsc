@@ -111,9 +111,13 @@ reduce cs depth (Loc e rgn) = runReducer (go e) cs depth rgn
                     _else' <- go _else
                     return (IfThenElse cond' _then' _else')
 
+        -- Do not reduce under lambda, because binders should be removed
+        -- top-down.
+        Lambda _ _ -> return e'
+
         Quantified q tySet sc -> do
             comps <- components tySet <$> view constants
-            go (quantifier q (fmap (removeBinder . instantiate sc) comps))
+            go (quantifier q (fmap (instantiate sc) comps))
 
         _ -> descend go e' >>= toLiteral
 
@@ -199,14 +203,6 @@ checkDepth = do
     depth <- view remainingDepth
     rgn   <- view region
     when (depth <= 0) (throw rgn ExceededDepth)
-
-
--- | Removes a binder by decrementing every de-Bruijn index in the
--- expression.
-removeBinder :: Expr t -> Expr t
-removeBinder = T.transform $ \case
-    Bound i ty -> Bound (i - 1) ty
-    e -> e
 
 
 quantifier :: Quantifier -> [Expr Bool] -> Expr Bool
