@@ -7,7 +7,7 @@
 
 
 -- | Instantiation of system instances.
-module Rbsc.Instancing
+module Rbsc.Instantiation
     ( generateInstances
     ) where
 

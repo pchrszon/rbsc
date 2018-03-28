@@ -15,7 +15,7 @@ import Rbsc.Data.Type
 
 import Rbsc.Eval
 
-import Rbsc.Instancing
+import Rbsc.Instantiation
 
 import Rbsc.Parser.TH
 

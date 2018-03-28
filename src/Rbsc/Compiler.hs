@@ -12,7 +12,7 @@ import System.Process (callCommand)
 
 import Rbsc.Data.System
 
-import Rbsc.Instancing
+import Rbsc.Instantiation
 
 import Rbsc.Parser
 
