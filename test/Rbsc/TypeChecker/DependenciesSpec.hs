@@ -63,7 +63,8 @@ dependencies m = do
 
 getName :: Dependency -> Name
 getName = \case
-    DepConstant c          -> unLoc (constName c)
-    DepFunction f          -> unLoc (functionName f)
+    DepDefinition def -> case def of
+        DefConstant c  -> unLoc (constName c)
+        DefFunction f  -> unLoc (functionName f)
+        DefComponent c -> unLoc (compDefName c)
     DepFunctionSignature f -> "sig_" <> unLoc (functionName f)
-    DepComponent name _    -> name

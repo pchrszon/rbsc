@@ -8,6 +8,8 @@
 module Rbsc.TypeChecker.Identifiers
     ( Identifiers
     , IdentifierDef(..)
+    , ComponentDef(..)
+
     , identifierDefs
     ) where
 
@@ -15,6 +17,8 @@ module Rbsc.TypeChecker.Identifiers
 import Control.Lens
 import Control.Monad.State.Strict
 
+import Data.Function
+import Data.Ord
 import           Data.Foldable
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -34,8 +38,22 @@ type Identifiers = Map Name (Loc IdentifierDef)
 data IdentifierDef
     = DefConstant UConstant -- ^ the identifier represents a constant
     | DefFunction UFunction -- ^ the identifier represents a function
-    | DefComponent !Name !(Loc TypeName) -- ^ the identifier represents a component
-    deriving (Eq, Show)
+    | DefComponent ComponentDef -- ^ the identifier represents a component or a component array
+    deriving (Eq, Ord, Show)
+
+
+-- | The definition of a component instance or a component array.
+data ComponentDef = ComponentDef
+    { compDefName     :: !(Loc Name)
+    , compDefTypeName :: !(Loc TypeName)
+    , compDefLength   :: Maybe LExpr
+    } deriving (Show)
+
+instance Eq ComponentDef where
+    (==) = (==) `on` compDefName
+
+instance Ord ComponentDef where
+    compare = comparing compDefName
 
 
 data BuilderState = BuilderState
@@ -66,8 +84,12 @@ insertFunctions = traverse_ (insert <$> functionName <*> DefFunction)
 
 insertComponents :: [LExpr] -> Builder ()
 insertComponents es = for_ es $ \case
-    Loc (HasType (Loc (Identifier name) rgn) tyName) _ ->
-        insert (Loc name rgn) (DefComponent name tyName)
+    HasType' (Loc (Identifier name) rgn) tyName ->
+        insert (Loc name rgn)
+            (DefComponent (ComponentDef (Loc name rgn) tyName Nothing))
+    HasType' (Index' (Loc (Identifier name) rgn) len) tyName ->
+        insert (Loc name rgn)
+            (DefComponent (ComponentDef (Loc name rgn) tyName (Just len)))
     _ -> return ()
 
 
@@ -84,7 +106,7 @@ runBuilder m
 
 insert :: Loc Name -> IdentifierDef -> Builder ()
 insert (Loc name rgn) def = use (identifiers.at name) >>= \case
-    Just ident -> throw' (Error rgn (DuplicateIdentifier (getLoc ident)))
+    Just def' -> throw' (Error rgn (DuplicateIdentifier (getLoc def')))
     Nothing -> identifiers.at name .= Just (Loc def rgn)
 
 

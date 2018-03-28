@@ -32,10 +32,10 @@ visualizeInstance :: System -> (Name, TypeName) -> Doc ann
 visualizeInstance sys (name, tyName) = case containedRoles name sys of
     []  | isJust (view (containedIn.at name) sys) -> emptyDoc
         | otherwise ->
-            pretty name <+>
+            ident name <+>
             brackets ("shape=box,label=" <> dquotes instanceLabel) <> semi
     roleNames ->
-        pretty name <+>
+        ident name <+>
         brackets ("shape=plaintext,label=<" <> table roleNames <> ">") <> semi
   where
     instanceLabel = pretty name <+> colon <+> pretty tyName
@@ -60,5 +60,9 @@ visualizeBoundTo sys (roleName, playerName) =
     port name =
         case view (containedIn.at name) sys of
             Just compartmentName ->
-                pretty compartmentName <> colon <> pretty name
-            Nothing -> pretty name
+                pretty compartmentName <> colon <> ident name
+            Nothing -> ident name
+
+
+ident :: Pretty a => a -> Doc ann
+ident = dquotes . pretty

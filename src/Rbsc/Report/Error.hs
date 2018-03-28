@@ -45,6 +45,7 @@ data ErrorDesc
 
     | DivisionByZero
     | NotConstant
+    | InvalidUpperBound !Int
     | IndexOutOfBounds (Int, Int) !Int
     | ExceededDepth
     deriving (Eq, Show)
@@ -143,12 +144,19 @@ toReport (Error rgn desc) = case desc of
     NotConstant ->
         Report "expression is not constant" [ errorPart rgn Nothing ]
 
+    InvalidUpperBound len ->
+        Report "invalid array size"
+            [ errorPart rgn . Just $
+                "array must have at least size 1, but the given size is " <>
+                Text.pack (show len)
+            ]
+
     IndexOutOfBounds (lower, upper) idx ->
         Report "index out of bounds"
             [ errorPart rgn . Just $
                 "array has bounds [" <> Text.pack (show lower) <> " .. " <>
-                Text.pack (show upper) <> "]" <>
-                "but the index is " <> Text.pack (show idx)
+                Text.pack (show upper) <> "] but the index is " <>
+                Text.pack (show idx)
             ]
 
     ExceededDepth ->

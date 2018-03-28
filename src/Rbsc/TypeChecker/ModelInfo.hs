@@ -1,5 +1,6 @@
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE TemplateHaskell  #-}
 
 
 -- | Construction of the symbol table and evaluation of constants.
@@ -62,10 +63,11 @@ getModelInfo depth m = do
 
 addDependency :: Dependency -> Builder ()
 addDependency = \case
-    DepConstant c            -> addConstant c
+    DepDefinition def -> case def of
+        DefConstant c  -> addConstant c
+        DefFunction f  -> addFunction f
+        DefComponent c -> addComponents c
     DepFunctionSignature f   -> addFunctionSignature f
-    DepFunction f            -> addFunction f
-    DepComponent name tyName -> addComponent name tyName
 
 
 addConstant :: UConstant -> Builder ()
@@ -113,12 +115,28 @@ addFunction (U.Function (Loc name _) params sTy body) = do
         return (unLoc n, ty)
 
 
-addComponent :: Name -> Loc TypeName -> Builder ()
-addComponent name (Loc tyName rgn) = do
-    types <- use (modelInfo.componentTypes)
-    if tyName `Map.member` types
-        then insertSymbol name (SomeType (TyComponent (Set.singleton tyName)))
-        else throw rgn UndefinedType
+addComponents :: ComponentDef -> Builder ()
+addComponents (ComponentDef (Loc name _) (Loc tyName rgn) mLen) =
+    whenTypeExists $ case mLen of
+        -- add component array
+        Just len -> do
+            len' <- fst <$> evalIntegerExpr len
+            if len' > 0
+                then
+                    let tyArray = TyArray (0, len' - 1) tyComponent
+                    in insertSymbol name (SomeType tyArray)
+                else throw (getLoc len) (InvalidUpperBound len')
+        -- add single component
+        Nothing ->
+            insertSymbol name (SomeType tyComponent)
+  where
+    tyComponent = TyComponent (Set.singleton tyName)
+
+    whenTypeExists m = do
+        types <- use (modelInfo.componentTypes)
+        if tyName `Map.member` types
+            then m
+            else throw rgn UndefinedType
 
 
 fromSyntaxType :: UType -> Builder (TType, SomeType)
@@ -164,7 +182,6 @@ evalIntegerExpr e = do
     e' <- typeCheckExpr TyInt e
     v  <- fromInteger <$> evalExpr (e' `withLocOf` e)
     return (v, SomeExpr e' TyInt `withLocOf` e)
-
 
 
 evalExpr :: Loc (T.Expr t) -> Builder t

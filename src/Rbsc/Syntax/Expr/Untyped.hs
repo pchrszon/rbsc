@@ -1,11 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE PatternSynonyms   #-}
 
 
 -- | Abstract syntax of untyped expressions.
 module Rbsc.Syntax.Expr.Untyped
     ( Expr(..)
     , LExpr
+
+    , pattern Index'
+    , pattern HasType'
+
     , clauses
     ) where
 
@@ -70,6 +75,13 @@ instance Plated LExpr where
         BoundTo l r -> BoundTo <$> f l <*> f r
         Element l r -> Element <$> f l <*> f r
         Quantified q varName tySet e' -> Quantified q varName tySet <$> f e'
+
+
+pattern Index' :: LExpr -> LExpr -> LExpr
+pattern Index' e idx <- Loc (Index e idx) _
+
+pattern HasType' :: LExpr -> Loc TypeName -> LExpr
+pattern HasType' e tyName <- Loc (HasType e tyName) _
 
 
 -- | A location-annotated 'Expr'.

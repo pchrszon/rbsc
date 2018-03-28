@@ -39,10 +39,8 @@ import Rbsc.Util
 -- | A @Dependency@ corresponds to an 'IdentifierDef'. Each @Dependency@
 -- may itself be dependend on other dependencies.
 data Dependency
-    = DepConstant UConstant
+    = DepDefinition IdentifierDef
     | DepFunctionSignature UFunction
-    | DepFunction UFunction
-    | DepComponent !Name !(Loc TypeName)
     deriving (Eq, Ord, Show)
 
 
@@ -63,7 +61,8 @@ makeLenses ''AnalyzerInfo
 -- then a 'CyclicDefinition' error is returned.
 sortDefinitions :: Identifiers -> Either Error [Dependency]
 sortDefinitions idents = do
-    depGraph <- runAnalyzer idents (traverse_ insert (Map.elems idents))
+    depGraph <-
+        runAnalyzer idents (traverse_ (insert . unLoc) (Map.elems idents))
     case topoSort (Map.keys depGraph) (lookupEdges depGraph) of
         Right deps    -> return (fmap unLoc deps)
         Left depCycle -> throwError (buildError depCycle)
@@ -75,10 +74,12 @@ sortDefinitions idents = do
         Error rgn (CyclicDefinition (getConstructName dep) (fmap getLoc deps))
 
     getConstructName = \case
-        DepConstant _          -> "constant"
-        DepFunction _          -> "function"
+        DepDefinition def -> case def of
+            DefConstant _ -> "constant"
+            DefFunction _ -> "function"
+            DefComponent (ComponentDef _ _ Nothing)  -> "component"
+            DefComponent (ComponentDef _ _ (Just _)) -> "component array"
         DepFunctionSignature _ -> "function"
-        DepComponent _ _       -> "component"
 
 
 -- | A dependency graph.
@@ -91,16 +92,19 @@ type LDependency = Loc Dependency
 
 
 -- | Insert an 'IdentifierDef' into the dependency graph.
-insert :: Loc IdentifierDef -> Analyzer ()
-insert (Loc def rgn) = case def of
-    DefConstant c            -> insertConstant c
-    DefFunction f            -> insertFunction f
-    DefComponent name tyName -> insertComponent name tyName rgn
+insert :: IdentifierDef -> Analyzer ()
+insert def = case def of
+    DefConstant c  -> insertConstant c
+    DefFunction f  -> insertFunction f
+    DefComponent c -> insertComponents c
 
 
 insertConstant :: UConstant -> Analyzer ()
 insertConstant c@(Constant (Loc _ rgn) sTy e) =
-    newDependency (DepConstant c) rgn (dependOnIdentifiers idents)
+    newDependency
+        (DepDefinition (DefConstant c))
+        rgn
+        (dependOnIdentifiers idents)
   where
     idents = identsInExpr e `Set.union` maybe Set.empty identsInType sTy
 
@@ -109,16 +113,16 @@ insertFunction :: UFunction -> Analyzer ()
 insertFunction f@(Function (Loc _ rgn) _ _ e) = do
     newDependency (DepFunctionSignature f) rgn $
         dependOnIdentifiers (identsInSignature f)
-    newDependency (DepFunction f) rgn $ do
+    newDependency (DepDefinition (DefFunction f)) rgn $ do
         dependOn (DepFunctionSignature f) rgn
         local ((inFunctionBody .~ True) . (parameters .~ parameterSet f)) $
             dependOnIdentifiers (identsInExpr e)
 
 
-insertComponent :: Name -> Loc TypeName -> Region -> Analyzer ()
-insertComponent name tyName rgn =
-    newDependency (DepComponent name tyName) rgn $
-        return ()
+insertComponents :: ComponentDef -> Analyzer ()
+insertComponents c@(ComponentDef (Loc _ rgn) _ mLen) =
+    newDependency (DepDefinition (DefComponent c)) rgn $
+        void (_Just (dependOnIdentifiers . identsInExpr) mLen)
 
 
 -- | @dependOnIdentifiers idents@ states that the current definition (see
@@ -143,7 +147,7 @@ dependOnIdentifier (Loc name rgn) = do
 
 depsFromIdentifierDef :: IdentifierDef -> Analyzer [Dependency]
 depsFromIdentifierDef = \case
-    DefConstant c -> return [DepConstant c]
+    DefConstant c -> return [DepDefinition (DefConstant c)]
     DefFunction f -> do
         inBody <- view inFunctionBody
         if inBody
@@ -160,8 +164,9 @@ depsFromIdentifierDef = \case
             -- Also, the functions called by f must be known as well.
             else do
                 funcs <- view functions
-                return (fmap DepFunction (referencedFunctions funcs f))
-    DefComponent name tyName -> return [DepComponent name tyName]
+                let ref = referencedFunctions funcs f
+                return (fmap (DepDefinition . DefFunction) ref)
+    DefComponent c -> return [DepDefinition (DefComponent c)]
 
 
 -- | @referencedFunctions f@ returns a list of all functions called by @f@.
