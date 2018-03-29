@@ -109,6 +109,7 @@ deriving instance Data EqOp
 deriving instance Data RelOp
 deriving instance Data LogicOp
 deriving instance Data Quantifier
+deriving instance (Data comp, Data expr) => Data (QuantifiedType comp expr)
 
 deriving instance Data ComponentTypeSet
 

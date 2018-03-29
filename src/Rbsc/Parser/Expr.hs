@@ -28,7 +28,8 @@ import Rbsc.Data.Function      (FunctionName (..))
 import Rbsc.Parser.Lexer
 
 import           Rbsc.Syntax.Expr.Untyped
-import qualified Rbsc.Syntax.Operators    as Ops
+import qualified Rbsc.Syntax.Operators      as Ops
+import           Rbsc.Syntax.Quantification
 
 
 -- | Parser for ranges.
@@ -163,14 +164,18 @@ quantified = do
 
     variable = (,)
         <$> identifier
-        <*> option AllComponents (colon *> componentTypeSet)
+        <*> option (QdTypeComponent AllComponents) (colon *> quantifiedType)
 
     quantifier = choice
-        [ Loc Ops.Forall <$> reserved "forall"
-        , Loc Ops.Exists <$> reserved "exists"
+        [ Loc Forall <$> reserved "forall"
+        , Loc Exists <$> reserved "exists"
         ]
 
     apply = foldr (.) id
+
+
+quantifiedType :: Parser (QuantifiedType ComponentTypeSet LExpr)
+quantifiedType = QdTypeInt <$> range <|> QdTypeComponent <$> componentTypeSet
 
 
 -- | Operators working on 'Expr's.

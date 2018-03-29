@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE LambdaCase       #-}
-{-# LANGUAGE ViewPatterns     #-}
 
 
 -- | Type checking of expressions.
@@ -28,9 +27,10 @@ import Rbsc.Data.Type
 import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region, withLocOf)
 
-import           Rbsc.Syntax.Expr.Typed   (SomeExpr (..))
-import qualified Rbsc.Syntax.Expr.Typed   as T
-import qualified Rbsc.Syntax.Expr.Untyped as U
+import           Rbsc.Syntax.Expr.Typed     (SomeExpr (..))
+import qualified Rbsc.Syntax.Expr.Typed     as T
+import qualified Rbsc.Syntax.Expr.Untyped   as U
+import           Rbsc.Syntax.Quantification
 
 import Rbsc.TypeChecker.Internal
 
@@ -149,15 +149,27 @@ tcExpr (Loc e rgn) = case e of
         r' <- r `hasType` tyComponent
         T.Element (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 
-    U.Quantified q varName tySet body -> do
+    U.Quantified q varName (QdTypeComponent tySet) body -> do
         compTys <- view componentTypes
         tySet' <- lift (normalizeTypeSet compTys tySet)
-        let varTy = TyComponent tySet'
+        let varTy = SomeType (TyComponent tySet')
 
-        body' <- local (over boundVars ((varName, SomeType varTy) :)) $
+        body' <- local (over boundVars ((varName, varTy) :)) $
             body `hasType` TyBool
 
-        T.Quantified q tySet' (T.Scope body') `withType` TyBool
+        T.Quantified q (QdTypeComponent tySet') (T.Scope body')
+            `withType` TyBool
+
+    U.Quantified q varName (QdTypeInt (lower, upper)) body -> do
+        lower' <- lower `hasType` TyInt
+        upper' <- upper `hasType` TyInt
+        let varTy = SomeType TyInt
+
+        body' <- local (over boundVars ((varName, varTy) :)) $
+            body `hasType` TyBool
+
+        T.Quantified q (QdTypeInt (lower', upper')) (T.Scope body')
+            `withType` TyBool
 
 
 -- | @tcFunctionDef params tyRes body@ checks an untyped function

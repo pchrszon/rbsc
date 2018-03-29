@@ -6,6 +6,7 @@
 -- | Abstract syntax of untyped expressions.
 module Rbsc.Syntax.Expr.Untyped
     ( Expr(..)
+    , QuantifiedType(..)
     , LExpr
 
     , pattern Index'
@@ -27,6 +28,7 @@ import Rbsc.Data.Name
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Operators
+import Rbsc.Syntax.Quantification
 
 
 -- | An untyped expression.
@@ -50,8 +52,12 @@ data Expr
     | HasType LExpr (Loc TypeName)
     | BoundTo LExpr LExpr
     | Element LExpr LExpr
-    | Quantified !Quantifier !Name ComponentTypeSet LExpr
+    | Quantified !Quantifier !Name (QuantifiedType ComponentTypeSet LExpr) LExpr
     deriving (Show)
+
+
+-- | A location-annotated 'Expr'.
+type LExpr = Loc Expr
 
 instance Plated LExpr where
     plate f (Loc e rgn) = fmap (`Loc` rgn) $ case e of
@@ -74,7 +80,8 @@ instance Plated LExpr where
         HasType e' tyName -> HasType <$> f e' <*> pure tyName
         BoundTo l r -> BoundTo <$> f l <*> f r
         Element l r -> Element <$> f l <*> f r
-        Quantified q varName tySet e' -> Quantified q varName tySet <$> f e'
+        Quantified q varName var e' ->
+            Quantified q varName <$> traverse f var <*> f e'
 
 
 pattern Index' :: LExpr -> LExpr -> LExpr
@@ -82,10 +89,6 @@ pattern Index' e idx <- Loc (Index e idx) _
 
 pattern HasType' :: LExpr -> Loc TypeName -> LExpr
 pattern HasType' e tyName <- Loc (HasType e tyName) _
-
-
--- | A location-annotated 'Expr'.
-type LExpr = Loc Expr
 
 
 clauses :: LExpr -> [LExpr]

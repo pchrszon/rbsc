@@ -37,8 +37,13 @@ spec = do
             `shouldBe`
             Right 4
 
-        it "evaluates quantified expressions" $
-            eval' TyBool [expr| forall x : R. x boundto n |]
+        it "evaluates quantified expressions over components" $
+            eval' TyBool [expr| forall x: R. x boundto n |]
+            `shouldBe`
+            Right True
+
+        it "evaluates quantified expressions over integers" $
+            eval' TyBool [expr| forall i: [0..2]. i < 3 |]
             `shouldBe`
             Right True
 
@@ -51,8 +56,13 @@ spec = do
             `shouldBe`
             Right True
 
-        it "evaluates functions containing quantified expressions" $
+        it "evaluates functions containing quantified expressions over components" $
             eval' TyBool [expr| n playerIn c |]
+            `shouldBe`
+            Right True
+
+        it "evaluates functions containing quantified expressions over integers" $
+            eval' TyBool [expr| hasZero(square, -2, 2) |]
             `shouldBe`
             Right True
 
@@ -104,6 +114,11 @@ modelInfo =
                 const x: int = 1;
 
                 function f(i: int) : int = f(i);
+
+                function square(x: int) : int = x * x;
+
+                function hasZero(f: int -> int, from: int, to: int) : bool =
+                    exists x: [from .. to]. f(x) = 0;
 
                 function playerIn(p: component, c: compartment) : bool =
                     exists r: role. r in c & r boundto p;

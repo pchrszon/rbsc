@@ -9,6 +9,7 @@
 module Rbsc.Syntax.Expr.Typed
     ( Expr(..)
     , Scope(..)
+    , TQuantifiedType
 
     , SomeExpr(..)
 
@@ -37,6 +38,7 @@ import Rbsc.Data.Type
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Operators
+import Rbsc.Syntax.Quantification
 
 
 -- | Typed abstract syntax of expressions.
@@ -61,10 +63,12 @@ data Expr t where
     Element     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound       :: Int -> Type t -> Expr t
     Lambda      :: Type a -> Scope b -> Expr (Fn (a -> b))
-    Quantified  :: Quantifier -> Set TypeName -> Scope Bool -> Expr Bool
+    Quantified  :: Quantifier -> TQuantifiedType -> Scope Bool -> Expr Bool
 
 deriving instance Show (Expr t)
 
+
+type TQuantifiedType = QuantifiedType (Set TypeName) (Expr Integer)
 
 -- | A Scope contains an expression with a bound variable.
 --
@@ -113,8 +117,12 @@ instantiate (Scope body) (SomeExpr s ty) = go 0 body
                 Nothing   -> error "instantiate: type error"
             | otherwise -> Bound i' ty'
         Lambda ty' (Scope body') -> Lambda ty' (Scope (go (succ i) body'))
-        Quantified q tySet (Scope body') ->
-            Quantified q tySet (Scope (go (succ i) body'))
+        Quantified q qdTy (Scope body') ->
+            Quantified q (goQdType i qdTy) (Scope (go (succ i) body'))
+
+    goQdType i = \case
+        QdTypeComponent tySet    -> QdTypeComponent tySet
+        QdTypeInt (lower, upper) -> QdTypeInt (go i lower, go i upper)
 
 
 -- | Transform every element in an expression tree, in a bottom-up manner.
@@ -158,4 +166,9 @@ descend f = \case
     Element l r        -> Element <$> traverse f l <*> traverse f r
     Bound i ty         -> pure (Bound i ty)
     Lambda ty (Scope body) -> Lambda ty . Scope <$> f body
-    Quantified q tySet (Scope body) -> Quantified q tySet . Scope <$> f body
+    Quantified q qdTy@(QdTypeComponent _) (Scope body) ->
+        Quantified q qdTy . Scope <$> f body
+    Quantified q (QdTypeInt (lower, upper)) (Scope body) ->
+        Quantified q
+            <$> (QdTypeInt <$> ((,) <$> f lower <*> f upper))
+            <*> (Scope <$> f body)

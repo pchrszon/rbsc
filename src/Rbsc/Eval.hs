@@ -39,6 +39,7 @@ import Rbsc.Report.Region (Loc (..), Region)
 import Rbsc.Syntax.Expr.Typed (Constants)
 import Rbsc.Syntax.Expr.Typed as T
 import Rbsc.Syntax.Operators
+import Rbsc.Syntax.Quantification
 
 
 -- | The recursion depth.
@@ -115,9 +116,18 @@ reduce cs depth (Loc e rgn) = runReducer (go e) cs depth rgn
         -- top-down.
         Lambda _ _ -> return e'
 
-        Quantified q tySet sc -> do
+        Quantified q (QdTypeComponent tySet) sc -> do
             comps <- components tySet <$> view constants
             go (quantifier q (fmap (instantiate sc) comps))
+
+        Quantified q (QdTypeInt (lower, upper)) sc -> do
+            lower' <- go lower
+            upper' <- go upper
+            case (lower', upper') of
+                (Literal l, Literal u) -> do
+                    let es = fmap (\i -> SomeExpr (Literal i) TyInt) [l .. u]
+                    go (quantifier q (fmap (instantiate sc) es))
+                _ -> return (Quantified q (QdTypeInt (lower', upper')) sc)
 
         _ -> descend go e' >>= toLiteral
 

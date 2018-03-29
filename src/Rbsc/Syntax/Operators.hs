@@ -15,8 +15,6 @@ module Rbsc.Syntax.Operators
     , LogicOp(..)
     , logicOp
     , logicOpShortcut
-
-    , Quantifier(..)
     ) where
 
 
@@ -94,10 +92,3 @@ logicOpShortcut binOp l = case binOp of
     Or  | l         -> Just True
     Implies | not l -> Just True
     _ -> Nothing
-
-
--- | A quantifier.
-data Quantifier
-    = Forall
-    | Exists
-    deriving (Eq, Show)
