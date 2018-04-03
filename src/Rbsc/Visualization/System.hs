@@ -60,7 +60,7 @@ visualizeBoundTo sys (roleName, playerName) =
     port name =
         case view (containedIn.at name) sys of
             Just compartmentName ->
-                pretty compartmentName <> colon <> ident name
+                ident compartmentName <> colon <> ident name
             Nothing -> ident name
 
 
