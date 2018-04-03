@@ -103,6 +103,34 @@ spec = do
                 , _containedIn = []
                 })
 
+        it "detects invalid use of 'boundto' relation" $
+            buildSystem'
+                [model|
+                    natural type N;
+                    natural type M;
+                    system
+                        { n: N
+                        , m: M
+                        , n boundto m
+                        }
+                |]
+            `shouldSatisfy`
+            has (_Left.traverse.errorDesc._NotARole)
+
+        it "detects invalid use of 'in' relation" $
+            buildSystem'
+                [model|
+                    natural type N;
+                    role type R(N);
+                    system
+                        { n: N
+                        , r: R
+                        , r in n
+                        }
+                |]
+            `shouldSatisfy`
+            has (_Left.traverse.errorDesc._NotACompartment)
+
         it "detects invalid component array sizes" $
             buildSystem'
                 [model|
