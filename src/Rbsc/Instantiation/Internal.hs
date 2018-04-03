@@ -9,7 +9,7 @@
 -- | Internal functions for the @Instantiation@ module.
 module Rbsc.Instantiation.Internal
     ( ArrayInfo(..)
-    , BuilderState(..)
+    , Result(..)
 
     , updateModelInfo
     , buildSystem
@@ -53,18 +53,22 @@ data ArrayInfo = ArrayInfo
     }
 
 
--- | The state used by 'buildSystem'.
-data BuilderState = BuilderState
+-- | A result produced by 'buildSystem'.
+data Result = Result
     { _system          :: System
     , _constraints     :: [LSomeExpr]
     , _componentArrays :: [ArrayInfo]
     }
 
-makeLenses ''BuilderState
+makeLenses ''Result
 
 
 pattern TyComponent' :: TypeName -> Type Component
 pattern TyComponent' tyName <- TyComponent (toList -> [tyName])
+
+
+pattern LitComponent :: Name -> TypeName -> Expr Component
+pattern LitComponent name tyName <- (componentLiteral -> Just (name, tyName))
 
 
 -- | Extract the 'System' definition and the list of other constraints from
@@ -74,12 +78,34 @@ pattern TyComponent' tyName <- TyComponent (toList -> [tyName])
 -- transformed into the 'System' instance. All other expressions are added
 -- to the constraints list.
 buildSystem ::
-       RecursionDepth -> TModel -> ModelInfo -> Either Error BuilderState
-buildSystem depth model info =
-    execStateT (traverse insert (modelSystem model)) initState
+       RecursionDepth -> TModel -> ModelInfo -> Either Error Result
+buildSystem depth model info = do
+    -- Partition expressions into instantiations of components and other
+    -- constraints.
+    Result sys constrs arrayInfos <-
+        execStateT (traverse insertDefinition (modelSystem model)) initState
+
+    -- Partially evaluate constraints to remove quantifiers. This is done
+    -- in order to provide as much information to the 'completeSystem'
+    -- function as possible. Partial evaluation will reduce quantification
+    -- over a set of components to either true or false (since our
+    -- constants table does not contain any components yet). However, this
+    -- is fine, since the partially evaluated constraints are only used to
+    -- extract the 'boundto' and 'in' relations, but not for evaluating the
+    -- constraints.
+    constrs' <- traverse (reduceSomeExpr (view constants info) depth) constrs
+
+    -- Split conjunctions into individual constraints.
+    let constrs'' = concatMap clauses constrs'
+
+    -- Extract relations 'boundto' and 'in' from the partially evaluated
+    -- constraints.
+    sys' <- execStateT (traverse insertRelation constrs'') sys
+
+    return (Result sys' constrs arrayInfos)
   where
-    insert :: LSomeExpr -> StateT BuilderState (Either Error) ()
-    insert e@(Loc (SomeExpr e' _) _) = case e' of
+    insertDefinition :: LSomeExpr -> StateT Result (Either Error) ()
+    insertDefinition e@(Loc (SomeExpr e' _) _) = case e' of
         HasType (Identifier name _) tyName ->
             system.instances.at name .= Just tyName
 
@@ -87,39 +113,60 @@ buildSystem depth model info =
             -- upper bound is already checked in TypeChecker.ModelInfo
             idx' <- lift (eval (view constants info) depth idx)
             arr <- for [0 .. idx' - 1] $ \i -> do
-                -- indexedName is guaranteed to be unused, because brackets
-                -- are not allowed in identifier names
-                let indexedName = name <> "[" <> pack (show i) <> "]"
-                system.instances.at indexedName .= Just tyName
-                return indexedName
+                let name' = indexedName name i
+                system.instances.at name' .= Just tyName
+                return name'
             modifying componentArrays ((ArrayInfo name tyName (fromList arr)) :)
 
+        _ -> modifying constraints (e :)
+
+    insertRelation :: LSomeExpr -> StateT System (Either Error) ()
+    insertRelation (Loc (SomeExpr e _) _) = case e of
         BoundTo
-            (Loc (Identifier roleName (TyComponent' roleTyName)) rgn)
-            (Identifier playerName _)
+            (Loc (LitComponent roleName roleTyName) rgn)
+            (LitComponent playerName _)
                 | isRoleType roleTyName ->
-                    system.boundTo.at roleName .= Just playerName
+                    boundTo.at roleName .= Just playerName
                 | otherwise -> throw rgn NotARole
 
         Element
-            (Loc (Identifier roleName (TyComponent' roleTyName)) rgnRole)
-            (Loc (Identifier compartmentName (TyComponent' compTyName)) rgnComp)
+            (Loc (LitComponent roleName roleTyName) rgnRole)
+            (Loc (LitComponent compartmentName compTyName) rgnComp)
                 | not (isRoleType roleTyName) ->
                     throw rgnRole NotARole
                 | not (isCompartmentType compTyName) ->
                     throw rgnComp NotACompartment
                 | otherwise ->
-                    system.containedIn.at roleName .= Just compartmentName
+                    containedIn.at roleName .= Just compartmentName
 
-        _ -> modifying constraints (e :)
+        _ -> return ()
 
-    initState = BuilderState emptySystem [] []
+    initState = Result emptySystem [] []
 
     emptySystem = System Map.empty Map.empty Map.empty
 
     isRoleType tyName = has (componentTypes.at tyName._Just._RoleType) info
     isCompartmentType tyName =
         has (componentTypes.at tyName._Just._CompartmentType) info
+
+
+-- | If an expression is an identifier or an indexed indentifier with type
+-- 'TyComponent', return the component 'Name' and its 'TypeName'. In case
+-- of an indexed identifier, the index is added to the component's name.
+componentLiteral :: Expr Component -> Maybe (Name, TypeName)
+componentLiteral = \case
+    Identifier name (TyComponent' tyName) -> Just (name, tyName)
+    Index
+        (Identifier name (TyArray _ (TyComponent' tyName)))
+        (Loc (Literal idx) _) ->
+            Just (indexedName name idx, tyName)
+    _ -> Nothing
+
+
+-- indexedName is guaranteed to be unused, because brackets
+-- are not allowed in identifier names
+indexedName :: Name -> Integer -> Name
+indexedName name i = name <> "[" <> pack (show i) <> "]"
 
 
 -- | Updates a 'ModelInfo' by adding constants for all the 'Component's
@@ -176,3 +223,21 @@ evalConstraints depth consts cs = and <$> traverse evalConstraint cs
     evalConstraint = \case
         Loc (SomeExpr e TyBool) rgn -> eval consts depth (Loc e rgn)
         _ -> error "evalConstraint: type error"
+
+
+reduceSomeExpr ::
+       Constants -> RecursionDepth -> LSomeExpr -> Either Error LSomeExpr
+reduceSomeExpr consts depth (Loc (SomeExpr e ty) rgn) = do
+    e' <- reduce consts depth (Loc e rgn)
+    return (Loc (SomeExpr e' ty) rgn)
+
+
+clauses :: LSomeExpr -> [LSomeExpr]
+clauses = \case
+    e@(Loc (SomeExpr e' TyBool) rgn) -> case e' of
+        LogicOp And l r ->
+            clauses (Loc (SomeExpr l TyBool) rgn) ++
+            clauses (Loc (SomeExpr r TyBool) rgn)
+        Literal True -> []
+        _ -> [e]
+    e -> [e]

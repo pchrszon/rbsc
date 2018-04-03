@@ -33,7 +33,7 @@ generateInstances ::
     -> ModelInfo
     -> Either Error [(System, ModelInfo)]
 generateInstances depth model info = do
-    BuilderState sys cs arrayInfos <- buildSystem depth model info
+    Result sys cs arrayInfos <- buildSystem depth model info
     let syss = rights (completeSystem (view componentTypes info) sys) -- TODO: cycle warnings
         sysInfos = fmap (updateModelInfo info arrayInfos) syss
     filterM (checkConstraints depth cs . snd) sysInfos

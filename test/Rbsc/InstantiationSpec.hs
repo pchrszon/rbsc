@@ -1,0 +1,190 @@
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE OverloadedLists   #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+
+
+module Rbsc.InstantiationSpec (spec) where
+
+
+import Control.Lens
+
+import Data.Foldable
+import Data.Maybe
+
+import Test.Hspec
+
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+
+
+import Rbsc.Data.Component
+import Rbsc.Data.ModelInfo
+import Rbsc.Data.Name
+import Rbsc.Data.System
+import Rbsc.Data.Type
+
+import Rbsc.Instantiation.Internal
+
+import Rbsc.Parser.TH
+
+import Rbsc.Report.Error
+
+import Rbsc.Syntax.Expr.Typed (Expr (..), SomeExpr (..))
+import Rbsc.Syntax.Untyped    (UModel)
+
+import Rbsc.TypeChecker
+
+
+spec :: Spec
+spec = do
+    describe "buildSystem" $ do
+        it "extracts instances, boundto and in relations" $
+            buildSystem' simpleModel
+            `shouldBe`
+            Right (System
+                { _instances =
+                    [ ("n", "N")
+                    , ("r", "R")
+                    , ("c", "C")
+                    ]
+                , _boundTo = [("r", "n")]
+                , _containedIn = [("r", "c")]
+                })
+
+        it "handles component arrays" $
+            buildSystem'
+                [model|
+                    natural type N;
+                    role type R(N);
+                    system
+                        { n[2]: N
+                        , r: R
+                        , r boundto n[1]
+                        }
+                |]
+            `shouldBe`
+            Right (System
+                { _instances =
+                    [ ("n[0]", "N")
+                    , ("n[1]", "N")
+                    , ("r", "R")
+                    ]
+                , _boundTo = [("r", "n[1]")]
+                , _containedIn = []
+                })
+
+        it "handles quantification" $
+            buildSystem'
+                [model|
+                    natural type N;
+                    role type R(N);
+
+                    const SIZE = 2;
+
+                    system
+                        { n[SIZE]: N
+                        , r[SIZE]: R
+                        , forall i: [0 .. SIZE - 1]. r[i] boundto n[i]
+                        }
+                |]
+            `shouldBe`
+            Right (System
+                { _instances =
+                    [ ("n[0]", "N")
+                    , ("n[1]", "N")
+                    , ("r[0]", "R")
+                    , ("r[1]", "R")
+                    ]
+                , _boundTo =
+                    [ ("r[0]", "n[0]")
+                    , ("r[1]", "n[1]")
+                    ]
+                , _containedIn = []
+                })
+
+        it "detects invalid component array sizes" $
+            buildSystem'
+                [model|
+                    natural type N;
+                    system { n[-1]: N }
+                |]
+            `shouldSatisfy`
+            has (_Left.traverse.errorDesc._InvalidUpperBound)
+
+    describe "updateModelInfo" $ do
+        it "creates constants for components" $
+            getComponents simpleModel
+            `shouldBe`
+            Right
+                [ ("n", Component "n" "N" Nothing Nothing)
+                , ("r", Component "r" "R" (Just "n") (Just "c"))
+                , ("c", Component "c" "C" Nothing Nothing)
+                ]
+
+        it "creates component arrays" $
+            getComponentArrays
+                [model|
+                    natural type N;
+                    system { n[2]: N }
+                |]
+            `shouldBe`
+            Right
+                [ ("n", [ Component "n[0]" "N" Nothing Nothing
+                        , Component "n[1]" "N" Nothing Nothing
+                        ])
+                ]
+
+
+simpleModel :: UModel
+simpleModel =
+    [model|
+        natural type N;
+        role type R(N);
+        compartment type C(R);
+
+        system
+            { n: N
+            , r: R
+            , c: C
+            , r boundto n
+            , r in c
+            }
+    |]
+
+
+buildSystem' :: UModel -> Either [Error] System
+buildSystem' m = do
+    (m', info) <- typeCheck 10 m
+    result <- over _Left (: []) (buildSystem 10 m' info)
+    return (_system result)
+
+
+getComponents :: UModel -> Either [Error] (Map Name Component)
+getComponents m = do
+    consts <- getConstants m
+    return (Map.fromList (mapMaybe getComponent (Map.assocs consts)))
+  where
+    getComponent :: (Name, SomeExpr) -> Maybe (Name, Component)
+    getComponent (name, SomeExpr (Literal comp) (TyComponent _)) =
+        Just (name, comp)
+    getComponent _ = Nothing
+
+
+getComponentArrays :: UModel -> Either [Error] (Map Name [Component])
+getComponentArrays m = do
+    consts <- getConstants m
+    return (Map.fromList (mapMaybe getArray (Map.assocs consts)))
+  where
+    getArray :: (Name, SomeExpr) -> Maybe (Name, [Component])
+    getArray (name, SomeExpr (Literal arr) (TyArray _ (TyComponent _))) =
+        Just (name, toList arr)
+    getArray _ = Nothing
+
+
+getConstants :: UModel -> Either [Error] Constants
+getConstants m = do
+    (m', info) <- typeCheck 10 m
+    Result sys _ arrayInfos <- over _Left (: []) (buildSystem 10 m' info)
+    let (_, info') = updateModelInfo info arrayInfos sys
+    return (view constants info')

@@ -7,8 +7,6 @@ module Rbsc.Parser.System
 import Text.Megaparsec
 
 
-import Rbsc.Syntax.Expr.Untyped (clauses)
-
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
@@ -18,5 +16,5 @@ import Rbsc.Parser.Lexer
 systemDef :: Parser Definition
 systemDef =
     DefSystem <$>
-    block "system" (concatMap clauses <$> expr `sepBy` comma) <?>
+    block "system" (expr `sepBy` comma) <?>
     "system definition"

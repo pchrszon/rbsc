@@ -11,8 +11,6 @@ module Rbsc.Syntax.Expr.Untyped
 
     , pattern Index'
     , pattern HasType'
-
-    , clauses
     ) where
 
 
@@ -89,10 +87,3 @@ pattern Index' e idx <- Loc (Index e idx) _
 
 pattern HasType' :: LExpr -> Loc TypeName -> LExpr
 pattern HasType' e tyName <- Loc (HasType e tyName) _
-
-
-clauses :: LExpr -> [LExpr]
-clauses = \case
-    Loc (LogicOp And l r) _ -> clauses l ++ clauses r
-    Loc (LitBool True) _ -> []
-    e -> [e]

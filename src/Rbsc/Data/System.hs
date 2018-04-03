@@ -33,7 +33,7 @@ data System = System
     { _instances   :: Map Name TypeName
     , _boundTo     :: Map RoleName Name
     , _containedIn :: Map RoleName Name
-    } deriving (Show)
+    } deriving (Eq, Show)
 
 makeLenses ''System
 
