@@ -126,12 +126,21 @@ spec = do
             getComponentArrays
                 [model|
                     natural type N;
-                    system { n[2]: N }
+                    role type R(N);
+
+                    system
+                        { n[2]: N
+                        , r[2]: R
+                        , forall i: [0 .. 1]. r[i] boundto n[i]
+                        }
                 |]
             `shouldBe`
             Right
                 [ ("n", [ Component "n[0]" "N" Nothing Nothing
                         , Component "n[1]" "N" Nothing Nothing
+                        ])
+                , ("r", [ Component "r[0]" "R" (Just "n[0]") Nothing
+                        , Component "r[1]" "R" (Just "n[1]") Nothing
                         ])
                 ]
 
