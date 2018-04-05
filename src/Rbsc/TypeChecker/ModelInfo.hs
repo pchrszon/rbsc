@@ -53,10 +53,12 @@ makeLenses ''BuilderState
 getModelInfo ::
        RecursionDepth -> UModel -> Either [Error] (ModelInfo, [TConstant])
 getModelInfo depth m = do
-    types  <- getComponentTypes m
+    -- types  <- getComponentTypes m
     idents <- identifierDefs m
     deps   <- toErrorList (sortDefinitions idents)
-    toErrorList (runBuilder (traverse addDependency deps) depth types)
+    result <- toErrorList (runBuilder (traverse addDependency deps) depth)
+    validateComponentTypes (view (_1.componentTypes) result) m
+    return result
   where
     toErrorList = over _Left (: [])
 
@@ -64,10 +66,11 @@ getModelInfo depth m = do
 addDependency :: Dependency -> Builder ()
 addDependency = \case
     DepDefinition def -> case def of
-        DefConstant c  -> addConstant c
-        DefFunction f  -> addFunction f
-        DefComponent c -> addComponents c
-    DepFunctionSignature f   -> addFunctionSignature f
+        DefConstant c      -> addConstant c
+        DefFunction f      -> addFunction f
+        DefComponentType t -> addComponentType t
+        DefComponent c     -> addComponents c
+    DepFunctionSignature f -> addFunctionSignature f
 
 
 addConstant :: UConstant -> Builder ()
@@ -115,28 +118,33 @@ addFunction (U.Function (Loc name _) params sTy body) = do
         return (unLoc n, ty)
 
 
+addComponentType :: ComponentTypeDef -> Builder ()
+addComponentType = \case
+    TypeDefNatural (U.NaturalTypeDef (Loc name _)) ->
+        insertComponentType name NaturalType
+    TypeDefRole (U.RoleTypeDef (Loc name _) playerTyNames) ->
+        insertComponentType
+            name
+            (RoleType (Set.fromList (fmap unLoc playerTyNames)))
+    TypeDefCompartment (U.CompartmentTypeDef (Loc name _) roleTyNames) ->
+        insertComponentType name (CompartmentType (fmap unLoc roleTyNames))
+
+
 addComponents :: ComponentDef -> Builder ()
-addComponents (ComponentDef (Loc name _) (Loc tyName rgn) mLen) =
-    whenTypeExists $ case mLen of
-        -- add component array
-        Just len -> do
-            len' <- fst <$> evalIntegerExpr len
-            if len' > 0
-                then
-                    let tyArray = TyArray (0, len' - 1) tyComponent
-                    in insertSymbol name (SomeType tyArray)
-                else throw (getLoc len) (InvalidUpperBound len')
-        -- add single component
-        Nothing ->
-            insertSymbol name (SomeType tyComponent)
+addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
+    -- add component array
+    Just len -> do
+        len' <- fst <$> evalIntegerExpr len
+        if len' > 0
+            then
+                let tyArray = TyArray (0, len' - 1) tyComponent
+                in insertSymbol name (SomeType tyArray)
+            else throw (getLoc len) (InvalidUpperBound len')
+    -- add single component
+    Nothing ->
+        insertSymbol name (SomeType tyComponent)
   where
     tyComponent = TyComponent (Set.singleton tyName)
-
-    whenTypeExists m = do
-        types <- use (modelInfo.componentTypes)
-        if tyName `Map.member` types
-            then m
-            else throw rgn UndefinedType
 
 
 fromSyntaxType :: UType -> Builder (TType, SomeType)
@@ -168,13 +176,12 @@ type Builder a = StateT BuilderState (Either Error) a
 runBuilder ::
        Builder a
     -> RecursionDepth
-    -> ComponentTypes
     -> Either Error (ModelInfo, [TConstant])
-runBuilder m depth types = do
+runBuilder m depth = do
     BuilderState mi defs _ <- execStateT m initial
     return (mi, defs)
   where
-    initial = BuilderState (ModelInfo types Map.empty Map.empty) [] depth
+    initial = BuilderState (ModelInfo Map.empty Map.empty Map.empty) [] depth
 
 
 evalIntegerExpr :: Num a => Loc U.Expr -> Builder (a, Loc SomeExpr)
@@ -208,3 +215,7 @@ insertSymbol name ty = modelInfo.symbolTable.at name .= Just ty
 
 insertConstant :: Name -> SomeExpr -> Builder ()
 insertConstant name e = modelInfo.constants.at name .= Just e
+
+
+insertComponentType :: TypeName -> ComponentType -> Builder ()
+insertComponentType tyName ty = modelInfo.componentTypes.at tyName .= Just ty

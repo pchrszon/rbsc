@@ -7,7 +7,18 @@
 -- definitions from the model.
 module Rbsc.TypeChecker.Identifiers
     ( Identifiers
+
     , IdentifierDef(..)
+    , _DefConstant
+    , _DefFunction
+    , _DefComponentType
+    , _DefComponent
+
+    , ComponentTypeDef(..)
+    , _TypeDefNatural
+    , _TypeDefRole
+    , _TypeDefCompartment
+
     , ComponentDef(..)
 
     , identifierDefs
@@ -38,7 +49,16 @@ type Identifiers = Map Name (Loc IdentifierDef)
 data IdentifierDef
     = DefConstant UConstant -- ^ the identifier represents a constant
     | DefFunction UFunction -- ^ the identifier represents a function
+    | DefComponentType ComponentTypeDef -- ^ the identifier represents a component type
     | DefComponent ComponentDef -- ^ the identifier represents a component or a component array
+    deriving (Eq, Ord, Show)
+
+
+-- | The definition of a component type.
+data ComponentTypeDef
+    = TypeDefNatural NaturalTypeDef
+    | TypeDefRole RoleTypeDef
+    | TypeDefCompartment CompartmentTypeDef
     deriving (Eq, Ord, Show)
 
 
@@ -56,6 +76,10 @@ instance Ord ComponentDef where
     compare = comparing compDefName
 
 
+makePrisms ''IdentifierDef
+makePrisms ''ComponentTypeDef
+
+
 data BuilderState = BuilderState
     { _identifiers :: Identifiers
     , _errors      :: [Error]
@@ -71,6 +95,9 @@ identifierDefs :: UModel -> Either [Error] Identifiers
 identifierDefs m = runBuilder $ do
     insertConstants (modelConstants m)
     insertFunctions (modelFunctions m)
+    insertComponentTypes ntdName TypeDefNatural (modelNaturalTypes m)
+    insertComponentTypes rtdName TypeDefRole (modelRoleTypes m)
+    insertComponentTypes ctdName TypeDefCompartment (modelCompartmentTypes m)
     insertComponents (modelSystem m)
 
 
@@ -80,6 +107,13 @@ insertConstants = traverse_ (insert <$> constName <*> DefConstant)
 
 insertFunctions :: [UFunction] -> Builder ()
 insertFunctions = traverse_ (insert <$> functionName <*> DefFunction)
+
+
+insertComponentTypes ::
+       (a -> Loc TypeName) -> (a -> ComponentTypeDef) -> [a] -> Builder ()
+insertComponentTypes getName con =
+    traverse_
+        (insert <$> (fmap getTypeName . getName) <*> (DefComponentType . con))
 
 
 insertComponents :: [LExpr] -> Builder ()

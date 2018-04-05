@@ -11,47 +11,25 @@ import Control.Lens
 import Test.Hspec
 
 
-import Rbsc.Data.ComponentType
-
 import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
 
-import Rbsc.TypeChecker.ComponentTypes
+import Rbsc.TypeChecker.ModelInfo
 
 
 spec :: Spec
-spec = describe "getComponentTypes" $ do
-    it "extracts all types" $
-        getComponentTypes
-            [model|
-                natural type N;
-                role type R(N);
-                compartment type C(R);
-            |]
-        `shouldBe`
-        Right
-            [ ("N", NaturalType)
-            , ("R", RoleType ["N"])
-            , ("C", CompartmentType ["R"])
-            ]
-
+spec = describe "validateComponentTypes" $ do
     it "detects undefined types" $
-        getComponentTypes [model| role type R(Undefined); |]
+        getModelInfo 10
+            [model|
+                role type R(Undefined);
+            |]
         `shouldSatisfy`
         has (_Left.traverse.errorDesc._UndefinedType)
 
-    it "detects duplicate type definitions" $
-        getComponentTypes
-            [model|
-                natural type N;
-                natural type N;
-            |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._DuplicateType)
-
     it "detects non-role types in compartments" $
-        getComponentTypes
+        getModelInfo 10
             [model|
                 natural type N;
                 compartment type C(N);

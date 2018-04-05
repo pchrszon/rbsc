@@ -26,6 +26,8 @@ import           Data.Set           (Set)
 import qualified Data.Set           as Set
 
 
+import Rbsc.Data.ComponentType
+
 import Rbsc.Report.Error
 import Rbsc.Report.Region
 
@@ -77,6 +79,7 @@ sortDefinitions idents = do
         DepDefinition def -> case def of
             DefConstant _ -> "constant"
             DefFunction _ -> "function"
+            DefComponentType _ -> "type"
             DefComponent (ComponentDef _ _ Nothing)  -> "component"
             DefComponent (ComponentDef _ _ (Just _)) -> "component array"
         DepFunctionSignature _ -> "function"
@@ -94,35 +97,51 @@ type LDependency = Loc Dependency
 -- | Insert an 'IdentifierDef' into the dependency graph.
 insert :: IdentifierDef -> Analyzer ()
 insert def = case def of
-    DefConstant c  -> insertConstant c
-    DefFunction f  -> insertFunction f
-    DefComponent c -> insertComponents c
+    DefConstant c      -> insertConstant c
+    DefFunction f      -> insertFunction f
+    DefComponentType t -> insertComponentType t
+    DefComponent c     -> insertComponents c
 
 
 insertConstant :: UConstant -> Analyzer ()
 insertConstant c@(Constant (Loc _ rgn) sTy e) =
-    newDependency
-        (DepDefinition (DefConstant c))
-        rgn
-        (dependOnIdentifiers idents)
-  where
-    idents = identsInExpr e `Set.union` maybe Set.empty identsInType sTy
+    newDependency (DepDefinition (DefConstant c)) rgn $ do
+        mIdentsTy <- _Just identsInType sTy
+        idents <- identsInExpr e
+        dependOnIdentifiers (idents `Set.union` fromMaybe Set.empty mIdentsTy)
 
 
 insertFunction :: UFunction -> Analyzer ()
 insertFunction f@(Function (Loc _ rgn) _ _ e) = do
-    newDependency (DepFunctionSignature f) rgn $
-        dependOnIdentifiers (identsInSignature f)
+    newDependency (DepFunctionSignature f) rgn $ do
+        identsSig <- identsInSignature f
+        dependOnIdentifiers identsSig
     newDependency (DepDefinition (DefFunction f)) rgn $ do
         dependOn (DepFunctionSignature f) rgn
-        local ((inFunctionBody .~ True) . (parameters .~ parameterSet f)) $
-            dependOnIdentifiers (identsInExpr e)
+        local ((inFunctionBody .~ True) . (parameters .~ parameterSet f)) $ do
+            idents <- identsInExpr e
+            dependOnIdentifiers idents
+
+
+insertComponentType :: ComponentTypeDef -> Analyzer ()
+insertComponentType t = newDependency (DepDefinition (DefComponentType t)) rgn $
+    return ()
+  where
+    rgn = getLoc $ case t of
+        TypeDefNatural nt     -> ntdName nt
+        TypeDefRole rt        -> rtdName rt
+        TypeDefCompartment ct -> ctdName ct
 
 
 insertComponents :: ComponentDef -> Analyzer ()
-insertComponents c@(ComponentDef (Loc _ rgn) _ mLen) =
-    newDependency (DepDefinition (DefComponent c)) rgn $
-        void (_Just (dependOnIdentifiers . identsInExpr) mLen)
+insertComponents c@(ComponentDef (Loc _ rgn) tyName mLen) =
+    newDependency (DepDefinition (DefComponent c)) rgn $ do
+        dependOnIdentifier (fmap getTypeName tyName)
+        case mLen of
+            Just len -> do
+                idents <- identsInExpr len
+                dependOnIdentifiers idents
+            Nothing -> return ()
 
 
 -- | @dependOnIdentifiers idents@ states that the current definition (see
@@ -163,48 +182,84 @@ depsFromIdentifierDef = \case
             -- expression containing f, the function body must be known.
             -- Also, the functions called by f must be known as well.
             else do
-                funcs <- view functions
-                let ref = referencedFunctions funcs f
+                ref <- referencedFunctions f
                 return (fmap (DepDefinition . DefFunction) ref)
+    DefComponentType t -> return [DepDefinition (DefComponentType t)]
     DefComponent c -> return [DepDefinition (DefComponent c)]
 
 
 -- | @referencedFunctions f@ returns a list of all functions called by @f@.
 -- The result will also contain @f@ itself.
-referencedFunctions :: Map Name UFunction -> UFunction -> [UFunction]
-referencedFunctions funcs f = Set.toList (execState (go f) Set.empty)
+referencedFunctions :: UFunction -> Analyzer [UFunction]
+referencedFunctions f = Set.toList <$> execStateT (go f) Set.empty
   where
     go f' = do
         visited <- get
         unless (f' `Set.member` visited) $ do
             modify (Set.insert f')
-            for_ (functionVars (functionBody f')) go
+            fvars <- functionVars (functionBody f')
+            for_ fvars go
 
-    functionVars e = catMaybes
-        (fmap ((`Map.lookup` funcs) . unLoc) (toList (identsInExpr e)))
+    functionVars e = do
+        idents <- lift (identsInExpr e)
+        funcs  <- lift (view functions)
+        return (catMaybes (fmap ((`Map.lookup` funcs) . unLoc) (toList idents)))
 
 
-identsInSignature :: UFunction -> Set (Loc Name)
-identsInSignature (Function _ args ty _) =
-    Set.unions (identsInType ty : fmap identsInParam (toList args))
+identsInSignature :: UFunction -> Analyzer (Set (Loc Name))
+identsInSignature (Function _ args ty _) = do
+    identsTy <- identsInType ty
+    identsParams <- traverse identsInParam (toList args)
+    return (Set.unions (identsTy : identsParams))
   where
     identsInParam (Parameter _ paramTy) = identsInType paramTy
 
 
-identsInType :: UType -> Set (Loc Name)
-identsInType = Set.unions . fmap identsInExpr . toList
+identsInType :: UType -> Analyzer (Set (Loc Name))
+identsInType ty = case ty of
+    TyComponent tySet -> identsInComponentTypeSet tySet
+    TyArray (lower, upper) ty' -> do
+        identsTy <- identsInType ty'
+        identsLower <- identsInExpr lower
+        identsUpper <- identsInExpr upper
+        return (Set.unions [identsTy, identsLower, identsUpper])
+    TyFunc tyL tyR -> Set.union <$> identsInType tyL <*> identsInType tyR
+    _ -> return Set.empty
+
+
+identsInComponentTypeSet :: ComponentTypeSet -> Analyzer (Set (Loc Name))
+identsInComponentTypeSet cts = do
+    idents <- view (identifiers.to Map.assocs)
+    return $ case cts of
+        AllComponents -> filterIdents _DefComponentType idents
+        AllNaturals   -> filterIdents (_DefComponentType._TypeDefNatural) idents
+        AllRoles      -> filterIdents (_DefComponentType._TypeDefRole) idents
+        AllCompartments ->
+            filterIdents (_DefComponentType._TypeDefCompartment) idents
+        ComponentTypeSet tySet -> Set.map (fmap getTypeName) tySet
+  where
+    filterIdents p =
+        Set.fromList .  fmap (uncurry withLocOf) . filter (has (_2.to unLoc.p))
 
 
 -- | @identsInExpr e@ returns a set of all unbound identifiers in @e@.
-identsInExpr :: LExpr -> Set (Loc Name)
+identsInExpr :: LExpr -> Analyzer (Set (Loc Name))
 identsInExpr = go Set.empty
   where
     go bound e = case unLoc e of
         Identifier name
-            | name `Set.member` bound -> Set.empty
-            | otherwise -> Set.singleton (name `withLocOf` e)
-        Quantified _ name _ e' -> go (Set.insert name bound) e'
-        _ -> Set.unions (fmap (go bound) (children e))
+            | name `Set.member` bound -> return Set.empty
+            | otherwise -> return (Set.singleton (name `withLocOf` e))
+        HasType e' tyName ->
+            Set.insert (fmap getTypeName tyName) <$> go bound e'
+        Quantified _ name qdTy e' -> do
+            idents <- case qdTy of
+                QdTypeComponent tySet ->
+                    identsInComponentTypeSet tySet
+                QdTypeInt (lower, upper) ->
+                    Set.union <$> go bound lower <*> go bound upper
+            Set.union idents <$> go (Set.insert name bound) e'
+        _ -> Set.unions <$> traverse (go bound) (children e)
 
 
 parameterSet :: Function expr -> Set Name
