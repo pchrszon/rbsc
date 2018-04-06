@@ -215,16 +215,20 @@ checkDepth = do
     when (depth <= 0) (throw rgn ExceededDepth)
 
 
-quantifier :: Quantifier -> [Expr Bool] -> Expr Bool
-quantifier q = foldr (LogicOp lOp) neutralElement
+quantifier :: Quantifier t -> [Expr t] -> Expr t
+quantifier q = foldr qOp neutralElement
   where
-    lOp = case q of
-        Forall -> And
-        Exists -> Or
+    qOp = case q of
+        Forall  -> LogicOp And
+        Exists  -> LogicOp Or
+        Sum     -> ArithOp Add
+        Product -> ArithOp Mul
 
     neutralElement = case q of
-        Forall -> Literal True
-        Exists -> Literal False
+        Forall  -> Literal True
+        Exists  -> Literal False
+        Sum     -> Literal 0
+        Product -> Literal 1
 
 
 -- | Get a list of all constants that have a component type contained in

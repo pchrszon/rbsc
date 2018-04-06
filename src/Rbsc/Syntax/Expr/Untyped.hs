@@ -6,7 +6,7 @@
 -- | Abstract syntax of untyped expressions.
 module Rbsc.Syntax.Expr.Untyped
     ( Expr(..)
-    , QuantifiedType(..)
+    , Quantifier(..)
     , LExpr
 
     , pattern Index'
@@ -51,6 +51,15 @@ data Expr
     | BoundTo LExpr LExpr
     | Element LExpr LExpr
     | Quantified !Quantifier !Name (QuantifiedType ComponentTypeSet LExpr) LExpr
+    deriving (Show)
+
+
+-- | A quantifier.
+data Quantifier
+    = Forall
+    | Exists
+    | Sum
+    | Product
     deriving (Show)
 
 

@@ -47,6 +47,11 @@ spec = do
             `shouldBe`
             Right True
 
+        it "evaluates sum expressions" $
+            eval' TyInt [expr| sum i: [1..3]. i |]
+            `shouldBe`
+            Right 6
+
         it "evaluates nested quantified expressions" $
             eval' TyBool
                 [expr|

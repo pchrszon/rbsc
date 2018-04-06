@@ -9,6 +9,7 @@
 module Rbsc.Syntax.Expr.Typed
     ( Expr(..)
     , Scope(..)
+    , Quantifier(..)
     , TQuantifiedType
 
     , SomeExpr(..)
@@ -63,12 +64,22 @@ data Expr t where
     Element     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound       :: Int -> Type t -> Expr t
     Lambda      :: Type a -> Scope b -> Expr (Fn (a -> b))
-    Quantified  :: Quantifier -> TQuantifiedType -> Scope Bool -> Expr Bool
+    Quantified  :: Quantifier t -> TQuantifiedType -> Scope t -> Expr t
 
 deriving instance Show (Expr t)
 
 
+data Quantifier t where
+    Forall  :: Quantifier Bool
+    Exists  :: Quantifier Bool
+    Sum     :: Quantifier Integer
+    Product :: Quantifier Integer
+
+deriving instance Show (Quantifier t)
+
+
 type TQuantifiedType = QuantifiedType (Set TypeName) (Expr Integer)
+
 
 -- | A Scope contains an expression with a bound variable.
 --

@@ -25,6 +25,8 @@ reservedWords =
     , "false"
     , "forall"
     , "exists"
+    , "sum"
+    , "product"
     , "if"
     , "then"
     , "else"

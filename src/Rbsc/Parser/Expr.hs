@@ -14,7 +14,7 @@ import Control.Monad
 import Control.Monad.State.Strict
 
 import           Data.List.NonEmpty (NonEmpty (..))
-import           Data.Semigroup     hiding (option)
+import           Data.Semigroup     ((<>))
 import qualified Data.Set           as Set
 import           Data.Text          (Text)
 
@@ -167,8 +167,10 @@ quantified = do
         <*> option (QdTypeComponent AllComponents) (colon *> quantifiedType)
 
     quantifier = choice
-        [ Loc Forall <$> reserved "forall"
-        , Loc Exists <$> reserved "exists"
+        [ Loc Forall  <$> reserved "forall"
+        , Loc Exists  <$> reserved "exists"
+        , Loc Sum     <$> reserved "sum"
+        , Loc Product <$> reserved "product"
         ]
 
     apply = foldr (.) id

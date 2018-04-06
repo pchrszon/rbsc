@@ -149,27 +149,16 @@ tcExpr (Loc e rgn) = case e of
         r' <- r `hasType` tyComponent
         T.Element (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 
-    U.Quantified q varName (QdTypeComponent tySet) body -> do
+    U.Quantified q var (QdTypeComponent tySet) body -> do
         compTys <- view componentTypes
         tySet' <- lift (normalizeTypeSet compTys tySet)
         let varTy = SomeType (TyComponent tySet')
+        tcQuantifier q var varTy body (QdTypeComponent tySet')
 
-        body' <- local (over boundVars ((varName, varTy) :)) $
-            body `hasType` TyBool
-
-        T.Quantified q (QdTypeComponent tySet') (T.Scope body')
-            `withType` TyBool
-
-    U.Quantified q varName (QdTypeInt (lower, upper)) body -> do
+    U.Quantified q var (QdTypeInt (lower, upper)) body -> do
         lower' <- lower `hasType` TyInt
         upper' <- upper `hasType` TyInt
-        let varTy = SomeType TyInt
-
-        body' <- local (over boundVars ((varName, varTy) :)) $
-            body `hasType` TyBool
-
-        T.Quantified q (QdTypeInt (lower', upper')) (T.Scope body')
-            `withType` TyBool
+        tcQuantifier q var (SomeType TyInt) body (QdTypeInt (lower', upper'))
 
 
 -- | @tcFunctionDef params tyRes body@ checks an untyped function
@@ -243,6 +232,40 @@ tcCall (Loc (SomeExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
     tcCall (Loc (SomeExpr (T.Apply f arg') tyRes) rgn) args
 tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
     throw rgn (NotAFunction (renderType ty))
+
+
+tcQuantifier ::
+       U.Quantifier
+    -> Name
+    -> SomeType
+    -> Loc U.Expr
+    -> T.TQuantifiedType
+    -> TypeChecker SomeExpr
+tcQuantifier q varName varTy body qdTy = do
+    SomeQuantifier q' <- return (typedQuantifier q)
+    let qTy = quantifierType q'
+    body' <- local (over boundVars ((varName, varTy) :)) $ body `hasType` qTy
+    T.Quantified q' qdTy (T.Scope body') `withType` qTy
+
+
+data SomeQuantifier where
+    SomeQuantifier :: T.Quantifier t -> SomeQuantifier
+
+
+typedQuantifier :: U.Quantifier -> SomeQuantifier
+typedQuantifier = \case
+    U.Forall  -> SomeQuantifier T.Forall
+    U.Exists  -> SomeQuantifier T.Exists
+    U.Sum     -> SomeQuantifier T.Sum
+    U.Product -> SomeQuantifier T.Product
+
+
+quantifierType :: T.Quantifier t -> Type t
+quantifierType = \case
+    T.Forall  -> TyBool
+    T.Exists  -> TyBool
+    T.Sum     -> TyInt
+    T.Product -> TyInt
 
 
 -- | Assume that a given untyped expression has a given 'Type'.
