@@ -125,7 +125,17 @@ insertFunction f@(Function (Loc _ rgn) _ _ e) = do
 
 insertComponentType :: ComponentTypeDef -> Analyzer ()
 insertComponentType t = newDependency (DepDefinition (DefComponentType t)) rgn $
-    return ()
+    case t of
+        TypeDefCompartment (CompartmentTypeDef _ multiRoleLists) ->
+            for_ multiRoleLists $ \multiRoles ->
+                for_ multiRoles $ \(MultiRole _ mBounds) -> case mBounds of
+                    Just (lower, upper) -> do
+                        identsLower <- identsInExpr lower
+                        identsUpper <- identsInExpr upper
+                        dependOnIdentifiers identsLower
+                        dependOnIdentifiers identsUpper
+                    Nothing -> return ()
+        _ -> return ()
   where
     rgn = getLoc $ case t of
         TypeDefNatural nt     -> ntdName nt

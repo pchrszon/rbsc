@@ -13,7 +13,7 @@ import Control.Monad.Except
 
 import Data.Monoid
 
-import           Data.Text (Text)
+import           Data.Text (Text, pack)
 import qualified Data.Text as Text
 
 import Rbsc.Report
@@ -42,6 +42,8 @@ data ErrorDesc
     | WrongNumberOfArguments !Int !Int
     | NotARole
     | NotACompartment
+    | InvalidLowerBound !Int
+    | InvalidCardinalities !Int !Int
 
     | DivisionByZero
     | NotConstant
@@ -135,6 +137,22 @@ toReport (Error rgn desc) = case desc of
             [ errorPart rgn (Just "only compartments can contain roles")
             ]
 
+    InvalidLowerBound lower ->
+        Report "invalid cardinalities"
+            [ errorPart rgn . Just $
+                "lower bound must be greater or equal 0, " <>
+                "but the given bound is " <> pack (show lower)
+            ]
+
+    InvalidCardinalities lower upper ->
+        Report "invalid cardinalities"
+            [ errorPart rgn . Just $
+                "lower bound must be greater than the upper bound, " <>
+                "but the given bounds are [" <> pack (show lower) <> " .. " <>
+                pack (show upper)
+            ]
+
+
     DivisionByZero ->
         Report "division by zero"
             [ errorPart rgn $ Just
@@ -154,9 +172,9 @@ toReport (Error rgn desc) = case desc of
     IndexOutOfBounds (lower, upper) idx ->
         Report "index out of bounds"
             [ errorPart rgn . Just $
-                "array has bounds [" <> Text.pack (show lower) <> " .. " <>
-                Text.pack (show upper) <> "] but the index is " <>
-                Text.pack (show idx)
+                "array has bounds [" <> pack (show lower) <> " .. " <>
+                pack (show upper) <> "] but the index is " <>
+                pack (show idx)
             ]
 
     ExceededDepth ->

@@ -30,7 +30,7 @@ data Definition
     | DefFunction UFunction
     | DefNaturalType NaturalTypeDef
     | DefRoleType RoleTypeDef
-    | DefCompartmentType CompartmentTypeDef
+    | DefCompartmentType UCompartmentTypeDef
     | DefSystem [Loc Expr]
     deriving (Show)
 

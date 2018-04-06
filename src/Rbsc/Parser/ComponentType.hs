@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 
 
@@ -9,10 +10,12 @@ module Rbsc.Parser.ComponentType
 
 import Text.Megaparsec
 
-import Rbsc.Parser.Lexer
-import Rbsc.Parser.Definition
 
-import Rbsc.Syntax.ComponentType
+import Rbsc.Parser.Definition
+import Rbsc.Parser.Expr
+import Rbsc.Parser.Lexer
+
+import Rbsc.Syntax.Untyped
 
 
 -- | Parser for a componen type definition.
@@ -41,9 +44,22 @@ roleTypeDef =
 
 
 -- | Parser for a compartment type definition.
-compartmentTypeDef :: Parser CompartmentTypeDef
+compartmentTypeDef :: Parser UCompartmentTypeDef
 compartmentTypeDef =
     CompartmentTypeDef <$> (keyword *> identifier) <*>
-    (parens (identifier `sepBy` comma) <* semi)
+    (parens (multiRoleList `sepBy` symbol "|") <* semi)
   where
     keyword = reserved "compartment" *> reserved "type"
+    multiRoleList = multiRole `sepBy` comma
+
+
+multiRole :: Parser UMultiRole
+multiRole = MultiRole <$> identifier <*> optional cardinalities
+
+
+cardinalities :: Parser (LExpr, LExpr)
+cardinalities = brackets $ do
+    lower <- expr
+    optional (operator ".." *> expr) >>= \case
+        Just upper -> return (lower, upper)
+        Nothing    -> return (lower, lower)

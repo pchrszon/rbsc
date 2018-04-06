@@ -35,14 +35,14 @@ validateComponentTypes types model
         mapMaybe exists playerTyNames
 
     validateCompartmentTypes = concatMap $
-        \(CompartmentTypeDef _ roleTyNames) ->
-            mapMaybe isRoleType roleTyNames
+        \(CompartmentTypeDef _ multiRoleLists) ->
+            concatMap (mapMaybe isRoleType) multiRoleLists
 
     exists (Loc tyName rgn)
         | Map.member tyName types = Nothing
         | otherwise = Just (Error rgn UndefinedType)
 
-    isRoleType (Loc tyName rgn) = case Map.lookup tyName types of
+    isRoleType (MultiRole (Loc tyName rgn) _) = case Map.lookup tyName types of
         Just (RoleType _) -> Nothing
         Just _            -> Just (Error rgn NonRoleInCompartment)
         Nothing           -> Just (Error rgn UndefinedType)

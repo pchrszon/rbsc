@@ -58,7 +58,7 @@ data IdentifierDef
 data ComponentTypeDef
     = TypeDefNatural NaturalTypeDef
     | TypeDefRole RoleTypeDef
-    | TypeDefCompartment CompartmentTypeDef
+    | TypeDefCompartment UCompartmentTypeDef
     deriving (Eq, Ord, Show)
 
 

@@ -7,6 +7,8 @@
 -- | User-defined natural types, role types and compartment types.
 module Rbsc.Data.ComponentType
     ( ComponentType(..)
+    , RoleRef(..)
+
     , _NaturalType
     , _RoleType
     , _CompartmentType
@@ -40,8 +42,13 @@ data ComponentType
       -- | A role type with its set of possible player types.
     | RoleType (Set TypeName)
       -- | A compartment type with its list of required role types.
-    | CompartmentType [TypeName]
+    | CompartmentType [[RoleRef]]
     deriving (Eq, Show)
+
+data RoleRef = RoleRef
+    { refType   :: TypeName
+    , refBounds :: (Int, Int)
+    } deriving (Eq, Show)
 
 makePrisms ''ComponentType
 

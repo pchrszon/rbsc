@@ -14,6 +14,7 @@ import Control.Monad.State.Strict
 
 import           Data.Foldable
 import qualified Data.Map.Strict as Map
+import           Data.Semigroup
 import qualified Data.Set        as Set
 
 
@@ -126,8 +127,25 @@ addComponentType = \case
         insertComponentType
             name
             (RoleType (Set.fromList (fmap unLoc playerTyNames)))
-    TypeDefCompartment (U.CompartmentTypeDef (Loc name _) roleTyNames) ->
-        insertComponentType name (CompartmentType (fmap unLoc roleTyNames))
+    TypeDefCompartment (U.CompartmentTypeDef (Loc name _) multiRoleLists) -> do
+        roleRefLists <- traverse (traverse toRoleRef) multiRoleLists
+        insertComponentType name (CompartmentType roleRefLists)
+  where
+    toRoleRef (U.MultiRole (Loc tyName _) mBounds) = case mBounds of
+        Nothing -> return (RoleRef tyName (1, 1))
+        Just (lower, upper) -> do
+            lower' <- fst <$> evalIntegerExpr lower
+            upper' <- fst <$> evalIntegerExpr upper
+            checkCardinalities lower upper lower' upper'
+            return (RoleRef tyName (lower', upper'))
+
+    checkCardinalities lower upper lower' upper'
+        | lower' < 0 = throw (getLoc lower) (InvalidLowerBound lower')
+        | upper' < lower' =
+            throw
+                (getLoc lower <> getLoc upper)
+                (InvalidCardinalities lower' upper')
+        | otherwise = return ()
 
 
 addComponents :: ComponentDef -> Builder ()

@@ -3,6 +3,7 @@ module Rbsc.Syntax.ComponentType
     ( NaturalTypeDef(..)
     , RoleTypeDef(..)
     , CompartmentTypeDef(..)
+    , MultiRole(..)
     ) where
 
 
@@ -34,13 +35,20 @@ instance Ord RoleTypeDef where
 
 
 -- | A definition of a compartment type.
-data CompartmentTypeDef = CompartmentTypeDef
+data CompartmentTypeDef expr = CompartmentTypeDef
     { ctdName  :: Loc TypeName
-    , ctdRoles :: [Loc TypeName]
+    , ctdRoles :: [[MultiRole expr]]
     } deriving (Show)
 
-instance Eq CompartmentTypeDef where
+instance Eq (CompartmentTypeDef expr) where
     (==) = (==) `on` ctdName
 
-instance Ord CompartmentTypeDef where
+instance Ord (CompartmentTypeDef expr) where
     compare = comparing ctdName
+
+
+-- | A reference to a role type with optional cardinalities.
+data MultiRole expr = MultiRole
+    { mrName   :: Loc TypeName
+    , mrBounds :: Maybe (expr, expr)
+    } deriving (Show)

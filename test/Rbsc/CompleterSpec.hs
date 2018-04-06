@@ -58,11 +58,14 @@ compartmentsAreFilled types sys =
   where
     isFilled (name, tyName) =
         case Map.lookup tyName types of
-            Just (CompartmentType rTys) ->
+            Just (CompartmentType roleRefLists) ->
                 let cs = containedRoles name sys
                     cTys = fmap (`Map.lookup` (sys^.instances)) cs
-                in sort cTys == sort (fmap Just rTys)
+                    roleTypeLists = fmap (concatMap fromRoleRef) roleRefLists
+                in any (\rTys -> sort cTys == sort (fmap Just rTys)) roleTypeLists
             _ -> True
+
+    fromRoleRef (RoleRef tyName (lower, _)) = replicate lower tyName
 
 
 data Model = Model ComponentTypes System deriving (Show)
@@ -143,8 +146,10 @@ compartmentTypes :: [TypeName] -> [TypeName] -> Gen ComponentTypes
 compartmentTypes compartmentTyNames roleTyNames =
     Map.fromList <$> traverse compartmentType compartmentTyNames
   where
-    compartmentType n =
-        (,) n . CompartmentType <$> nonEmptySublistOf roleTyNames
+    compartmentType n = (,) n . CompartmentType . (: []) <$>
+        nonEmptySublistOf (fmap mkRoleRef roleTyNames)
+
+    mkRoleRef tyName = RoleRef tyName (1, 1)
 
 
 typeNames :: Text -> Gen [TypeName]

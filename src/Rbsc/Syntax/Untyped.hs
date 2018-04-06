@@ -5,6 +5,10 @@ module Rbsc.Syntax.Untyped
       -- * Model
     , UModel
 
+      -- * Component Types
+    , UCompartmentTypeDef
+    , UMultiRole
+
       -- * Constants
     , UConstant
 
@@ -30,6 +34,10 @@ import Rbsc.Syntax.Type           as Syntax
 
 
 type UModel = Model LExpr
+
+
+type UCompartmentTypeDef = CompartmentTypeDef LExpr
+type UMultiRole          = MultiRole LExpr
 
 
 type UConstant = Constant LExpr

@@ -19,10 +19,9 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 
 import           Data.Char       (isUpper)
-import           Data.Foldable   (find, for_)
-import           Data.List       (delete)
+import           Data.Foldable   (for_)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe      (isNothing)
+import           Data.Maybe      (isNothing, mapMaybe)
 import           Data.Monoid
 import           Data.Set        (Set)
 import qualified Data.Set        as Set
@@ -120,19 +119,26 @@ completeRoleInstance types name playerTyNames =
 -- | Complete a compartment instance by adding a role instance for each
 -- required role type.
 completeCompartmentInstance ::
-       ComponentTypes -> Name -> [TypeName] -> Completer ()
-completeCompartmentInstance types name roleTyNames = do
+       ComponentTypes -> Name -> [[RoleRef]] -> Completer ()
+completeCompartmentInstance types name roleRefLists = do
     sys <- use system
-    let missing = missingRoles (containedRoles name sys) roleTyNames sys
 
-    for_ missing $ \roleTyName -> do
-        roleName <- getOrCreateInstance types roleTyName
+    let missings =
+            fmap (missingRoles (containedRoles name sys) sys) roleRefLists
 
-        -- check if the role is already contained in another compartment
-        ci <- use $ system.containedIn
-        liftList (guard (Map.notMember roleName ci))
+    -- Only attempt to complete a compartment if none of its alternatives
+    -- are complete already.
+    unless (null missings || any null missings) $ do
+        missing <- liftList missings
 
-        system.containedIn.at roleName .= Just name
+        for_ missing $ \roleTyName -> do
+            roleName <- getOrCreateInstance types roleTyName
+
+            -- check if the role is already contained in another compartment
+            ci <- use $ system.containedIn
+            liftList (guard (Map.notMember roleName ci))
+
+            system.containedIn.at roleName .= Just name
 
 
 -- | Get an instance of the given type or create a new one.
@@ -171,20 +177,23 @@ unlessVisited typeName m = do
         else local (typeName:) m
 
 
--- | Given a list of role instances and a list of required role types, get
+-- | Given a list of role instances and a list of required roles, get
 -- a list of all role types that have no corresponding instance.
-missingRoles :: [RoleName] -> [TypeName] -> System -> [TypeName]
-missingRoles contained required sys =
-    evalState (filterM (fmap not . hasInstance) required) contained
+missingRoles :: [RoleName] -> System -> [RoleRef] -> [TypeName]
+missingRoles contained sys required =
+    concatMap (\(tyName, i) -> replicate i tyName) (Map.toList stillRequired)
   where
-    hasInstance tyName = do
-        cs <- get
-        case find (hasType tyName) cs of
-            Just name -> do
-                modify (delete name)
-                return True
-            Nothing -> return False
-    hasType tyName name = view (instances.at name) sys == Just tyName
+    stillRequired = Map.unionWith (-) numRequired numContained'
+
+    numContained' = Map.intersection numContained numRequired
+
+    numContained =
+        Map.unionsWith (+) (fmap (`Map.singleton` (1 :: Int)) containedTypes)
+
+    numRequired = Map.unionsWith (+) (fmap fromRoleRef required)
+    fromRoleRef (RoleRef tyName (lower, _)) = Map.singleton tyName lower
+
+    containedTypes = mapMaybe (\name -> view (instances.at name) sys) contained
 
 
 -- | Get the first cycle induced by the 'boundTo' relation if it exists.

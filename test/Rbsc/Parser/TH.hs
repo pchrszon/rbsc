@@ -98,7 +98,8 @@ deriving instance Data expr => Data (Parameter expr)
 
 deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef
-deriving instance Data CompartmentTypeDef
+deriving instance Data expr => Data (CompartmentTypeDef expr)
+deriving instance Data expr => Data (MultiRole expr)
 
 deriving instance Data expr => Data (Syntax.Type expr)
 

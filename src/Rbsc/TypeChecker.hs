@@ -41,7 +41,7 @@ typeCheck depth model = do
 
 tcModel :: UModel -> [TConstant] -> TypeChecker TModel
 tcModel Model{..} consts =
-    Model consts [] modelNaturalTypes modelRoleTypes modelCompartmentTypes
+    Model consts [] [] [] []
     <$> traverse tcConstraint modelSystem
 
 

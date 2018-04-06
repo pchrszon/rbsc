@@ -15,6 +15,6 @@ data Model expr = Model
     , modelFunctions        :: [Function expr]
     , modelNaturalTypes     :: [NaturalTypeDef]
     , modelRoleTypes        :: [RoleTypeDef]
-    , modelCompartmentTypes :: [CompartmentTypeDef]
+    , modelCompartmentTypes :: [CompartmentTypeDef expr]
     , modelSystem           :: [expr]
     } deriving (Show)
