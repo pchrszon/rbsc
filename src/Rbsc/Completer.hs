@@ -123,8 +123,7 @@ completeCompartmentInstance ::
 completeCompartmentInstance types name roleRefLists = do
     sys <- use system
 
-    let missings =
-            fmap (missingRoles (containedRoles name sys) sys) roleRefLists
+    let missings = missingRoles (containedRoles name sys) sys roleRefLists
 
     -- Only attempt to complete a compartment if none of its alternatives
     -- are complete already.
@@ -177,21 +176,27 @@ unlessVisited typeName m = do
         else local (typeName:) m
 
 
--- | Given a list of role instances and a list of required roles, get
--- a list of all role types that have no corresponding instance.
-missingRoles :: [RoleName] -> System -> [RoleRef] -> [TypeName]
-missingRoles contained sys required =
-    concatMap (\(tyName, i) -> replicate i tyName) (Map.toList stillRequired)
-  where
-    stillRequired = Map.unionWith (-) numRequired numContained'
+-- | @missingRoles contained sys roleRefLists@ returns a list of missing
+-- roles for each possible instantiation of the @roleRefLists@.
+missingRoles :: [RoleName] -> System -> [[RoleRef]] -> [[TypeName]]
+missingRoles contained sys roleRefLists = do
+    required <- roleRefLists
+    requireds <- traverse fromRoleRef required
 
-    numContained' = Map.intersection numContained numRequired
+    let numRequired   = Map.unionsWith (+) requireds
+        numContained' = Map.intersection numContained numRequired
+        stillRequired = Map.unionWith (-) numRequired numContained'
+
+    return (concatMap unfold (Map.toList stillRequired))
+  where
+    fromRoleRef (RoleRef tyName (lower, upper)) = do
+        i <- [lower .. upper]
+        return (Map.singleton tyName i)
+
+    unfold (tyName, i) = replicate i tyName
 
     numContained =
         Map.unionsWith (+) (fmap (`Map.singleton` (1 :: Int)) containedTypes)
-
-    numRequired = Map.unionsWith (+) (fmap fromRoleRef required)
-    fromRoleRef (RoleRef tyName (lower, _)) = Map.singleton tyName lower
 
     containedTypes = mapMaybe (\name -> view (instances.at name) sys) contained
 
