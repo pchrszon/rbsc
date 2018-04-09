@@ -43,6 +43,7 @@ reservedWords =
     , "powf"
     , "mod"
     , "log"
+    , "count"
     ]
 
 

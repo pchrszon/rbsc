@@ -76,6 +76,11 @@ spec = do
             `shouldBe`
             Right 1
 
+        it "evaluates the count function" $
+            eval' TyInt [expr| count(R, c) |]
+            `shouldBe`
+            Right 1
+
         it "does short-circuit evaluation" $
             eval' TyInt [expr| if true | (1 / 0 > 0) then 1 else f(1) |]
             `shouldBe`

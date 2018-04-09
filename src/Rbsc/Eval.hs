@@ -18,6 +18,7 @@ import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
 
+import           Data.List          (genericLength)
 import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict    as Map
@@ -36,8 +37,8 @@ import           Rbsc.Data.Type
 import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 
-import Rbsc.Syntax.Expr.Typed (Constants)
-import Rbsc.Syntax.Expr.Typed as T
+import Rbsc.Syntax.Expr.Typed     (Constants)
+import Rbsc.Syntax.Expr.Typed     as T
 import Rbsc.Syntax.Operators
 import Rbsc.Syntax.Quantification
 
@@ -194,6 +195,10 @@ toLiteral e = case e of
         return (Literal
             (view compContainedIn role == Just (view compName compartment)))
 
+    Count tySet (Literal comp) -> do
+        comps <- components tySet <$> view constants
+        return (Literal (genericLength (filter (isElement comp) comps)))
+
     _ -> return e
 
 
@@ -240,3 +245,10 @@ components tySet = mapMaybe f . Map.elems
         e@(SomeExpr _ (TyComponent ty))
             | ty `Set.isSubsetOf` tySet -> Just e
         _ -> Nothing
+
+
+isElement :: Component -> SomeExpr -> Bool
+isElement comp = \case
+    SomeExpr (Literal role) (TyComponent _) ->
+        view compContainedIn role == Just (view compName comp)
+    _ -> False

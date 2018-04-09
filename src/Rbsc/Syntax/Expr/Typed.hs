@@ -63,6 +63,7 @@ data Expr t where
     BoundTo     :: Loc (Expr Component) -> Expr Component -> Expr Bool
     Element     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound       :: Int -> Type t -> Expr t
+    Count       :: Set TypeName -> Expr Component -> Expr Integer
     Lambda      :: Type a -> Scope b -> Expr (Fn (a -> b))
     Quantified  :: Quantifier t -> TQuantifiedType -> Scope t -> Expr t
 
@@ -127,6 +128,7 @@ instantiate (Scope body) (SomeExpr s ty) = go 0 body
                 Just Refl -> s
                 Nothing   -> error "instantiate: type error"
             | otherwise -> Bound i' ty'
+        Count tySet e -> Count tySet (go i e)
         Lambda ty' (Scope body') -> Lambda ty' (Scope (go (succ i) body'))
         Quantified q qdTy (Scope body') ->
             Quantified q (goQdType i qdTy) (Scope (go (succ i) body'))
@@ -176,6 +178,7 @@ descend f = \case
     BoundTo l r        -> BoundTo <$> traverse f l <*> f r
     Element l r        -> Element <$> traverse f l <*> traverse f r
     Bound i ty         -> pure (Bound i ty)
+    Count tySet e      -> Count tySet <$> f e
     Lambda ty (Scope body) -> Lambda ty . Scope <$> f body
     Quantified q qdTy@(QdTypeComponent _) (Scope body) ->
         Quantified q qdTy . Scope <$> f body

@@ -149,6 +149,13 @@ tcExpr (Loc e rgn) = case e of
         r' <- r `hasType` tyComponent
         T.Element (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 
+    U.Count tySet inner -> do
+        tyComponent <- getTyComponent
+        compTys <- view componentTypes
+        tySet' <- lift (normalizeTypeSet compTys tySet)
+        inner' <- inner `hasType` tyComponent
+        T.Count tySet' inner' `withType` TyInt
+
     U.Quantified q var (QdTypeComponent tySet) body -> do
         compTys <- view componentTypes
         tySet' <- lift (normalizeTypeSet compTys tySet)

@@ -50,6 +50,7 @@ data Expr
     | HasType LExpr (Loc TypeName)
     | BoundTo LExpr LExpr
     | Element LExpr LExpr
+    | Count ComponentTypeSet LExpr
     | Quantified !Quantifier !Name (QuantifiedType ComponentTypeSet LExpr) LExpr
     deriving (Show)
 
@@ -87,6 +88,7 @@ instance Plated LExpr where
         HasType e' tyName -> HasType <$> f e' <*> pure tyName
         BoundTo l r -> BoundTo <$> f l <*> f r
         Element l r -> Element <$> f l <*> f r
+        Count tyName e' -> Count tyName <$> f e'
         Quantified q varName var e' ->
             Quantified q varName <$> traverse f var <*> f e'
 

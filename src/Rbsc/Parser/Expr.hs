@@ -73,6 +73,7 @@ atom = choice
     , litArray
     , ifThenElse
     , function
+    , countFunction
     , ident
     ]
 
@@ -144,6 +145,15 @@ function = choice
     fn sym name = do
         rgn <- reserved name
         return (Loc (LitFunction sym) rgn)
+
+
+countFunction :: Parser LExpr
+countFunction = do
+    start <- reserved "count"
+    _ <- symbol "("
+    e <- Count <$> componentTypeSet <*> (comma *> expr)
+    end <- symbol ")"
+    return (Loc e (start <> end))
 
 
 ident :: Parser LExpr
