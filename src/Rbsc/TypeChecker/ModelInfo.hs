@@ -54,7 +54,6 @@ makeLenses ''BuilderState
 getModelInfo ::
        RecursionDepth -> UModel -> Either [Error] (ModelInfo, [TConstant])
 getModelInfo depth m = do
-    -- types  <- getComponentTypes m
     idents <- identifierDefs m
     deps   <- toErrorList (sortDefinitions idents)
     result <- toErrorList (runBuilder (traverse addDependency deps) depth)

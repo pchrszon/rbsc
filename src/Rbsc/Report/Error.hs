@@ -16,6 +16,9 @@ import Data.Monoid
 import           Data.Text (Text, pack)
 import qualified Data.Text as Text
 
+
+import Rbsc.Data.Name
+
 import Rbsc.Report
 import Rbsc.Report.Region
 
@@ -44,6 +47,7 @@ data ErrorDesc
     | NotACompartment
     | InvalidLowerBound !Int
     | InvalidCardinalities !Int !Int
+    | TooManyRoles !Name [(TypeName, Int)]
 
     | DivisionByZero
     | NotConstant
@@ -96,7 +100,7 @@ toReport (Error rgn desc) = case desc of
         Report "type error"
             [ errorPart rgn . Just $
                 "expression has type: " <> actual <>
-                "\nexpected type: " <> orList expected
+                "\nexpected type: " <> list "or" expected
             ]
 
     NotComparable ty ->
@@ -152,6 +156,14 @@ toReport (Error rgn desc) = case desc of
                 pack (show upper)
             ]
 
+    TooManyRoles name amounts ->
+        flip Report [] $
+            "the compartment " <> name <> " contains " <>
+            list "and" (fmap (\(TypeName tyName, amount) ->
+                pack (show amount) <>
+                " more role" <> (if amount > 1 then "s" else "") <>
+                " of type " <> tyName <> " than allowed") amounts)
+
 
     DivisionByZero ->
         Report "division by zero"
@@ -188,8 +200,8 @@ throw :: MonadError Error m => Region -> ErrorDesc -> m a
 throw rgn = throwError . Error rgn
 
 
-orList :: [Text] -> Text
-orList []     = Text.empty
-orList [x]    = x
-orList [x, y] = x <> " or " <> y
-orList (x:xs) = x <> ", " <> orList xs
+list :: Text -> [Text] -> Text
+list _ []     = Text.empty
+list _ [x]    = x
+list c [x, y] = x <> " " <> c <> " " <> y
+list c (x:xs) = x <> ", " <> list c xs

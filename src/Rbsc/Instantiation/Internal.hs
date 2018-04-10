@@ -14,18 +14,22 @@ module Rbsc.Instantiation.Internal
     , updateModelInfo
     , buildSystem
     , checkConstraints
+    , checkCompartmentUpperBounds
     ) where
 
 
 import Control.Lens
 import Control.Monad.State.Strict
 
+import           Data.List       (sortBy)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import           Data.Maybe
 import qualified Data.Set        as Set
 
 import Data.Foldable
 import Data.Monoid
+import Data.Ord
 import Data.Text        (pack)
 import Data.Traversable
 
@@ -241,3 +245,48 @@ clauses = \case
         Literal True -> []
         _ -> [e]
     e -> [e]
+
+
+-- | Check if the given 'System' violates the role cardinalities given by
+-- the compartment type definitions. If so, an error is thrown.
+checkCompartmentUpperBounds :: ComponentTypes -> System -> Either Error ()
+checkCompartmentUpperBounds compTys sys =
+    for_ (view (instances.to Map.assocs) sys) $ \(name, tyName) ->
+        case Map.lookup tyName compTys of
+            Just (CompartmentType roleRefLists) ->
+                checkCompartment sys name roleRefLists
+            _ -> return ()
+
+
+checkCompartment :: System -> Name -> [[RoleRef]] -> Either Error ()
+checkCompartment sys name roleRefLists
+    | any Map.null overfulls = return ()
+    | otherwise = case sortedOverfulls of
+        (os:_) -> throw dummyRegion (TooManyRoles name (Map.assocs os))
+        _      -> return ()
+  where
+    sortedOverfulls = sortBy (comparing numAdditional) overfulls
+    overfulls = fmap (getOverfullTypes sys name) roleRefLists
+
+    numAdditional = Map.foldr (+) 0
+
+    -- A 'TooManyRoles' error cannot be given a precise code region, since
+    -- it is potentially a result of multiple constraints in the system
+    -- block.
+    dummyRegion = Region "" "" (Position 1 1) (Position 1 2)
+
+
+getOverfullTypes :: System -> Name -> [RoleRef] -> Map TypeName Int
+getOverfullTypes sys name roleRefs =
+    Map.filter (> 0) (Map.unionWith (-) numContained numMaxRequired')
+  where
+    numMaxRequired' = Map.intersection numMaxRequired numContained
+    numMaxRequired  = Map.unionsWith (+) (fmap fromRoleRef roleRefs)
+
+    fromRoleRef (RoleRef roleTyName (_, upper)) = Map.singleton roleTyName upper
+
+    numContained =
+        Map.unionsWith (+) (fmap (`Map.singleton` (1 :: Int)) containedTypes)
+
+    containedTypes =
+        mapMaybe (\n -> view (instances.at n) sys) (containedRoles name sys)

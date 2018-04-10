@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | Instantiation of system instances.
 module Rbsc.Instantiation
     ( generateInstances
@@ -34,6 +37,12 @@ generateInstances ::
     -> Either Error [(System, ModelInfo)]
 generateInstances depth model info = do
     Result sys cs arrayInfos <- buildSystem depth model info
+
+    -- We only have to check the upper role cardinality bounds, since in case
+    -- the lower bounds are violated, the 'completeSystem' function will
+    -- generate the missing roles.
+    checkCompartmentUpperBounds (view componentTypes info) sys
+
     let syss = rights (completeSystem (view componentTypes info) sys) -- TODO: cycle warnings
         sysInfos = fmap (updateModelInfo info arrayInfos) syss
     filterM (checkConstraints depth cs . snd) sysInfos

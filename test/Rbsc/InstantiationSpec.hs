@@ -29,6 +29,7 @@ import Rbsc.Instantiation.Internal
 import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
+import Rbsc.Report.Region
 
 import Rbsc.Syntax.Expr.Typed (Expr (..), SomeExpr (..))
 import Rbsc.Syntax.Untyped    (UModel)
@@ -140,6 +141,26 @@ spec = do
             `shouldSatisfy`
             has (_Left.traverse.errorDesc._InvalidUpperBound)
 
+
+    describe "checkCompartmentUpperBounds" $
+        it "detects overfull compartments" $
+            checkCompartmentUpperBounds'
+                [model|
+                    natural type N;
+                    role type R(N);
+                    compartment type C(R);
+
+                    system
+                        { r[2]: R
+                        , c: C
+                        , r[0] in c
+                        , r[1] in c
+                        }
+                |]
+            `shouldBe`
+            Left [Error dummyRegion (TooManyRoles "c" [("R", 1)])]
+
+
     describe "updateModelInfo" $ do
         it "creates constants for components" $
             getComponents simpleModel
@@ -188,6 +209,18 @@ simpleModel =
             , r in c
             }
     |]
+
+
+checkCompartmentUpperBounds' :: UModel -> Either [Error] ()
+checkCompartmentUpperBounds' m = do
+    (m', info) <- typeCheck 10 m
+    Result sys _ _ <- over _Left (: []) (buildSystem 10 m' info)
+    over _Left (: [])
+        (checkCompartmentUpperBounds (view componentTypes info) sys)
+
+
+dummyRegion :: Region
+dummyRegion = Region "" "" (Position 1 1) (Position 1 2)
 
 
 buildSystem' :: UModel -> Either [Error] System
