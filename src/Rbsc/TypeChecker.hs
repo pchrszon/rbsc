@@ -15,8 +15,8 @@ import Rbsc.Data.Type
 
 import Rbsc.Eval
 
+import Rbsc.Report.Error
 import Rbsc.Report.Region (withLocOf)
-import Rbsc.Report.Result
 
 import Rbsc.Syntax.Expr.Typed (SomeExpr (..))
 import Rbsc.Syntax.Typed      hiding (Type (..))
@@ -27,8 +27,8 @@ import Rbsc.TypeChecker.Internal  (TypeChecker, runTypeChecker)
 import Rbsc.TypeChecker.ModelInfo
 
 
-typeCheck :: RecursionDepth -> UModel -> Result' (TModel, ModelInfo)
-typeCheck depth model = fromEither $ do
+typeCheck :: RecursionDepth -> UModel -> Either [Error] (TModel, ModelInfo)
+typeCheck depth model = do
     (info, consts') <- getModelInfo depth model
     let compTys  = view componentTypes info
         symTable = view symbolTable info

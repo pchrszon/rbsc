@@ -29,7 +29,6 @@ import Rbsc.Instantiation.Internal
 import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
-import Rbsc.Report.Result (toEither)
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Expr.Typed (Expr (..), SomeExpr (..))
@@ -214,7 +213,7 @@ simpleModel =
 
 checkCompartmentUpperBounds' :: UModel -> Either [Error] ()
 checkCompartmentUpperBounds' m = do
-    (m', info) <- toEither (typeCheck 10 m)
+    (m', info) <- typeCheck 10 m
     Result sys _ _ <- over _Left (: []) (buildSystem 10 m' info)
     over _Left (: [])
         (checkCompartmentUpperBounds (view componentTypes info) sys)
@@ -226,7 +225,7 @@ dummyRegion = Region "" "" (Position 1 1) (Position 1 2)
 
 buildSystem' :: UModel -> Either [Error] System
 buildSystem' m = do
-    (m', info) <- toEither (typeCheck 10 m)
+    (m', info) <- typeCheck 10 m
     result <- over _Left (: []) (buildSystem 10 m' info)
     return (_system result)
 
@@ -255,7 +254,7 @@ getComponentArrays m = do
 
 getConstants :: UModel -> Either [Error] Constants
 getConstants m = do
-    (m', info) <- toEither (typeCheck 10 m)
+    (m', info) <- typeCheck 10 m
     Result sys _ arrayInfos <- over _Left (: []) (buildSystem 10 m' info)
     let (_, info') = updateModelInfo info arrayInfos sys
     return (view constants info')

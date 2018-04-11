@@ -116,7 +116,7 @@ spec = do
 
 modelInfo :: ModelInfo
 modelInfo =
-    let Right (model', info) = toEither . typeCheck 10 $
+    let Right (model', info) = typeCheck 10
             [model|
                 natural type N;
                 role type R(N);
