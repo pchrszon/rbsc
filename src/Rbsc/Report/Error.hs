@@ -64,92 +64,92 @@ makePrisms ''ErrorDesc
 toReport :: Error -> Report
 toReport (Error rgn desc) = case desc of
     ParseError err ->
-        Report "syntax error" [errorPart rgn (Just err)]
+        errorReport "syntax error" [errorPart rgn (Just err)]
 
     UndefinedType ->
-        Report "undefined type" [errorPart rgn Nothing]
+        errorReport "undefined type" [errorPart rgn Nothing]
 
     DuplicateType first ->
-        Report "duplicate type definition"
+        errorReport "duplicate type definition"
             [ errorPart rgn (Just "a type of the same name already exists")
             , hintPart first (Just "first definition was here")
             ]
 
     NonRoleInCompartment ->
-        Report "only roles can be contained in compartments"
+        errorReport "only roles can be contained in compartments"
             [ errorPart rgn (Just "this is not a role type")
             ]
 
     UndefinedIdentifier ->
-        Report "undefined identifier" [errorPart rgn Nothing]
+        errorReport "undefined identifier" [errorPart rgn Nothing]
 
     DuplicateIdentifier first ->
-        Report "duplicate definition"
+        errorReport "duplicate definition"
             [ errorPart rgn
                 (Just "an identifier with this name already exists")
             , hintPart first (Just "first definition was here")
             ]
 
     CyclicDefinition construct rgns ->
-        Report "cyclic definition" $
+        errorReport "cyclic definition" $
             (errorPart rgn (Just $
                 "this " <> construct <> " is defined in terms of itself")) :
             fmap (\r -> hintPart r Nothing) rgns
 
     TypeError expected actual ->
-        Report "type error"
+        errorReport "type error"
             [ errorPart rgn . Just $
                 "expression has type: " <> actual <>
                 "\nexpected type: " <> list "or" expected
             ]
 
     NotComparable ty ->
-        Report "uncomparable values"
+        errorReport "uncomparable values"
             [ errorPart rgn . Just $
                 "values of type " <> ty <> " are not comparable"
             ]
 
     NotAnArray actual ->
-        Report "not an array"
+        errorReport "not an array"
             [ errorPart rgn . Just $
                 "expression has type: " <> actual <>
                 "\nexpected type: array"
             ]
 
     NotAFunction ty ->
-        Report "not a function"
+        errorReport "not a function"
             [ errorPart rgn . Just $
                 "this is not a function\nexpression has type: " <> ty
             ]
 
     WrongNumberOfArguments expected actual ->
-        Report "wrong number of arguments"
+        errorReport "wrong number of arguments"
             [ errorPart rgn . Just $
                 "arguments given: " <> Text.pack (show actual) <>
                 "\nexpected: " <> Text.pack (show expected)
             ]
 
     NotARole ->
-        Report "component is not a role"
+        errorReport "component is not a role"
             [ errorPart rgn . Just $
                 "only roles can be bound to players and\n" <>
                 "be contained in compartments"
             ]
 
     NotACompartment ->
-        Report "component is not a compartment"
+        errorReport "component is not a compartment"
             [ errorPart rgn (Just "only compartments can contain roles")
             ]
 
     InvalidLowerBound lower ->
-        Report "invalid cardinalities"
+        errorReport "invalid cardinalities"
             [ errorPart rgn . Just $
                 "lower bound must be greater or equal 0, " <>
                 "but the given bound is " <> pack (show lower)
             ]
 
     InvalidCardinalities lower upper ->
-        Report "invalid cardinalities"
+        errorReport "invalid cardinalities"
             [ errorPart rgn . Just $
                 "lower bound must be greater than the upper bound, " <>
                 "but the given bounds are [" <> pack (show lower) <> " .. " <>
@@ -157,7 +157,7 @@ toReport (Error rgn desc) = case desc of
             ]
 
     TooManyRoles name amounts ->
-        flip Report [] $
+        flip errorReport [] $
             "the compartment " <> name <> " contains " <>
             list "and" (fmap (\(TypeName tyName, amount) ->
                 pack (show amount) <>
@@ -166,23 +166,23 @@ toReport (Error rgn desc) = case desc of
 
 
     DivisionByZero ->
-        Report "division by zero"
+        errorReport "division by zero"
             [ errorPart rgn $ Just
                 "division by zero occurred while evaluating this expression"
             ]
 
     NotConstant ->
-        Report "expression is not constant" [ errorPart rgn Nothing ]
+        errorReport "expression is not constant" [ errorPart rgn Nothing ]
 
     InvalidUpperBound len ->
-        Report "invalid array size"
+        errorReport "invalid array size"
             [ errorPart rgn . Just $
                 "array must have at least size 1, but the given size is " <>
                 Text.pack (show len)
             ]
 
     IndexOutOfBounds (lower, upper) idx ->
-        Report "index out of bounds"
+        errorReport "index out of bounds"
             [ errorPart rgn . Just $
                 "array has bounds [" <> pack (show lower) <> " .. " <>
                 pack (show upper) <> "] but the index is " <>
@@ -190,7 +190,7 @@ toReport (Error rgn desc) = case desc of
             ]
 
     ExceededDepth ->
-        Report "exceeded maximum recursion depth"
+        errorReport "exceeded maximum recursion depth"
             [ errorPart rgn . Just $
                 "exceeded recursion depth evaluating this expression"
             ]

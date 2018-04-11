@@ -3,6 +3,7 @@ module Rbsc.Compiler where
 
 import Data.Foldable
 
+import Data.List (intersperse)
 import qualified Data.Text.IO                              as Text
 import           Data.Text.Prettyprint.Doc                 (pretty)
 import           Data.Text.Prettyprint.Doc.Render.Terminal
@@ -75,8 +76,12 @@ drawSystem sys baseName = do
 
 
 printErrors :: [Error] -> IO ()
-printErrors = traverse_ (putDoc . render . Error.toReport)
+printErrors =
+    sequence_ . intersperse (putStrLn "") .
+    fmap (putDoc . render . Error.toReport)
 
 
 printWarnings :: [Warning] -> IO ()
-printWarnings = traverse_ (putDoc . render . Warning.toReport)
+printWarnings =
+    sequence_ . intersperse (putStrLn "") .
+    fmap (putDoc . render . Warning.toReport)

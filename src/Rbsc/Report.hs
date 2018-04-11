@@ -4,7 +4,10 @@
 
 -- | Reports referring to a source code region.
 module Rbsc.Report
-    ( Report(..)
+    ( Report
+    , errorReport
+    , hintReport
+
     , Part
     , errorPart
     , hintPart
@@ -25,24 +28,31 @@ import qualified Rbsc.Report.Region as Region
 
 
 -- | Represents information about the source code (e.g., an error or a warning).
-data Report = Report
-    { title :: !Text
-    , parts :: [Part]
-    }
+data Report = Report !MessageType !Text [Part]
 
 
 -- | A reference to a code region with an optional description.
 data Part = Part
-    { _type    :: !PartType
+    { _type    :: !MessageType
     , _region  :: !Region
     , _message :: Maybe Text
     }
 
 
 -- | A 'Part' can either point to an error or give a hint.
-data PartType
+data MessageType
     = Error
     | Hint
+
+
+-- | Create a 'Report' representing an error.
+errorReport :: Text -> [Part] -> Report
+errorReport = Report Error
+
+
+-- | Create a 'Report' representing a hint.
+hintReport :: Text -> [Part] -> Report
+hintReport = Report Hint
 
 
 -- | Create a 'Part' referencing an error.
@@ -61,6 +71,10 @@ instance Pretty Report where
 
 errorTitleStyle :: AnsiStyle
 errorTitleStyle = color Red <> bold
+
+
+hintTitleStyle :: AnsiStyle
+hintTitleStyle = color Blue <> bold
 
 
 errorUnderlineStyle :: AnsiStyle
@@ -85,8 +99,8 @@ lineNumberStyle = colorDull Blue
 
 -- | Render a 'Report'.
 render :: Report -> Doc AnsiStyle
-render (Report title parts) =
-    annotate errorTitleStyle (pretty title) <> hardline <>
+render (Report ty title parts) =
+    annotate titleStyle (pretty title) <> hardline <>
     mconcat (fmap (renderPart marginWidth) (zip parts prevPaths))
   where
     -- File path of the previos report part. The first part does not have
@@ -98,6 +112,10 @@ render (Report title parts) =
         | otherwise  = length (show maxLineNum)
 
     maxLineNum = maximum (fmap (Region.line . Region.end . _region) parts)
+
+    titleStyle = case ty of
+        Error -> errorTitleStyle
+        Hint  -> hintTitleStyle
 
 
 renderPart :: Int -> (Part, Maybe FilePath) -> Doc AnsiStyle
@@ -132,7 +150,7 @@ renderPart marginWidth (Part partType region message, path) =
     numLines = lastLine - firstLine + 1
 
 
-renderLineRegion :: Int -> PartType -> (Text, LineRegion) -> Doc AnsiStyle
+renderLineRegion :: Int -> MessageType -> (Text, LineRegion) -> Doc AnsiStyle
 renderLineRegion marginWidth partType (sourceLine, LineRegion lrLine lrStart lrEnd) =
     annotate lineNumberStyle (fill marginWidth (pretty lrLine) <+> pipe) <+>
     pretty sourceLine <> hardline <> spaces marginWidth <+>

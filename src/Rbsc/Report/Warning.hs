@@ -1,12 +1,13 @@
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE LambdaCase #-}
 
 
 module Rbsc.Report.Warning where
 
 
-import Data.Monoid
-import qualified Data.Text as Text
+import           Data.Monoid
+import           Data.Text   (Text)
+import qualified Data.Text   as Text
 
 
 import Rbsc.Data.Name
@@ -20,12 +21,12 @@ data Warning
 
 
 toReport :: Warning -> Report
-toReport = addWarningLabel . \case
+toReport = \case
     InstantiationCycle tyNames ->
-        flip Report [] $
+        flip warningReport [] $
             "omitted system instance because of cycle among types:\n" <>
             Text.intercalate ", " (fmap getTypeName tyNames)
 
 
-addWarningLabel :: Report -> Report
-addWarningLabel (Report t ps) = Report ("warning: " <> t) ps
+warningReport :: Text -> [Part] -> Report
+warningReport title = hintReport ("warning: " <> title)
