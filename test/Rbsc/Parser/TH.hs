@@ -38,6 +38,7 @@ import           Rbsc.Report
 import           Rbsc.Report.Error          (Error(..))
 import qualified Rbsc.Report.Error as Error
 import           Rbsc.Report.Region
+import           Rbsc.Report.Result (toEither)
 
 import           Rbsc.Syntax.Untyped hiding (Type(..))
 import qualified Rbsc.Syntax.Type as Syntax
@@ -80,7 +81,7 @@ handleText = Just . appE (varE 'Text.pack) . litE . StringL . Text.unpack
 parseIO :: String -> IO UModel
 parseIO str = do
     result <- parse "splice" (Text.pack str)
-    case result of
+    case toEither result of
         Left errors -> throwIO (userError (unlines (printErrors errors)))
         Right m     -> return m
 

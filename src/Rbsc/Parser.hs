@@ -29,6 +29,7 @@ import Rbsc.Parser.Function
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
 
+import Rbsc.Report.Result (Result', fromEither)
 import           Rbsc.Report.Error  (Error (..))
 import qualified Rbsc.Report.Error  as Error
 import qualified Rbsc.Report.Region as Region
@@ -37,9 +38,8 @@ import Rbsc.Syntax.Untyped
 
 
 -- | Parse a source file.
-parse ::
-       MonadIO m => FilePath -> Text -> m (Either [Error] UModel)
-parse path content = do
+parse :: MonadIO m => FilePath -> Text -> m (Result' UModel)
+parse path content = fmap fromEither $ do
     (result, sourceMap) <- run modelFile path content
 
     return $ case result of

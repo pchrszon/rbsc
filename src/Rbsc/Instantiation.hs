@@ -22,7 +22,7 @@ import Rbsc.Eval
 
 import Rbsc.Instantiation.Internal
 
-import Rbsc.Report.Error
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed
 
@@ -34,8 +34,8 @@ generateInstances ::
        RecursionDepth
     -> TModel
     -> ModelInfo
-    -> Either Error [(System, ModelInfo)]
-generateInstances depth model info = do
+    -> Result' [(System, ModelInfo)]
+generateInstances depth model info = fromEither' $ do
     Result sys cs arrayInfos <- buildSystem depth model info
 
     -- We only have to check the upper role cardinality bounds, since in case

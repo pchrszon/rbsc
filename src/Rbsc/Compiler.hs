@@ -11,34 +11,47 @@ import System.Process (callCommand)
 
 
 import Rbsc.Data.System
+import Rbsc.Data.ModelInfo
 
 import Rbsc.Instantiation
 
 import Rbsc.Parser
 
 import Rbsc.Report
-import Rbsc.Report.Error
+import Rbsc.Report.Result
+import Rbsc.Report.Error as Error
+import Rbsc.Report.Warning as Warning
+
+import Rbsc.Syntax.Untyped
 
 import Rbsc.TypeChecker
 
 import Rbsc.Visualization.System
 
 
-compile :: FilePath -> IO (Maybe ())
+compile :: FilePath -> IO ()
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
-    case parseResult of
-        Left errors -> printErrors errors
-        Right model -> case typeCheck 10 model of
-            Left errors -> printErrors errors
-            Right (model', info) -> case generateInstances 10 model' info of
-                Left err -> printErrors [err]
-                Right results -> do
-                    let systems = fmap fst results
-                    traverse_ printSystem systems
-                    drawSystems systems
-                    return (Just ())
+
+    let (result, warnings) = toEither' (generateSystems parseResult)
+
+    case result of
+        Left errors -> do
+            printErrors errors
+            printWarnings warnings
+        Right results -> do
+            printWarnings warnings
+            let systems = fmap fst results
+            traverse_ printSystem systems
+            drawSystems systems
+
+
+generateSystems :: Result' UModel -> Result' [(System, ModelInfo)]
+generateSystems parseResult = do
+    model          <- parseResult
+    (model', info) <- typeCheck 10 model
+    generateInstances 10 model' info
 
 
 printSystem :: System -> IO ()
@@ -61,7 +74,9 @@ drawSystem sys baseName = do
     callCommand $ "rm " ++ baseName ++ ".dot"
 
 
-printErrors :: [Error] -> IO (Maybe a)
-printErrors errors = do
-    traverse_ (putDoc . render . toReport) errors
-    return Nothing
+printErrors :: [Error] -> IO ()
+printErrors = traverse_ (putDoc . render . Error.toReport)
+
+
+printWarnings :: [Warning] -> IO ()
+printWarnings = traverse_ (putDoc . render . Warning.toReport)

@@ -21,6 +21,7 @@ import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result (toEither)
 
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
@@ -115,7 +116,7 @@ spec = do
 
 modelInfo :: ModelInfo
 modelInfo =
-    let Right (model', info) = typeCheck 10
+    let Right (model', info) = toEither . typeCheck 10 $
             [model|
                 natural type N;
                 role type R(N);
@@ -141,7 +142,7 @@ modelInfo =
                     r in c
                 }
             |]
-        Right [(_, info')] = generateInstances 10 model' info
+        Right [(_, info')] = toEither (generateInstances 10 model' info)
     in info' & symbolTable.at "y" .~ Just (SomeType TyInt)
 
 
