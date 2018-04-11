@@ -24,7 +24,6 @@ module Rbsc.Report.Result
     , Error(..)
     , ErrorDesc(..)
     , Warning(..)
-    , WarningDesc(..)
     ) where
 
 

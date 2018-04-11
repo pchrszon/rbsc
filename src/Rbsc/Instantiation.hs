@@ -11,6 +11,7 @@ import Control.Lens
 import Control.Monad
 
 import Data.Either
+import Data.Foldable
 
 
 import Rbsc.Completer
@@ -35,14 +36,21 @@ generateInstances ::
     -> TModel
     -> ModelInfo
     -> Result' [(System, ModelInfo)]
-generateInstances depth model info = fromEither' $ do
-    Result sys cs arrayInfos <- buildSystem depth model info
+generateInstances depth model info = do
+    (sysInfos, cycles) <- fromEither' generate
+    traverse_ (warn . InstantiationCycle) cycles
+    return sysInfos
+  where
+    generate = do
+        Result sys cs arrayInfos <- buildSystem depth model info
 
-    -- We only have to check the upper role cardinality bounds, since in case
-    -- the lower bounds are violated, the 'completeSystem' function will
-    -- generate the missing roles.
-    checkCompartmentUpperBounds (view componentTypes info) sys
+        -- We only have to check the upper role cardinality bounds, since in case
+        -- the lower bounds are violated, the 'completeSystem' function will
+        -- generate the missing roles.
+        checkCompartmentUpperBounds (view componentTypes info) sys
 
-    let syss = rights (completeSystem (view componentTypes info) sys) -- TODO: cycle warnings
-        sysInfos = fmap (updateModelInfo info arrayInfos) syss
-    filterM (checkConstraints depth cs . snd) sysInfos
+        let (cycles, syss) =
+                partitionEithers (completeSystem (view componentTypes info) sys)
+            sysInfos = fmap (updateModelInfo info arrayInfos) syss
+        sysInfos' <- filterM (checkConstraints depth cs . snd) sysInfos
+        return (sysInfos', cycles)
