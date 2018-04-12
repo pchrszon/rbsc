@@ -30,6 +30,7 @@ import qualified Data.Text       as T
 
 
 import Rbsc.Data.ComponentType
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
 import Rbsc.Data.System
 
@@ -59,14 +60,14 @@ instance HasNameGen CompletionState where
     nameGen = csNameGen
 
 
-runCompleter :: Completer () -> System -> [Either Cycle System]
-runCompleter m sys =
+runCompleter :: Completer () -> SymbolTable -> System -> [Either Cycle System]
+runCompleter m symTable sys =
     let results =
             runExceptT (execStateT (runReaderT m []) (CompletionState gen sys))
     in over (traverse._Right) (view system) results
   where
     gen = mkNameGen deriveFromTypeIdent takenNames
-    takenNames = view (instances.to Map.keysSet) sys
+    takenNames = Map.keysSet symTable
 
 
 -- | Lift a nondeterministic choice into the 'Completer' monad.
@@ -82,12 +83,12 @@ liftList = lift . lift . lift
 --
 -- Some instantiations may lead to a cycle (e.g., a role played by
 -- a compartment is contained within the compartment).
-completeSystem :: ComponentTypes -> System -> [Either Cycle System]
-completeSystem types sys = runCompleter completeAll sys
+completeSystem :: ModelInfo -> System -> [Either Cycle System]
+completeSystem info sys = runCompleter completeAll (view symbolTable info) sys
   where
     completeAll =
         ifor_ (view instances sys) $ \name tyName -> do
-            completeInstance types name tyName
+            completeInstance (view componentTypes info) name tyName
             -- discard all system instances containing cycles
             liftList . guard . isNothing . getCycle =<< use system
 

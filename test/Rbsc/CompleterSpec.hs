@@ -21,6 +21,7 @@ import Test.QuickCheck
 import Rbsc.Completer
 
 import Rbsc.Data.ComponentType
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
 import Rbsc.Data.System
 
@@ -29,13 +30,16 @@ import Rbsc.Util
 
 spec :: Spec
 spec = describe "completeSystem" $ do
-    prop "binds all roles" $ \(Model types sys) ->
-        allOf (traverse._Right) (rolesAreBound types) (completeSystem types sys)
+    prop "binds all roles" $ \(Model info sys) ->
+        allOf
+            (traverse._Right)
+            (rolesAreBound (view componentTypes info))
+            (completeSystem info sys)
 
-    prop "fills all compartments" $ \(Model types sys) ->
+    prop "fills all compartments" $ \(Model info sys) ->
         allOf (traverse._Right)
-              (compartmentsAreFilled types)
-              (completeSystem types sys)
+              (compartmentsAreFilled (view componentTypes info))
+              (completeSystem info sys)
 
 
 rolesAreBound :: ComponentTypes -> System -> Bool
@@ -68,7 +72,7 @@ compartmentsAreFilled types sys =
     fromRoleRef (RoleRef tyName (lower, _)) = replicate lower tyName
 
 
-data Model = Model ComponentTypes System deriving (Show)
+data Model = Model ModelInfo System deriving (Show)
 
 instance Arbitrary Model where
     arbitrary = do
@@ -82,7 +86,7 @@ instance Arbitrary Model where
                     , _containedIn = Map.empty
                     }
 
-        return (Model types sys)
+        return (Model (ModelInfo types Map.empty Map.empty) sys)
 
 
 genInstances :: ComponentTypes -> Gen (Map Name TypeName)

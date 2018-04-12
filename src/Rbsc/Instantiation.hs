@@ -49,8 +49,7 @@ generateInstances depth model info = do
         -- generate the missing roles.
         checkCompartmentUpperBounds (view componentTypes info) sys
 
-        let (cycles, syss) =
-                partitionEithers (completeSystem (view componentTypes info) sys)
+        let (cycles, syss) = partitionEithers (completeSystem info sys)
             sysInfos = fmap (updateModelInfo info arrayInfos) syss
         sysInfos' <- filterM (checkConstraints depth cs . snd) sysInfos
         return (sysInfos', cycles)
