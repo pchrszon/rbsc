@@ -2,8 +2,7 @@
 {-# LANGUAGE LambdaCase       #-}
 
 
--- | This module extracts and validates the component types defined in the
--- model.
+-- | This module validates the component types defined in the model.
 module Rbsc.TypeChecker.ComponentTypes
     ( validateComponentTypes
     ) where

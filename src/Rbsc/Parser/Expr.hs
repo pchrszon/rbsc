@@ -173,10 +173,10 @@ quantified = do
         Loc (Quantified q name tySet e) (start <> end)
 
     variable = (,)
-        <$> identifier
+        <$> (identifier <?> "variable")
         <*> option (QdTypeComponent AllComponents) (colon *> quantifiedType)
 
-    quantifier = choice
+    quantifier = label "quantifier" $ choice
         [ Loc Forall  <$> reserved "forall"
         , Loc Exists  <$> reserved "exists"
         , Loc Sum     <$> reserved "sum"
@@ -187,7 +187,8 @@ quantified = do
 
 
 quantifiedType :: Parser (QuantifiedType ComponentTypeSet LExpr)
-quantifiedType = QdTypeInt <$> range <|> QdTypeComponent <$> componentTypeSet
+quantifiedType = label "type" $
+    QdTypeInt <$> range <|> QdTypeComponent <$> componentTypeSet
 
 
 -- | Operators working on 'Expr's.
