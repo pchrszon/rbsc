@@ -179,7 +179,7 @@ unlessVisited typeName m = do
 -- | @missingRoles contained sys roleRefLists@ returns a list of missing
 -- roles for each possible instantiation of the @roleRefLists@.
 missingRoles :: [RoleName] -> System -> [[RoleRef]] -> [[TypeName]]
-missingRoles contained sys roleRefLists = do
+missingRoles contained sys roleRefLists = nub $ do
     required <- roleRefLists
     requireds <- traverse fromRoleRef required
 
@@ -199,6 +199,8 @@ missingRoles contained sys roleRefLists = do
         Map.unionsWith (+) (fmap (`Map.singleton` (1 :: Int)) containedTypes)
 
     containedTypes = mapMaybe (\name -> view (instances.at name) sys) contained
+
+    nub = Set.toDescList . Set.fromList
 
 
 -- | Get the first cycle induced by the 'boundTo' relation if it exists.
