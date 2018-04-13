@@ -141,7 +141,7 @@ tcExpr (Loc e rgn) = case e of
         tyComponent <- getTyComponent
         l' <- l `hasType` tyComponent
         r' <- r `hasType` tyComponent
-        T.BoundTo (l' `withLocOf` l) r' `withType` TyBool
+        T.BoundTo (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 
     U.Element l r -> do
         tyComponent <- getTyComponent

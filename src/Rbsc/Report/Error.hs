@@ -45,6 +45,7 @@ data ErrorDesc
     | WrongNumberOfArguments !Int !Int
     | NotARole
     | NotACompartment
+    | InvalidBinding !TypeName !TypeName
     | InvalidLowerBound !Int
     | InvalidCardinalities !Int !Int
     | TooManyRoles !Name [(TypeName, Int)]
@@ -139,6 +140,14 @@ toReport (Error rgn desc) = case desc of
     NotACompartment ->
         errorReport "component is not a compartment"
             [ errorPart rgn (Just "only compartments can contain roles")
+            ]
+
+    InvalidBinding roleTyName playerTyName ->
+        errorReport "invalid binding"
+            [ errorPart rgn . Just $
+                "a role of type " <> getTypeName roleTyName <>
+                " cannot be bound to a player of type " <>
+                getTypeName playerTyName
             ]
 
     InvalidLowerBound lower ->

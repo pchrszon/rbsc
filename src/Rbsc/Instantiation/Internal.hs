@@ -104,7 +104,8 @@ buildSystem depth model info = do
 
     -- Extract relations 'boundto' and 'in' from the partially evaluated
     -- constraints.
-    sys' <- execStateT (traverse insertRelation constrs'') sys
+    let compTys = view componentTypes info
+    sys' <- execStateT (traverse (insertRelation compTys) constrs'') sys
 
     return (Result sys' constrs arrayInfos)
   where
@@ -124,14 +125,18 @@ buildSystem depth model info = do
 
         _ -> modifying constraints (e :)
 
-    insertRelation :: LSomeExpr -> StateT System (Either Error) ()
-    insertRelation (Loc (SomeExpr e _) _) = case e of
+    insertRelation ::
+        ComponentTypes -> LSomeExpr -> StateT System (Either Error) ()
+    insertRelation compTys (Loc (SomeExpr e _) _) = case e of
         BoundTo
-            (Loc (LitComponent roleName roleTyName) rgn)
-            (LitComponent playerName _)
-                | isRoleType roleTyName ->
+            (Loc (LitComponent roleName roleTyName) rgnRole)
+            (Loc (LitComponent playerName playerTyName) rgnPlayer)
+                | not (isRoleType roleTyName) ->
+                    throw rgnRole NotARole
+                | not (canPlayRole compTys playerTyName roleTyName) ->
+                    throw rgnPlayer (InvalidBinding roleTyName playerTyName)
+                | otherwise ->
                     boundTo.at roleName .= Just playerName
-                | otherwise -> throw rgn NotARole
 
         Element
             (Loc (LitComponent roleName roleTyName) rgnRole)
@@ -152,6 +157,11 @@ buildSystem depth model info = do
     isRoleType tyName = has (componentTypes.at tyName._Just._RoleType) info
     isCompartmentType tyName =
         has (componentTypes.at tyName._Just._CompartmentType) info
+
+    canPlayRole compTys playerTyName roleTyName =
+        case Map.lookup roleTyName compTys of
+            Just (RoleType roleTyNames) -> playerTyName `Set.member` roleTyNames
+            _ -> False
 
 
 -- | If an expression is an identifier or an indexed indentifier with type

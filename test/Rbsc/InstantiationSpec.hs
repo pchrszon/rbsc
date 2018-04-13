@@ -118,6 +118,21 @@ spec = do
             `shouldSatisfy`
             has (_Left.traverse.errorDesc._NotARole)
 
+        it "detects invalid bindings" $
+            buildSystem'
+                [model|
+                    natural type N;
+                    natural type M;
+                    role type R(N);
+                    system
+                        { m: M
+                        , r: R
+                        , r boundto m
+                        }
+                |]
+            `shouldSatisfy`
+            has (_Left.traverse.errorDesc._InvalidBinding)
+
         it "detects invalid use of 'in' relation" $
             buildSystem'
                 [model|

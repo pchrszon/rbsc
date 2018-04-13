@@ -188,7 +188,7 @@ toLiteral e = case e of
     HasType (Literal comp) tyName ->
         return (Literal (view compTypeName comp == tyName))
 
-    BoundTo (Loc (Literal role) _) (Literal player) ->
+    BoundTo (Loc (Literal role) _) (Loc (Literal player) _) ->
         return (Literal (view compBoundTo role == Just (view compName player)))
 
     Element (Loc (Literal role) _) (Loc (Literal compartment) _) ->
