@@ -39,6 +39,7 @@ import           Rbsc.Data.Bag (Bag)
 import qualified Rbsc.Data.Bag as Bag
 
 import Rbsc.Report.Error
+import Rbsc.Report.Region
 import Rbsc.Report.Warning
 
 
@@ -82,8 +83,8 @@ type Errors = Bag Error
 
 
 -- | Throw a single 'Error'.
-throwOne :: MonadError Errors m => Error -> m a
-throwOne = throwError . Bag.singleton
+throwOne :: MonadError Errors m => Region -> ErrorDesc -> m a
+throwOne rgn = throwError . Bag.singleton . Error rgn
 
 
 -- | Throw many 'Error's.

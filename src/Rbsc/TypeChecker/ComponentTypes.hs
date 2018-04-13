@@ -16,15 +16,16 @@ import Rbsc.Data.ComponentType
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.ComponentType
 import Rbsc.Syntax.Model
 
 
-validateComponentTypes :: ComponentTypes -> Model expr -> Either [Error] ()
+validateComponentTypes :: ComponentTypes -> Model expr -> Result' ()
 validateComponentTypes types model
-    | null errors = Right ()
-    | otherwise   = Left errors
+    | null errors = return ()
+    | otherwise   = throwMany errors
   where
     errors =
         validateRoleTypes (modelRoleTypes model) ++

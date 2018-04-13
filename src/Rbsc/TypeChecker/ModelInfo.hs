@@ -26,6 +26,7 @@ import Rbsc.Eval
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import           Rbsc.Syntax.Typed   (SomeExpr (..), TConstant, TType)
 import qualified Rbsc.Syntax.Typed   as T
@@ -52,15 +53,13 @@ makeLenses ''BuilderState
 -- constants requires type checking the constant definitions, the checked
 -- definitions are returned as well.
 getModelInfo ::
-       RecursionDepth -> UModel -> Either [Error] (ModelInfo, [TConstant])
+       RecursionDepth -> UModel -> Result' (ModelInfo, [TConstant])
 getModelInfo depth m = do
-    idents <- identifierDefs m
-    deps   <- toErrorList (sortDefinitions idents)
-    result <- toErrorList (runBuilder (traverse addDependency deps) depth)
+    idents <- fromEither (identifierDefs m)
+    deps   <- fromEither' (sortDefinitions idents)
+    result <- runBuilder (traverse addDependency deps) depth
     validateComponentTypes (view (_1.componentTypes) result) m
     return result
-  where
-    toErrorList = over _Left (: [])
 
 
 addDependency :: Dependency -> Builder ()
@@ -139,9 +138,9 @@ addComponentType = \case
             return (RoleRef tyName (lower', upper'))
 
     checkCardinalities lower upper lower' upper'
-        | lower' < 0 = throw (getLoc lower) (InvalidLowerBound lower')
+        | lower' < 0 = throwOne (getLoc lower) (InvalidLowerBound lower')
         | upper' < lower' =
-            throw
+            throwOne
                 (getLoc lower <> getLoc upper)
                 (InvalidCardinalities lower' upper')
         | otherwise = return ()
@@ -156,7 +155,7 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
             then
                 let tyArray = TyArray (0, len' - 1) tyComponent
                 in insertSymbol name (SomeType tyArray)
-            else throw (getLoc len) (InvalidUpperBound len')
+            else throwOne (getLoc len) (InvalidUpperBound len')
     -- add single component
     Nothing ->
         insertSymbol name (SomeType tyComponent)
@@ -171,7 +170,7 @@ fromSyntaxType = \case
     U.TyDouble -> return (T.TyDouble, SomeType TyDouble)
     U.TyComponent tySet -> do
         compTys <- use (modelInfo.componentTypes)
-        tySet' <- lift (normalizeTypeSet compTys tySet)
+        tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
         return (T.TyComponent tySet, SomeType (TyComponent tySet'))
     U.TyArray (lower, upper) sTy -> do
         (lowerVal, lower') <- evalIntegerExpr lower
@@ -187,13 +186,10 @@ fromSyntaxType = \case
         return (T.TyFunc sTyL' sTyR', SomeType (tyL --> tyR))
 
 
-type Builder a = StateT BuilderState (Either Error) a
+type Builder a = StateT BuilderState (Result Errors) a
 
 
-runBuilder ::
-       Builder a
-    -> RecursionDepth
-    -> Either Error (ModelInfo, [TConstant])
+runBuilder :: Builder a -> RecursionDepth -> Result' (ModelInfo, [TConstant])
 runBuilder m depth = do
     BuilderState mi defs _ <- execStateT m initial
     return (mi, defs)
@@ -212,7 +208,7 @@ evalExpr :: Loc (T.Expr t) -> Builder t
 evalExpr e = do
     consts <- use (modelInfo.constants)
     depth  <- use recursionDepth
-    lift (eval consts depth e)
+    lift (fromEither' (eval consts depth e))
 
 
 typeCheckExpr :: Type t -> Loc U.Expr -> Builder (T.Expr t)

@@ -20,6 +20,7 @@ import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import qualified Rbsc.Syntax.Expr.Untyped as U
 
@@ -37,41 +38,41 @@ spec = describe "typeCheck" $ do
     it "detects type errors" $
         typeCheck TyBool [expr| true : N |]
         `shouldSatisfy`
-        has (_Left.errorDesc._TypeError)
+        has (_Left.traverse.errorDesc._TypeError)
 
     it "reports comparison of uncomparable values" $
         typeCheck TyBool [expr| n > 5 |]
         `shouldSatisfy`
-        has (_Left.errorDesc._NotComparable)
+        has (_Left.traverse.errorDesc._NotComparable)
 
     it "reports indexing of non-array values" $
         typeCheck TyBool [expr| n[1] |]
         `shouldSatisfy`
-        has (_Left.errorDesc._NotAnArray)
+        has (_Left.traverse.errorDesc._NotAnArray)
 
     it "reports invocation on a non-function value" $
         typeCheck TyBool [expr| n(1) |]
         `shouldSatisfy`
-        has (_Left.errorDesc._NotAFunction)
+        has (_Left.traverse.errorDesc._NotAFunction)
 
     it "detects too many arguments on a function call" $
         typeCheck TyBool [expr| floor(1, 2) |]
         `shouldSatisfy`
-        has (_Left.errorDesc._WrongNumberOfArguments)
+        has (_Left.traverse.errorDesc._WrongNumberOfArguments)
 
     it "detects undefined types" $
         typeCheck TyBool [expr| n : Undefined |]
         `shouldSatisfy`
-        has (_Left.errorDesc._UndefinedType)
+        has (_Left.traverse.errorDesc._UndefinedType)
 
     it "detects undefined identifiers" $
         typeCheck TyBool [expr| undefined : N |]
         `shouldSatisfy`
-        has (_Left.errorDesc._UndefinedIdentifier)
+        has (_Left.traverse.errorDesc._UndefinedIdentifier)
 
 
-typeCheck :: Type t -> Loc U.Expr -> Either Error String
-typeCheck ty e = do
+typeCheck :: Type t -> Loc U.Expr -> Either [Error] String
+typeCheck ty e = toEither $ do
     te <- runTypeChecker (tcExpr e) types symbolTable
     show <$> extract ty (getLoc e) te
 

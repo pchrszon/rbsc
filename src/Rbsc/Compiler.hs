@@ -51,7 +51,7 @@ compile path = do
 generateSystems :: Result' UModel -> Result' [(System, ModelInfo)]
 generateSystems parseResult = do
     model          <- parseResult
-    (model', info) <- fromEither (typeCheck 10 model)
+    (model', info) <- typeCheck 10 model
     generateInstances 10 model' info
 
 

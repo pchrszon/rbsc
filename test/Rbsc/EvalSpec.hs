@@ -90,17 +90,17 @@ spec = do
         it "detects division by zero" $
             eval' TyDouble [expr| 1.0 / 0 |]
             `shouldSatisfy`
-            has (_Left.errorDesc._DivisionByZero)
+            has (_Left.traverse.errorDesc._DivisionByZero)
 
         it "detects out-of-bound array accesses" $
             eval' TyInt [expr| {0, 1, 2}[3] |]
             `shouldSatisfy`
-            has (_Left.errorDesc._IndexOutOfBounds)
+            has (_Left.traverse.errorDesc._IndexOutOfBounds)
 
         it "stops after exceeding the maximum recursion depth" $
             eval' TyInt [expr| f(1) |]
             `shouldSatisfy`
-            has (_Left.errorDesc._ExceededDepth)
+            has (_Left.traverse.errorDesc._ExceededDepth)
 
     describe "reduce" $ do
         it "evaluates constant expressions" $
@@ -116,7 +116,7 @@ spec = do
 
 modelInfo :: ModelInfo
 modelInfo =
-    let Right (model', info) = typeCheck 10
+    let Right (model', info) = toEither . typeCheck 10 $
             [model|
                 natural type N;
                 role type R(N);
@@ -146,24 +146,25 @@ modelInfo =
     in info' & symbolTable.at "y" .~ Just (SomeType TyInt)
 
 
-eval' :: Type t -> Loc U.Expr -> Either Error t
+eval' :: Type t -> Loc U.Expr -> Either [Error] t
 eval' ty e = do
     e' <-
-        runTypeChecker
+        toEither (runTypeChecker
             (tcExpr e)
             (view componentTypes modelInfo)
             (view symbolTable modelInfo) >>=
-            extract ty (getLoc e)
-    eval (view constants modelInfo) 10 (e' `withLocOf` e)
+            extract ty (getLoc e))
+    over _Left (: []) (eval (view constants modelInfo) 10 (e' `withLocOf` e))
 
 
-reduce' :: Type t -> Loc U.Expr -> Either Error String
+reduce' :: Type t -> Loc U.Expr -> Either [Error] String
 reduce' ty e = do
     e' <-
-        runTypeChecker
+        toEither (runTypeChecker
             (tcExpr e)
             (view componentTypes modelInfo)
             (view symbolTable modelInfo) >>=
-            extract ty (getLoc e)
-    e'' <- reduce (view constants modelInfo) 10 (e' `withLocOf` e)
+            extract ty (getLoc e))
+    e'' <- over _Left (: []) $
+        reduce (view constants modelInfo) 10 (e' `withLocOf` e)
     return (show e'')

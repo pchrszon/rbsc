@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE RankNTypes       #-}
 
 
 -- | Type checking of expressions.
@@ -16,6 +17,7 @@ import Control.Monad.Reader
 
 import           Data.List.NonEmpty (NonEmpty (..), fromList)
 import qualified Data.Map.Strict    as Map
+import           Data.Set           (Set)
 import qualified Data.Set           as Set
 
 
@@ -26,6 +28,7 @@ import Rbsc.Data.Type
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region, withLocOf)
+import Rbsc.Report.Result
 
 import           Rbsc.Syntax.Expr.Typed     (SomeExpr (..))
 import qualified Rbsc.Syntax.Expr.Typed     as T
@@ -112,7 +115,7 @@ tcExpr (Loc e rgn) = case e of
                 idx' <- idx `hasType` TyInt
                 Dict <- return (dictShow elemTy)
                 T.Index inner' (Loc idx' (getLoc idx)) `withType` elemTy
-            _ -> throw (getLoc inner) (NotAnArray (renderType ty))
+            _ -> throwOne (getLoc inner) (NotAnArray (renderType ty))
 
     U.Call f args -> do
         f' <- tcExpr f
@@ -139,26 +142,32 @@ tcExpr (Loc e rgn) = case e of
 
     U.BoundTo l r -> do
         tyComponent <- getTyComponent
-        l' <- l `hasType` tyComponent
+        (l', TyComponent tySet) <- l `hasType'` tyComponent
+        warnIfNot _RoleType tySet (NonRoleInRelation rgn)
+
         r' <- r `hasType` tyComponent
         T.BoundTo (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 
     U.Element l r -> do
         tyComponent <- getTyComponent
-        l' <- l `hasType` tyComponent
-        r' <- r `hasType` tyComponent
+        (l', TyComponent tySetL) <- l `hasType'` tyComponent
+        warnIfNot _RoleType tySetL (NonRoleInRelation rgn)
+
+        (r', TyComponent tySetR) <- r `hasType'` tyComponent
+        warnIfNot _CompartmentType tySetR (NonCompartmentInRelation rgn)
+
         T.Element (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 
     U.Count tySet inner -> do
         tyComponent <- getTyComponent
         compTys <- view componentTypes
-        tySet' <- lift (normalizeTypeSet compTys tySet)
+        tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
         inner' <- inner `hasType` tyComponent
         T.Count tySet' inner' `withType` TyInt
 
     U.Quantified q var (QdTypeComponent tySet) body -> do
         compTys <- view componentTypes
-        tySet' <- lift (normalizeTypeSet compTys tySet)
+        tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
         let varTy = SomeType (TyComponent tySet')
         tcQuantifier q var varTy body (QdTypeComponent tySet')
 
@@ -219,7 +228,7 @@ tcArray (e :| es) = do
 checkCallArity :: Region -> SomeExpr -> [args] -> TypeChecker ()
 checkCallArity rgn (SomeExpr _ ty) args
     | numParams > 0 && numParams < numArgs =
-        throw rgn (WrongNumberOfArguments numParams numArgs)
+        throwOne rgn (WrongNumberOfArguments numParams numArgs)
     | otherwise = return ()
   where
     numParams = paramsLength ty
@@ -238,7 +247,7 @@ tcCall (Loc (SomeExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
     Dict <- return (dictShow tyRes)
     tcCall (Loc (SomeExpr (T.Apply f arg') tyRes) rgn) args
 tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
-    throw rgn (NotAFunction (renderType ty))
+    throwOne rgn (NotAFunction (renderType ty))
 
 
 tcQuantifier ::
@@ -280,11 +289,15 @@ quantifierType = \case
 -- If the expression has not the given type, but a dynamic cast is
 -- possible, then the dynamic cast will be performed.
 hasType :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t)
-hasType e expected = do
+hasType e expected = fst <$> hasType' e expected
+
+
+hasType' :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t, Type t)
+hasType' e expected = do
     SomeExpr e' actual <- cast expected <$> tcExpr e
     Refl <- expect expected (getLoc e) actual
     checkComponentType expected (getLoc e) actual
-    return e'
+    return (e', actual)
 
 
 -- | If one of the two given expression has 'TyDouble' and the other one
@@ -320,7 +333,7 @@ cast _ e = e
 checkComponentType :: Type t -> Region -> Type t -> TypeChecker ()
 checkComponentType expected@(TyComponent tySetExp) rgn actual@(TyComponent tySetAct)
     | tySetAct `Set.isSubsetOf` tySetExp = return ()
-    | otherwise = throw rgn (typeError [SomeType expected] actual)
+    | otherwise = throwOne rgn (typeError [SomeType expected] actual)
 checkComponentType _ _ _ = return ()
 
 
@@ -337,3 +350,10 @@ typeUnion l _ = l
 -- defined component types.
 getTyComponent :: TypeChecker (Type Component)
 getTyComponent = TyComponent <$> view (componentTypes.to Map.keysSet)
+
+
+warnIfNot :: Prism' ComponentType a -> Set TypeName -> Warning -> TypeChecker ()
+warnIfNot p tySet w = do
+    compTys <- view componentTypes
+    unless (any (\tyName -> has (at tyName._Just.p) compTys) tySet) $
+        lift (warn w)

@@ -54,13 +54,14 @@ import Rbsc.Data.Type
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
+import Rbsc.Report.Result
 
 import           Rbsc.Syntax.Expr.Typed (SomeExpr (..))
 import qualified Rbsc.Syntax.Expr.Typed as T
 
 
 -- | The @TypeChecker@ monad.
-type TypeChecker a = ReaderT TcInfo (Either Error) a
+type TypeChecker a = ReaderT TcInfo (Result Errors) a
 
 
 -- | The information provided to the type checker.
@@ -75,7 +76,7 @@ makeLenses ''TcInfo
 
 -- | Run a type checker action.
 runTypeChecker ::
-       TypeChecker a -> ComponentTypes -> SymbolTable -> Either Error a
+       TypeChecker a -> ComponentTypes -> SymbolTable -> Result' a
 runTypeChecker m types symTable = runReaderT m (TcInfo types symTable [])
 
 
@@ -86,7 +87,7 @@ getIdentifierType name rgn = do
     varTy <- view (symbolTable.at name)
     case varTy of
         Just ty -> return ty
-        Nothing -> throw rgn UndefinedIdentifier
+        Nothing -> throwOne rgn UndefinedIdentifier
 
 
 -- | Looks up the type and the de-Bruijn index of a given identifier.
@@ -107,7 +108,7 @@ whenTypeExists (Loc tyName rgn) m = do
     types <- view componentTypes
     if Map.member tyName types
         then m
-        else throw rgn UndefinedType
+        else throwOne rgn UndefinedType
 
 
 -- | Unwrap 'SomeExpr'. If the given expected 'Type' and the actual @Type@ do
@@ -121,7 +122,7 @@ getExpr expected (SomeExpr e actual) = do
 -- | @extract expected region e@ extracts an expression @e@ wrapped in
 -- 'SomeExpr'. If @e@ does not have the @expected@ type, a type error is
 -- thrown.
-extract :: Type t -> Region -> SomeExpr -> Either Error (T.Expr t)
+extract :: Type t -> Region -> SomeExpr -> Result' (T.Expr t)
 extract expected rgn (SomeExpr e actual) = do
     Refl <- expect expected rgn actual
     return e
@@ -129,11 +130,11 @@ extract expected rgn (SomeExpr e actual) = do
 
 -- | @expect expected rgn actual@ returns a witness that the types
 -- @expected@ and @actual@ are equal (w.r.t. 'typeEq').
-expect :: MonadError Error m => Type s -> Region -> Type t -> m (s :~: t)
+expect :: MonadError Errors m => Type s -> Region -> Type t -> m (s :~: t)
 expect expected rgn actual =
     case typeEq expected actual of
         Just Refl -> return Refl
-        Nothing   -> throw rgn (typeError [SomeType expected] actual)
+        Nothing   -> throwOne rgn (typeError [SomeType expected] actual)
 
 
 -- | Assume that values of the given type can be checked for equality. If
@@ -141,7 +142,7 @@ expect expected rgn actual =
 isEqType :: Type t -> Region -> TypeChecker (Dict (Eq t))
 isEqType ty rgn = case checkEq ty of
     Just Dict -> return Dict
-    Nothing   -> throw rgn (NotComparable (renderType ty))
+    Nothing   -> throwOne rgn (NotComparable (renderType ty))
 
 
 -- | Assume that values of the given type are comparable. If not, an error
@@ -149,7 +150,7 @@ isEqType ty rgn = case checkEq ty of
 isOrdType :: Type t -> Region -> TypeChecker (Dict (Ord t))
 isOrdType ty rgn = case checkOrd ty of
     Just Dict -> return Dict
-    Nothing   -> throw rgn (NotComparable (renderType ty))
+    Nothing   -> throwOne rgn (NotComparable (renderType ty))
 
 
 -- | Assume that the given type is a number type. If not, a type error is
@@ -157,7 +158,7 @@ isOrdType ty rgn = case checkOrd ty of
 isNumType :: Type t -> Region -> TypeChecker (Dict (Num t))
 isNumType ty rgn = case checkNum ty of
     Just Dict -> return Dict
-    Nothing   -> throw rgn (typeError numTypes ty)
+    Nothing   -> throwOne rgn (typeError numTypes ty)
 
 
 -- | Returns an expression tagged with its 'Type'.
