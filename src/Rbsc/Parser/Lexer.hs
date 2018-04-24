@@ -97,7 +97,7 @@ run p path content = do
 
 
 -- | @testRun@ applies a parser to a given input and shows the results.
-testRun :: Show a => ParserT IO a -> Text -> IO (Either String a)
+testRun :: ParserT IO a -> Text -> IO (Either String a)
 testRun p content = do
     (result, _) <- run p "" content
     return (over _Left parseErrorPretty result)
@@ -250,10 +250,7 @@ sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty
 -- | @withRecoveryOn end p@ runs parser @p@. In case @p@ fails, the input
 -- is skipped until @end@ is parsed successfully.
 withRecoveryOn ::
-       Monad m
-    => ParserT m b
-    -> ParserT m a
-    -> ParserT m (Either (ParseError Char Dec) a)
+       ParserT m b -> ParserT m a -> ParserT m (Either (ParseError Char Dec) a)
 withRecoveryOn end =
     withRecovery (\err -> Left err <$ anyChar `manyTill` end) . fmap Right
 

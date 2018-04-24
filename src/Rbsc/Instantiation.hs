@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-
 -- | Instantiation of system instances.
 module Rbsc.Instantiation
     ( generateInstances

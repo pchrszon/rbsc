@@ -142,19 +142,25 @@ tcExpr (Loc e rgn) = case e of
 
     U.BoundTo l r -> do
         tyComponent <- getTyComponent
-        (l', TyComponent tySet) <- l `hasType'` tyComponent
-        warnIfNot _RoleType tySet (NonRoleInRelation rgn)
+        (l', tyL) <- l `hasType'` tyComponent
+        case tyL of
+            TyComponent tySet ->
+                warnIfNot _RoleType tySet (NonRoleInRelation rgn)
 
         r' <- r `hasType` tyComponent
         T.BoundTo (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 
     U.Element l r -> do
         tyComponent <- getTyComponent
-        (l', TyComponent tySetL) <- l `hasType'` tyComponent
-        warnIfNot _RoleType tySetL (NonRoleInRelation rgn)
+        (l', tyL) <- l `hasType'` tyComponent
+        case tyL of
+            TyComponent tySetL ->
+                warnIfNot _RoleType tySetL (NonRoleInRelation rgn)
 
-        (r', TyComponent tySetR) <- r `hasType'` tyComponent
-        warnIfNot _CompartmentType tySetR (NonCompartmentInRelation rgn)
+        (r', tyR) <- r `hasType'` tyComponent
+        case tyR of
+            TyComponent tySetR ->
+                warnIfNot _CompartmentType tySetR (NonCompartmentInRelation rgn)
 
         T.Element (l' `withLocOf` l) (r' `withLocOf` r) `withType` TyBool
 

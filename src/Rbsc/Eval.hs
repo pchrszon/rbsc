@@ -138,7 +138,7 @@ reduce cs depth (Loc e rgn) = runReducer (go e) cs depth rgn
 -- sub-expressions are literals.
 toLiteral :: Expr t -> Reducer (Expr t)
 toLiteral e = case e of
-    Identifier name ty -> do
+    Identifier name ty ->
         view (constants.at name) >>= \case
             Just (SomeExpr e' ty') -> case typeEq ty ty' of -- if the identifier is a constant ...
                 Just Refl -> return e' -- ... then replace by constant value

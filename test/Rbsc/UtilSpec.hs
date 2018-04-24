@@ -1,7 +1,8 @@
 module Rbsc.UtilSpec (spec) where
 
 
-import Data.List.NonEmpty (NonEmpty(..))
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe
 
 import Test.Hspec
 
@@ -23,9 +24,7 @@ nodes = [1 .. 4]
 
 
 outgoing :: [(Int, [Int])] -> Int -> [Int]
-outgoing es n = case lookup n es of
-    Just ns' -> ns'
-    Nothing  -> []
+outgoing es n = fromMaybe [] (lookup n es)
 
 
 edges :: [(Int, [Int])]

@@ -44,7 +44,7 @@ spec = do
         it "extracts instances, boundto and in relations" $
             buildSystem' simpleModel
             `shouldBe`
-            Right (System
+            Right System
                 { _instances =
                     [ ("n", "N")
                     , ("r", "R")
@@ -52,7 +52,7 @@ spec = do
                     ]
                 , _boundTo = [("r", "n")]
                 , _containedIn = [("r", "c")]
-                })
+                }
 
         it "handles component arrays" $
             buildSystem'
@@ -66,7 +66,7 @@ spec = do
                         }
                 |]
             `shouldBe`
-            Right (System
+            Right System
                 { _instances =
                     [ ("n[0]", "N")
                     , ("n[1]", "N")
@@ -74,7 +74,7 @@ spec = do
                     ]
                 , _boundTo = [("r", "n[1]")]
                 , _containedIn = []
-                })
+                }
 
         it "handles quantification" $
             buildSystem'
@@ -91,7 +91,7 @@ spec = do
                         }
                 |]
             `shouldBe`
-            Right (System
+            Right System
                 { _instances =
                     [ ("n[0]", "N")
                     , ("n[1]", "N")
@@ -103,7 +103,7 @@ spec = do
                     , ("r[1]", "n[1]")
                     ]
                 , _containedIn = []
-                })
+                }
 
         it "detects invalid use of 'boundto' relation" $
             buildSystem'

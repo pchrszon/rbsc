@@ -1,6 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
-
 -- | Parser for types.
 module Rbsc.Parser.Type
     ( typ
@@ -20,7 +17,8 @@ import Rbsc.Syntax.Untyped
 typ :: Parser UType
 typ = label "type" $ do
     ty <- valueType
-    optional (operator "->" *> typ) >>= return . \case
+    mFunc <- optional (operator "->" *> typ)
+    return $ case mFunc of
         Just tyRes -> TyFunc ty tyRes
         Nothing    -> ty
 

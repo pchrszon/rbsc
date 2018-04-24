@@ -93,9 +93,9 @@ toReport (Error rgn desc) = case desc of
 
     CyclicDefinition construct rgns ->
         errorReport "cyclic definition" $
-            (errorPart rgn (Just $
-                "this " <> construct <> " is defined in terms of itself")) :
-            fmap (\r -> hintPart r Nothing) rgns
+            errorPart rgn (Just $
+                "this " <> construct <> " is defined in terms of itself") :
+            fmap (`hintPart` Nothing) rgns
 
     TypeError expected actual ->
         errorReport "type error"

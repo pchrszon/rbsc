@@ -121,7 +121,7 @@ buildSystem depth model info = do
                 let name' = indexedName name i
                 system.instances.at name' .= Just tyName
                 return name'
-            modifying componentArrays ((ArrayInfo name tyName (fromList arr)) :)
+            modifying componentArrays (ArrayInfo name tyName (fromList arr) :)
 
         _ -> modifying constraints (e :)
 
