@@ -16,6 +16,8 @@ reservedWords =
     , "of"
     , "const"
     , "function"
+    , "global"
+    , "init"
     , "component"
     , "natural"
     , "role"

@@ -79,6 +79,7 @@ sortDefinitions idents = do
         DepDefinition def -> case def of
             DefConstant _ -> "constant"
             DefFunction _ -> "function"
+            DefGlobal _   -> "global variable"
             DefComponentType _ -> "type"
             DefComponent (ComponentDef _ _ Nothing)  -> "component"
             DefComponent (ComponentDef _ _ (Just _)) -> "component array"
@@ -99,6 +100,7 @@ insert :: IdentifierDef -> Analyzer ()
 insert def = case def of
     DefConstant c      -> insertConstant c
     DefFunction f      -> insertFunction f
+    DefGlobal g        -> insertGlobal g
     DefComponentType t -> insertComponentType t
     DefComponent c     -> insertComponents c
 
@@ -121,6 +123,13 @@ insertFunction f@(Function (Loc _ rgn) _ _ e) = do
         local ((inFunctionBody .~ True) . (parameters .~ parameterSet f)) $ do
             idents <- identsInExpr e
             dependOnIdentifiers idents
+
+
+insertGlobal :: UGlobal -> Analyzer ()
+insertGlobal g@(Global (Loc _ rgn) vTy _) =
+    newDependency (DepDefinition (DefGlobal g)) rgn $ do
+        identsTy <- identsInVarType vTy
+        dependOnIdentifiers identsTy
 
 
 insertComponentType :: ComponentTypeDef -> Analyzer ()
@@ -176,7 +185,6 @@ dependOnIdentifier (Loc name rgn) = do
 
 depsFromIdentifierDef :: IdentifierDef -> Analyzer [Dependency]
 depsFromIdentifierDef = \case
-    DefConstant c -> return [DepDefinition (DefConstant c)]
     DefFunction f -> do
         inBody <- view inFunctionBody
         if inBody
@@ -194,8 +202,7 @@ depsFromIdentifierDef = \case
             else do
                 ref <- referencedFunctions f
                 return (fmap (DepDefinition . DefFunction) ref)
-    DefComponentType t -> return [DepDefinition (DefComponentType t)]
-    DefComponent c -> return [DepDefinition (DefComponent c)]
+    def -> return [DepDefinition def]
 
 
 -- | @referencedFunctions f@ returns a list of all functions called by @f@.
@@ -228,11 +235,7 @@ identsInSignature (Function _ args ty _) = do
 identsInType :: UType -> Analyzer (Set (Loc Name))
 identsInType ty = case ty of
     TyComponent tySet -> identsInComponentTypeSet tySet
-    TyArray (lower, upper) ty' -> do
-        identsTy <- identsInType ty'
-        identsLower <- identsInExpr lower
-        identsUpper <- identsInExpr upper
-        return (Set.unions [identsTy, identsLower, identsUpper])
+    TyArray r ty' -> Set.union <$> identsInRange r <*> identsInType ty'
     TyFunc tyL tyR -> Set.union <$> identsInType tyL <*> identsInType tyR
     _ -> return Set.empty
 
@@ -250,6 +253,19 @@ identsInComponentTypeSet cts = do
   where
     filterIdents p =
         Set.fromList .  fmap (uncurry withLocOf) . filter (has (_2.to unLoc.p))
+
+
+identsInVarType :: UVarType -> Analyzer (Set (Loc Name))
+identsInVarType = \case
+    VarTyInt (lower, upper) ->
+        Set.union <$> identsInExpr lower <*> identsInExpr upper
+    VarTyArray r ty' -> Set.union <$> identsInRange r <*> identsInVarType ty'
+    _ -> return Set.empty
+
+
+identsInRange :: (LExpr, LExpr) -> Analyzer (Set (Loc Name))
+identsInRange (lower, upper) =
+    Set.union <$> identsInExpr lower <*> identsInExpr upper
 
 
 -- | @identsInExpr e@ returns a set of all unbound identifiers in @e@.

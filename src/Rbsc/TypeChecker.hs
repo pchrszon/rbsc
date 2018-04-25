@@ -37,9 +37,10 @@ typeCheck depth model = do
     return (model', info)
 
 
+-- TODO: type check global definitions
 tcModel :: UModel -> [TConstant] -> TypeChecker TModel
 tcModel Model{..} consts =
-    Model consts [] [] [] []
+    Model consts [] [] [] [] []
     <$> traverse tcConstraint modelSystem
 
 

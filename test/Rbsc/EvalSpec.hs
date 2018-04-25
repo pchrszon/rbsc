@@ -125,6 +125,8 @@ modelInfo =
 
                 const x: int = 1;
 
+                global y: [0..1];
+
                 function f(i: int) : int = f(i);
 
                 function square(x: int) : int = x * x;
@@ -144,7 +146,7 @@ modelInfo =
                 }
             |]
         Right [(_, info')] = toEither (generateInstances 10 model' info)
-    in info' & symbolTable.at "y" .~ Just (SomeType TyInt)
+    in info'
 
 
 eval' :: Type t -> Loc U.Expr -> Either [Error] t

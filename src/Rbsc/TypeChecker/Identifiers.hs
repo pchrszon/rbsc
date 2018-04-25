@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE RecordWildCards  #-}
 {-# LANGUAGE TemplateHaskell  #-}
 
 
@@ -49,6 +50,7 @@ type Identifiers = Map Name (Loc IdentifierDef)
 data IdentifierDef
     = DefConstant UConstant -- ^ the identifier represents a constant
     | DefFunction UFunction -- ^ the identifier represents a function
+    | DefGlobal UGlobal -- ^ the identifier represents a global variable
     | DefComponentType ComponentTypeDef -- ^ the identifier represents a component type
     | DefComponent ComponentDef -- ^ the identifier represents a component or a component array
     deriving (Eq, Ord, Show)
@@ -92,13 +94,14 @@ makeLenses ''BuilderState
 -- 'Model'. In case one or more identifiers are defined multiple times,
 -- a list of 'DuplicateIdentifier' errors is returned.
 identifierDefs :: UModel -> Either [Error] Identifiers
-identifierDefs m = runBuilder $ do
-    insertConstants (modelConstants m)
-    insertFunctions (modelFunctions m)
-    insertComponentTypes ntdName TypeDefNatural (modelNaturalTypes m)
-    insertComponentTypes rtdName TypeDefRole (modelRoleTypes m)
-    insertComponentTypes ctdName TypeDefCompartment (modelCompartmentTypes m)
-    insertComponents (modelSystem m)
+identifierDefs Model{..} = runBuilder $ do
+    insertConstants modelConstants
+    insertFunctions modelFunctions
+    insertGlobals modelGlobals
+    insertComponentTypes ntdName TypeDefNatural modelNaturalTypes
+    insertComponentTypes rtdName TypeDefRole modelRoleTypes
+    insertComponentTypes ctdName TypeDefCompartment modelCompartmentTypes
+    insertComponents modelSystem
 
 
 insertConstants :: [UConstant] -> Builder ()
@@ -107,6 +110,10 @@ insertConstants = traverse_ (insert <$> constName <*> DefConstant)
 
 insertFunctions :: [UFunction] -> Builder ()
 insertFunctions = traverse_ (insert <$> functionName <*> DefFunction)
+
+
+insertGlobals :: [UGlobal] -> Builder ()
+insertGlobals = traverse_ (insert <$> globalName <*> DefGlobal)
 
 
 insertComponentTypes ::

@@ -137,7 +137,7 @@ operator s = getLoc <$>
 
 -- | Parser for an identifier.
 identifier :: IsString a => Parser (Loc a)
-identifier = lexeme . try $ do
+identifier = label "identifier" . lexeme . try $ do
     ident <- (:) <$> identStart <*> many identLetter
     if ident `elem` reservedWords
         then fail ("unexpected reserved word " ++ ident)

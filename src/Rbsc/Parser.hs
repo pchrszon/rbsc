@@ -26,13 +26,14 @@ import Rbsc.Parser.ComponentType
 import Rbsc.Parser.Constant
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Function
+import Rbsc.Parser.Global
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
 
-import Rbsc.Report.Result (Result', fromEither)
 import           Rbsc.Report.Error  (Error (..))
 import qualified Rbsc.Report.Error  as Error
 import qualified Rbsc.Report.Region as Region
+import           Rbsc.Report.Result (Result', fromEither)
 
 import Rbsc.Syntax.Untyped
 
@@ -60,6 +61,7 @@ definition :: Parser ErrorOrDef
 definition = withRecoveryOn (semi <|> symbol "}") . choice $
     [ constantDef
     , functionDef
+    , globalDef
     , componentTypeDef
     , systemDef
     ]

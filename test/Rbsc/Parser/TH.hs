@@ -97,12 +97,15 @@ deriving instance Data expr => Data (Constant expr)
 deriving instance Data expr => Data (Function expr)
 deriving instance Data expr => Data (Parameter expr)
 
+deriving instance Data expr => Data (Global expr)
+
 deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef
 deriving instance Data expr => Data (CompartmentTypeDef expr)
 deriving instance Data expr => Data (MultiRole expr)
 
 deriving instance Data expr => Data (Syntax.Type expr)
+deriving instance Data expr => Data (VarType expr)
 
 deriving instance Data Expr
 deriving instance Data FunctionName

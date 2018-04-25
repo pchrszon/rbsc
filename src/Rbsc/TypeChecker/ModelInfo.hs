@@ -30,7 +30,8 @@ import Rbsc.Report.Result
 
 import           Rbsc.Syntax.Typed   (SomeExpr (..), TConstant, TType)
 import qualified Rbsc.Syntax.Typed   as T
-import           Rbsc.Syntax.Untyped (UConstant, UFunction, UModel, UType)
+import           Rbsc.Syntax.Untyped (UConstant, UFunction, UGlobal, UModel,
+                                      UType, UVarType)
 import qualified Rbsc.Syntax.Untyped as U
 
 import           Rbsc.TypeChecker.ComponentTypes
@@ -67,6 +68,7 @@ addDependency = \case
     DepDefinition def -> case def of
         DefConstant c      -> addConstant c
         DefFunction f      -> addFunction f
+        DefGlobal g        -> addGlobal g
         DefComponentType t -> addComponentType t
         DefComponent c     -> addComponents c
     DepFunctionSignature f -> addFunctionSignature f
@@ -115,6 +117,12 @@ addFunction (U.Function (Loc name _) params sTy body) = do
     paramToSym (U.Parameter n psTy) = do
         ty <- snd <$> fromSyntaxType psTy
         return (unLoc n, ty)
+
+
+addGlobal :: UGlobal -> Builder ()
+addGlobal (U.Global (Loc name _) vTy _) = do
+    ty <- fromSyntaxVarType vTy
+    insertSymbol name ty
 
 
 addComponentType :: ComponentTypeDef -> Builder ()
@@ -184,6 +192,17 @@ fromSyntaxType = \case
         (sTyL', SomeType tyL) <- fromSyntaxType sTyL
         (sTyR', SomeType tyR) <- fromSyntaxType sTyR
         return (T.TyFunc sTyL' sTyR', SomeType (tyL --> tyR))
+
+
+fromSyntaxVarType :: UVarType -> Builder SomeType
+fromSyntaxVarType = \case
+    U.VarTyBool  -> return (SomeType TyBool)
+    U.VarTyInt _ -> return (SomeType TyInt)
+    U.VarTyArray (lower, upper) vTy -> do
+        (lowerVal, _) <- evalIntegerExpr lower
+        (upperVal, _) <- evalIntegerExpr upper
+        SomeType ty <- fromSyntaxVarType vTy
+        return (SomeType (TyArray (lowerVal, upperVal) ty))
 
 
 type Builder a = StateT BuilderState (Result Errors) a
