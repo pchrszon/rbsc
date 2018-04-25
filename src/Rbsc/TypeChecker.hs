@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
 
@@ -10,41 +11,52 @@ module Rbsc.TypeChecker
 
 import Control.Lens
 
-import Rbsc.Data.ModelInfo
-import Rbsc.Data.Type
+import           Rbsc.Data.ModelInfo (ModelInfo)
+import qualified Rbsc.Data.ModelInfo as MI
+import           Rbsc.Data.Type
 
 import Rbsc.Eval
 
-import Rbsc.Report.Region (withLocOf)
+import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import Rbsc.Syntax.Expr.Typed (SomeExpr (..))
-import Rbsc.Syntax.Typed      hiding (Type (..))
-import Rbsc.Syntax.Untyped    hiding (Type (..))
+import           Rbsc.Syntax.Typed   hiding (Model (..), Type (..))
+import qualified Rbsc.Syntax.Typed   as T
+import           Rbsc.Syntax.Untyped hiding (Model (..), Type (..))
+import qualified Rbsc.Syntax.Untyped as U
 
 import Rbsc.TypeChecker.Expr
-import Rbsc.TypeChecker.Internal  (TypeChecker, runTypeChecker)
+import Rbsc.TypeChecker.Internal
 import Rbsc.TypeChecker.ModelInfo
 
 
-typeCheck :: RecursionDepth -> UModel -> Result' (TModel, ModelInfo)
+typeCheck :: RecursionDepth -> U.Model -> Result' (T.Model, ModelInfo)
 typeCheck depth model = do
     (info, consts') <- getModelInfo depth model
-    let compTys  = view componentTypes info
-        symTable = view symbolTable info
+    let compTys  = view MI.componentTypes info
+        symTable = view MI.symbolTable info
 
     model' <- runTypeChecker (tcModel model consts') compTys symTable
     return (model', info)
 
 
--- TODO: type check global definitions
-tcModel :: UModel -> [TConstant] -> TypeChecker TModel
-tcModel Model{..} consts =
-    Model consts [] [] [] [] []
-    <$> traverse tcConstraint modelSystem
+tcModel :: U.Model -> [TConstant] -> TypeChecker T.Model
+tcModel U.Model{..} consts = T.Model consts
+    <$> traverse tcGlobal modelGlobals
+    <*> traverse tcConstraint modelSystem
 
 
-tcConstraint :: LExpr -> TypeChecker LSomeExpr
+tcGlobal :: UGlobal -> TypeChecker (Name, Maybe LSomeExpr)
+tcGlobal (Global (Loc name _) _ mInit) = view (symbolTable.at name) >>= \case
+    Just (SomeType ty) -> case mInit of
+        Just e -> do
+            e' <- e `hasType` ty
+            return (name, Just (SomeExpr e' ty `withLocOf` e))
+        Nothing -> return (name, Nothing)
+    Nothing -> error ("tcGlobal: " ++ show name ++ " not in symbol table")
+
+
+tcConstraint :: LExpr -> TypeChecker (Loc (T.Expr Bool))
 tcConstraint e = do
     e' <- e `hasType` TyBool
-    return (SomeExpr e' TyBool `withLocOf` e)
+    return (e' `withLocOf` e)

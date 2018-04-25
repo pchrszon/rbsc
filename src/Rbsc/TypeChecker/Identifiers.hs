@@ -93,7 +93,7 @@ makeLenses ''BuilderState
 -- | Extract all identifiers together with their definition from the
 -- 'Model'. In case one or more identifiers are defined multiple times,
 -- a list of 'DuplicateIdentifier' errors is returned.
-identifierDefs :: UModel -> Either [Error] Identifiers
+identifierDefs :: Model -> Either [Error] Identifiers
 identifierDefs Model{..} = runBuilder $ do
     insertConstants modelConstants
     insertFunctions modelFunctions

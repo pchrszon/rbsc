@@ -3,7 +3,7 @@ module Rbsc.Syntax.Typed
     ( module Syntax
 
       -- * Model
-    , TModel
+    , Model(..)
 
       -- * Constants
     , TConstant
@@ -34,13 +34,17 @@ import Rbsc.Syntax.ComponentType  as Syntax
 import Rbsc.Syntax.Constant       as Syntax
 import Rbsc.Syntax.Expr.Typed     as Syntax
 import Rbsc.Syntax.Function       as Syntax
-import Rbsc.Syntax.Model          as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
 import Rbsc.Syntax.Type           as Syntax
 
 
-type TModel = Model LSomeExpr
+-- | Typed abstract syntax of a model.
+data Model = Model
+    { modelConstants :: [TConstant]
+    , modelGlobals   :: [(Name, Maybe LSomeExpr)]
+    , modelSystem    :: [Loc (Expr Bool)]
+    }
 
 
 type TConstant = Constant LSomeExpr

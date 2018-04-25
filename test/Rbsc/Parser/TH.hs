@@ -78,7 +78,7 @@ handleText :: Text -> Maybe ExpQ
 handleText = Just . appE (varE 'Text.pack) . litE . StringL . Text.unpack
 
 
-parseIO :: String -> IO UModel
+parseIO :: String -> IO Model
 parseIO str = do
     result <- parse "splice" (Text.pack str)
     case toEither result of
@@ -90,7 +90,7 @@ printErrors :: [Error] -> [String]
 printErrors = fmap (show . render . Error.toReport)
 
 
-deriving instance Data expr => Data (Model expr)
+deriving instance Data Model
 
 deriving instance Data expr => Data (Constant expr)
 

@@ -17,11 +17,10 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import Rbsc.Syntax.ComponentType
-import Rbsc.Syntax.Model
+import Rbsc.Syntax.Untyped
 
 
-validateComponentTypes :: ComponentTypes -> Model expr -> Result' ()
+validateComponentTypes :: ComponentTypes -> Model -> Result' ()
 validateComponentTypes types model
     | null errors = return ()
     | otherwise   = throwMany errors

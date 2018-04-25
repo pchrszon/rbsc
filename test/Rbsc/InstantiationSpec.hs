@@ -33,7 +33,7 @@ import Rbsc.Report.Region
 import Rbsc.Report.Result
 
 import Rbsc.Syntax.Expr.Typed (Expr (..), SomeExpr (..))
-import Rbsc.Syntax.Untyped    (UModel)
+import Rbsc.Syntax.Untyped    (Model)
 
 import Rbsc.TypeChecker
 
@@ -210,7 +210,7 @@ spec = do
                 ]
 
 
-simpleModel :: UModel
+simpleModel :: Model
 simpleModel =
     [model|
         natural type N;
@@ -227,7 +227,7 @@ simpleModel =
     |]
 
 
-checkCompartmentUpperBounds' :: UModel -> Either [Error] ()
+checkCompartmentUpperBounds' :: Model -> Either [Error] ()
 checkCompartmentUpperBounds' m = do
     (m', info) <- toEither (typeCheck 10 m)
     Result sys _ _ <- over _Left (: []) (buildSystem 10 m' info)
@@ -239,14 +239,14 @@ dummyRegion :: Region
 dummyRegion = Region "" "" (Position 1 1) (Position 1 2)
 
 
-buildSystem' :: UModel -> Either [Error] System
+buildSystem' :: Model -> Either [Error] System
 buildSystem' m = do
     (m', info) <- toEither (typeCheck 10 m)
     result <- over _Left (: []) (buildSystem 10 m' info)
     return (_system result)
 
 
-getComponents :: UModel -> Either [Error] (Map Name Component)
+getComponents :: Model -> Either [Error] (Map Name Component)
 getComponents m = do
     consts <- getConstants m
     return (Map.fromList (mapMaybe getComponent (Map.assocs consts)))
@@ -257,7 +257,7 @@ getComponents m = do
     getComponent _ = Nothing
 
 
-getComponentArrays :: UModel -> Either [Error] (Map Name [Component])
+getComponentArrays :: Model -> Either [Error] (Map Name [Component])
 getComponentArrays m = do
     consts <- getConstants m
     return (Map.fromList (mapMaybe getArray (Map.assocs consts)))
@@ -268,7 +268,7 @@ getComponentArrays m = do
     getArray _ = Nothing
 
 
-getConstants :: UModel -> Either [Error] Constants
+getConstants :: Model -> Either [Error] Constants
 getConstants m = do
     (m', info) <- toEither (typeCheck 10 m)
     Result sys _ arrayInfos <- over _Left (: []) (buildSystem 10 m' info)

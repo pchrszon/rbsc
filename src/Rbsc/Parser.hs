@@ -39,7 +39,7 @@ import Rbsc.Syntax.Untyped
 
 
 -- | Parse a source file.
-parse :: MonadIO m => FilePath -> Text -> m (Result' UModel)
+parse :: MonadIO m => FilePath -> Text -> m (Result' Model)
 parse path content = fmap fromEither $ do
     (result, sourceMap) <- run modelFile path content
 

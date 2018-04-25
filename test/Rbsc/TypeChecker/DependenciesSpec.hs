@@ -61,7 +61,7 @@ spec = describe "sortDefinitions" $ do
         has (_Left.traverse.errorDesc._CyclicDefinition)
 
 
-dependencies :: UModel -> Either [Error] [Name]
+dependencies :: Model -> Either [Error] [Name]
 dependencies m = do
     idents <- identifierDefs m
     (: []) +++ fmap getName $ sortDefinitions idents

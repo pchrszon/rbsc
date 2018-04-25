@@ -60,7 +60,7 @@ data ArrayInfo = ArrayInfo
 -- | A result produced by 'buildSystem'.
 data Result = Result
     { _system          :: System
-    , _constraints     :: [LSomeExpr]
+    , _constraints     :: [Loc (Expr Bool)]
     , _componentArrays :: [ArrayInfo]
     }
 
@@ -82,7 +82,7 @@ pattern LitComponent name tyName <- (componentLiteral -> Just (name, tyName))
 -- transformed into the 'System' instance. All other expressions are added
 -- to the constraints list.
 buildSystem ::
-       RecursionDepth -> TModel -> ModelInfo -> Either Error Result
+       RecursionDepth -> Model -> ModelInfo -> Either Error Result
 buildSystem depth model info = do
     -- Partition expressions into instantiations of components and other
     -- constraints.
@@ -97,7 +97,7 @@ buildSystem depth model info = do
     -- is fine, since the partially evaluated constraints are only used to
     -- extract the 'boundto' and 'in' relations, but not for evaluating the
     -- constraints.
-    constrs' <- traverse (reduceSomeExpr (view constants info) depth) constrs
+    constrs' <- traverse (reduce' (view constants info) depth) constrs
 
     -- Split conjunctions into individual constraints.
     let constrs'' = concatMap clauses constrs'
@@ -109,8 +109,8 @@ buildSystem depth model info = do
 
     return (Result sys' constrs arrayInfos)
   where
-    insertDefinition :: LSomeExpr -> StateT Result (Either Error) ()
-    insertDefinition e@(Loc (SomeExpr e' _) _) = case e' of
+    insertDefinition :: Loc (Expr Bool) -> StateT Result (Either Error) ()
+    insertDefinition e = case unLoc e of
         HasType (Identifier name _) tyName ->
             system.instances.at name .= Just tyName
 
@@ -126,8 +126,8 @@ buildSystem depth model info = do
         _ -> modifying constraints (e :)
 
     insertRelation ::
-        ComponentTypes -> LSomeExpr -> StateT System (Either Error) ()
-    insertRelation compTys (Loc (SomeExpr e _) _) = case e of
+        ComponentTypes -> Loc (Expr Bool) -> StateT System (Either Error) ()
+    insertRelation compTys (Loc e _) = case e of
         BoundTo
             (Loc (LitComponent roleName roleTyName) rgnRole)
             (Loc (LitComponent playerName playerTyName) rgnPlayer)
@@ -225,36 +225,31 @@ componentForName sys tyName name =
 -- | Checks whether the given list of constraints is satisfied by the model
 -- with the given 'ModelInfo'.
 checkConstraints ::
-       RecursionDepth -> [LSomeExpr] -> ModelInfo -> Either Error Bool
+       RecursionDepth -> [Loc (Expr Bool)] -> ModelInfo -> Either Error Bool
 checkConstraints depth cs info =
     evalConstraints depth (view constants info) cs
 
 
 evalConstraints ::
-       RecursionDepth -> Constants -> [LSomeExpr] -> Either Error Bool
-evalConstraints depth consts cs = and <$> traverse evalConstraint cs
-  where
-    evalConstraint = \case
-        Loc (SomeExpr e TyBool) rgn -> eval consts depth (Loc e rgn)
-        _ -> error "evalConstraint: type error"
+       RecursionDepth -> Constants -> [Loc (Expr Bool)] -> Either Error Bool
+evalConstraints depth consts cs = and <$> traverse (eval consts depth) cs
 
 
-reduceSomeExpr ::
-       Constants -> RecursionDepth -> LSomeExpr -> Either Error LSomeExpr
-reduceSomeExpr consts depth (Loc (SomeExpr e ty) rgn) = do
-    e' <- reduce consts depth (Loc e rgn)
-    return (Loc (SomeExpr e' ty) rgn)
+reduce' ::
+       Constants
+    -> RecursionDepth
+    -> Loc (Expr t)
+    -> Either Error (Loc (Expr t))
+reduce' consts depth e = do
+    e' <- reduce consts depth e
+    return (e' `withLocOf` e)
 
 
-clauses :: LSomeExpr -> [LSomeExpr]
-clauses = \case
-    e@(Loc (SomeExpr e' TyBool) rgn) -> case e' of
-        LogicOp And l r ->
-            clauses (Loc (SomeExpr l TyBool) rgn) ++
-            clauses (Loc (SomeExpr r TyBool) rgn)
-        Literal True -> []
-        _ -> [e]
-    e -> [e]
+clauses :: Loc (Expr Bool) -> [Loc (Expr Bool)]
+clauses e@(Loc e' rgn) = case e' of
+    LogicOp And l r -> clauses (Loc l rgn) ++ clauses (Loc r rgn)
+    Literal True    -> []
+    _               -> [e]
 
 
 -- | Check if the given 'System' violates the role cardinalities given by

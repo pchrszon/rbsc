@@ -39,7 +39,7 @@ makePrisms ''Definition
 
 
 -- | Extract a 'Model' from a list of definitions.
-toModel :: [Definition] -> UModel
+toModel :: [Definition] -> Model
 toModel defs = Model
     { modelConstants        = def _DefConstant
     , modelFunctions        = def _DefFunction

@@ -48,7 +48,7 @@ compile path = do
             drawSystems systems
 
 
-generateSystems :: Result' UModel -> Result' [(System, ModelInfo)]
+generateSystems :: Result' Model -> Result' [(System, ModelInfo)]
 generateSystems parseResult = do
     model          <- parseResult
     (model', info) <- typeCheck 10 model

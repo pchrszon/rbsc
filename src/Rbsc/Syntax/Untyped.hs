@@ -3,7 +3,7 @@ module Rbsc.Syntax.Untyped
     ( module Syntax
 
       -- * Model
-    , UModel
+    , Model(..)
 
       -- * Component Types
     , UCompartmentTypeDef
@@ -32,14 +32,22 @@ import Rbsc.Syntax.Constant       as Syntax
 import Rbsc.Syntax.Expr.Untyped   as Syntax
 import Rbsc.Syntax.Function       as Syntax
 import Rbsc.Syntax.Global         as Syntax
-import Rbsc.Syntax.Model          as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
 import Rbsc.Syntax.Type           as Syntax
 import Rbsc.Syntax.VarType        as Syntax
 
 
-type UModel = Model LExpr
+-- | Untyped abstract syntax of a model.
+data Model = Model
+    { modelConstants        :: [UConstant]
+    , modelFunctions        :: [UFunction]
+    , modelGlobals          :: [UGlobal]
+    , modelNaturalTypes     :: [NaturalTypeDef]
+    , modelRoleTypes        :: [RoleTypeDef]
+    , modelCompartmentTypes :: [UCompartmentTypeDef]
+    , modelSystem           :: [LExpr]
+    } deriving (Show)
 
 
 type UCompartmentTypeDef = CompartmentTypeDef LExpr

@@ -30,8 +30,8 @@ import Rbsc.Report.Result
 
 import           Rbsc.Syntax.Typed   (SomeExpr (..), TConstant, TType)
 import qualified Rbsc.Syntax.Typed   as T
-import           Rbsc.Syntax.Untyped (UConstant, UFunction, UGlobal, UModel,
-                                      UType, UVarType)
+import           Rbsc.Syntax.Untyped (UConstant, UFunction, UGlobal, UType,
+                                      UVarType)
 import qualified Rbsc.Syntax.Untyped as U
 
 import           Rbsc.TypeChecker.ComponentTypes
@@ -54,7 +54,7 @@ makeLenses ''BuilderState
 -- constants requires type checking the constant definitions, the checked
 -- definitions are returned as well.
 getModelInfo ::
-       RecursionDepth -> UModel -> Result' (ModelInfo, [TConstant])
+       RecursionDepth -> U.Model -> Result' (ModelInfo, [TConstant])
 getModelInfo depth m = do
     idents <- fromEither (identifierDefs m)
     deps   <- fromEither' (sortDefinitions idents)

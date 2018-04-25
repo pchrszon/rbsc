@@ -30,7 +30,7 @@ import Rbsc.Syntax.Typed
 -- is returned that contains constants for each component instance.
 generateInstances ::
        RecursionDepth
-    -> TModel
+    -> Model
     -> ModelInfo
     -> Result' [(System, ModelInfo)]
 generateInstances depth model info = do
