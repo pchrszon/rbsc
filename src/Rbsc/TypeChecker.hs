@@ -47,13 +47,14 @@ tcModel U.Model{..} consts = T.Model consts
 
 
 tcGlobal :: UGlobal -> TypeChecker (Name, Maybe LSomeExpr)
-tcGlobal (Global (Loc name _) _ mInit) = view (symbolTable.at name) >>= \case
-    Just (SomeType ty) -> case mInit of
-        Just e -> do
-            e' <- e `hasType` ty
-            return (name, Just (SomeExpr e' ty `withLocOf` e))
-        Nothing -> return (name, Nothing)
-    Nothing -> error ("tcGlobal: " ++ show name ++ " not in symbol table")
+tcGlobal (Global (VarDecl (Loc name _) _ mInit)) =
+    view (symbolTable.at name) >>= \case
+        Just (SomeType ty) -> case mInit of
+            Just e -> do
+                e' <- e `hasType` ty
+                return (name, Just (SomeExpr e' ty `withLocOf` e))
+            Nothing -> return (name, Nothing)
+        Nothing -> error ("tcGlobal: " ++ show name ++ " not in symbol table")
 
 
 tcConstraint :: LExpr -> TypeChecker (Loc (T.Expr Bool))

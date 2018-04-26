@@ -4,26 +4,10 @@ module Rbsc.Syntax.Global
     ) where
 
 
-import Data.Function
-import Data.Ord
+import Rbsc.Syntax.VarDecl
 
 
-import Rbsc.Data.Name
-
-import Rbsc.Report.Region
-
-import Rbsc.Syntax.VarType
-
-
--- | A global definition.
-data Global expr = Global
-    { globalName :: Loc Name
-    , globalType :: VarType expr
-    , globalInit :: Maybe expr
-    } deriving (Show)
-
-instance Eq (Global expr) where
-    (==) = (==) `on` globalName
-
-instance Ord (Global expr) where
-    compare = comparing globalName
+-- | A definition of a global variable.
+newtype Global expr = Global
+    { getGlobal :: VarDecl expr
+    } deriving (Eq, Ord, Show)

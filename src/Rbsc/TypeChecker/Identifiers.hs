@@ -113,7 +113,7 @@ insertFunctions = traverse_ (insert <$> functionName <*> DefFunction)
 
 
 insertGlobals :: [UGlobal] -> Builder ()
-insertGlobals = traverse_ (insert <$> globalName <*> DefGlobal)
+insertGlobals = traverse_ (insert <$> (declName . getGlobal) <*> DefGlobal)
 
 
 insertComponentTypes ::

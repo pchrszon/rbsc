@@ -120,7 +120,7 @@ addFunction (U.Function (Loc name _) params sTy body) = do
 
 
 addGlobal :: UGlobal -> Builder ()
-addGlobal (U.Global (Loc name _) vTy _) = do
+addGlobal (U.Global (U.VarDecl (Loc name _) vTy _)) = do
     ty <- fromSyntaxVarType vTy
     insertSymbol name ty
 

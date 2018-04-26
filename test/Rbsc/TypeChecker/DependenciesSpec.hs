@@ -72,7 +72,7 @@ getName = \case
     DepDefinition def -> case def of
         DefConstant c  -> unLoc (constName c)
         DefFunction f  -> unLoc (functionName f)
-        DefGlobal g    -> unLoc (globalName g)
+        DefGlobal g    -> unLoc (declName (getGlobal g))
         DefComponentType t -> getTypeName . unLoc $ case t of
             TypeDefNatural nt     -> ntdName nt
             TypeDefRole rt        -> rtdName rt

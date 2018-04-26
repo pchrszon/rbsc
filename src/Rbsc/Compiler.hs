@@ -1,6 +1,8 @@
 module Rbsc.Compiler where
 
 
+import Control.Monad
+
 import Data.Foldable
 
 import Data.List (intersperse)
@@ -40,6 +42,7 @@ compile path = do
     case result of
         Left errors -> do
             printErrors errors
+            unless (null errors) (putStrLn "")
             printWarnings warnings
         Right results -> do
             printWarnings warnings

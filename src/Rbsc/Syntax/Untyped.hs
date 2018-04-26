@@ -16,8 +16,9 @@ module Rbsc.Syntax.Untyped
     , UFunction
     , UParameter
 
-      -- * Globals
+      -- * Variables
     , UGlobal
+    , UVarDecl
 
       -- * Types
     , UType
@@ -35,6 +36,7 @@ import Rbsc.Syntax.Global         as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
 import Rbsc.Syntax.Type           as Syntax
+import Rbsc.Syntax.VarDecl        as Syntax
 import Rbsc.Syntax.VarType        as Syntax
 
 
@@ -61,7 +63,8 @@ type UFunction  = Function LExpr
 type UParameter = Parameter LExpr
 
 
-type UGlobal = Global LExpr
+type UGlobal  = Global LExpr
+type UVarDecl = VarDecl LExpr
 
 
 type UType    = Type LExpr

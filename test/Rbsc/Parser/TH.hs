@@ -99,6 +99,8 @@ deriving instance Data expr => Data (Parameter expr)
 
 deriving instance Data expr => Data (Global expr)
 
+deriving instance Data expr => Data (VarDecl expr)
+
 deriving instance Data NaturalTypeDef
 deriving instance Data RoleTypeDef
 deriving instance Data expr => Data (CompartmentTypeDef expr)

@@ -126,7 +126,7 @@ insertFunction f@(Function (Loc _ rgn) _ _ e) = do
 
 
 insertGlobal :: UGlobal -> Analyzer ()
-insertGlobal g@(Global (Loc _ rgn) vTy _) =
+insertGlobal g@(Global (VarDecl (Loc _ rgn) vTy _)) =
     newDependency (DepDefinition (DefGlobal g)) rgn $ do
         identsTy <- identsInVarType vTy
         dependOnIdentifiers identsTy
