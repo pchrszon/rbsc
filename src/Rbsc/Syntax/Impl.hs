@@ -16,6 +16,9 @@ module Rbsc.Syntax.Impl
     ) where
 
 
+import Data.List.NonEmpty (NonEmpty)
+
+
 import Rbsc.Data.Name
 import Rbsc.Report.Region
 
@@ -34,7 +37,7 @@ data Implementation comp expr = Implementation
 -- | An 'Implementation' can either reference a list of modules or directly
 -- provide the implementation.
 data ImplBody comp expr
-    = ImplModules [Loc Name]
+    = ImplModules (NonEmpty (Loc Name))
     | ImplSingle (ModuleBody comp expr)
     deriving (Show)
 

@@ -5,12 +5,12 @@
 module Rbsc.Parser.Expr
     ( expr
     , range
+    , quantifiedType
     , componentTypeSet
     ) where
 
 
 import Control.Applicative
-import Control.Monad
 import Control.Monad.State.Strict
 
 import           Data.List.NonEmpty (NonEmpty (..))
@@ -240,8 +240,10 @@ binaryNOp n c = binary InfixN c (operator n)
 
 hasType :: Monad m => ExprOp m
 hasType =
-    Postfix $ do
-        void (operator ":")
+    Postfix . try $ do
+        -- Fail if there is an assignment following. In that case, the
+        -- colon denotes a probability, not a @HasType@ relation.
+        _ <- operator ":" <* notFollowedBy (symbol "(")
         tyName <- identifier
         return (\e -> Loc (HasType e tyName) (getLoc e <> getLoc tyName))
 

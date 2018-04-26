@@ -22,7 +22,7 @@ import           Data.Generics
 import           Data.Text     (Text)
 import qualified Data.Text     as Text
 
-import Language.Haskell.TH       hiding (Loc)
+import Language.Haskell.TH       hiding (Loc, Body)
 import Language.Haskell.TH.Quote
 
 
@@ -108,6 +108,18 @@ deriving instance Data expr => Data (MultiRole expr)
 
 deriving instance Data expr => Data (Syntax.Type expr)
 deriving instance Data expr => Data (VarType expr)
+
+deriving instance (Data expr, Data comp) => Data (Implementation comp expr)
+deriving instance (Data expr, Data comp) => Data (ImplBody comp expr)
+deriving instance (Data expr, Data comp) => Data (Module comp expr)
+deriving instance (Data expr, Data comp) => Data (ModuleBody comp expr)
+deriving instance (Data expr, Data comp) => Data (Command comp expr)
+deriving instance (Data expr, Data comp) => Data (Update comp expr)
+deriving instance Data expr => Data (Assignment expr)
+
+deriving instance (Typeable a, Data expr, Data comp, Data (a expr)) => Data (Body a comp expr)
+deriving instance (Typeable a, Data expr, Data comp, Data (a expr)) => Data (BodyItem a comp expr)
+deriving instance (Typeable a, Data expr, Data comp, Data (a expr)) => Data (Loop a comp expr)
 
 deriving instance Data Expr
 deriving instance Data FunctionName

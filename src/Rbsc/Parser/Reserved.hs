@@ -35,6 +35,8 @@ reservedWords =
     , "boundto"
     , "in"
     , "system"
+    , "impl"
+    , "module"
     , "min"
     , "minf"
     , "max"

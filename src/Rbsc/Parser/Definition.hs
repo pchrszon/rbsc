@@ -33,6 +33,8 @@ data Definition
     | DefRoleType RoleTypeDef
     | DefCompartmentType UCompartmentTypeDef
     | DefSystem [Loc Expr]
+    | DefImplementation UImplementation
+    | DefModule UModule
     deriving (Show)
 
 makePrisms ''Definition
@@ -48,6 +50,8 @@ toModel defs = Model
     , modelRoleTypes        = def _DefRoleType
     , modelCompartmentTypes = def _DefCompartmentType
     , modelSystem           = concat (def _DefSystem)
+    , modelImplementations  = def _DefImplementation
+    , modelModules          = def _DefModule
     }
   where
     def p = toListOf (traverse.p) defs

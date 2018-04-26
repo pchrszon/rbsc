@@ -27,6 +27,7 @@ import Rbsc.Parser.Constant
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Function
 import Rbsc.Parser.Global
+import Rbsc.Parser.Impl
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
 
@@ -61,9 +62,11 @@ definition :: Parser ErrorOrDef
 definition = withRecoveryOn (semi <|> symbol "}") . choice $
     [ constantDef
     , functionDef
-    , globalDef
     , componentTypeDef
     , systemDef
+    , globalDef
+    , implementationDef
+    , moduleDef
     ]
 
 
