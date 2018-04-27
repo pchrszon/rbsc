@@ -17,6 +17,7 @@ module Rbsc.Data.Type
     , SomeType(..)
 
       -- * Symbol tables
+    , Scope(..)
     , SymbolTable
 
       -- * Type equality
@@ -48,6 +49,7 @@ import Data.Type.Equality        ((:~:) (..))
 import Data.Set (Set)
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.Array
 import Rbsc.Data.Component
 import Rbsc.Data.Function
@@ -59,6 +61,7 @@ data Type t where
     TyBool      :: Type Bool
     TyInt       :: Type Integer
     TyDouble    :: Type Double
+    TyAction    :: Type Action
     TyComponent :: Set TypeName -> Type Component
     TyArray     :: (Int, Int) -> Type t -> Type (Array t)
     TyFunc      :: Type a -> Type b -> Type (Fn (a -> b))
@@ -71,6 +74,7 @@ instance Pretty (Type t) where
         TyBool   -> "bool"
         TyInt    -> "int"
         TyDouble -> "double"
+        TyAction -> "action"
         TyComponent tySet ->
             braces (sep (punctuate comma (fmap pretty (toList tySet))))
         TyArray (idxStart, idxEnd) t ->
@@ -107,9 +111,17 @@ instance Pretty SomeType where
     pretty (SomeType ty) = pretty ty
 
 
+-- | The scope defines the visibility of symbols.
+data Scope
+    = GlobalScope
+    | LocalScope !TypeName
+    deriving (Eq, Ord, Show)
+
+
+
 -- | The symbol table holds the type of each identifier in the model
 -- source.
-type SymbolTable = Map Name SomeType
+type SymbolTable = Map (Scope, Name) SomeType
 
 
 -- | Check the equality of 'Type's.
@@ -122,6 +134,7 @@ typeEq :: Type s -> Type t -> Maybe (s :~: t)
 typeEq TyBool      TyBool   = Just Refl
 typeEq TyInt       TyInt    = Just Refl
 typeEq TyDouble    TyDouble = Just Refl
+typeEq TyAction    TyAction = Just Refl
 typeEq (TyComponent _) (TyComponent _) = Just Refl
 typeEq (TyArray sIndices s) (TyArray tIndices t) = do
     Refl <- typeEq s t
@@ -141,6 +154,7 @@ dictShow = \case
     TyBool        -> Dict
     TyInt         -> Dict
     TyDouble      -> Dict
+    TyAction      -> Dict
     TyComponent _ -> Dict
     TyArray _ ty  -> case dictShow ty of Dict -> Dict
     TyFunc _ _    -> Dict

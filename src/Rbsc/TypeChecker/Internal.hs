@@ -20,6 +20,7 @@ module Rbsc.TypeChecker.Internal
 
     , getIdentifierType
     , lookupBoundVar
+    , localScope
     , whenTypeExists
 
       -- * Extracting typed expressions
@@ -69,6 +70,7 @@ data TcInfo = TcInfo
     { _componentTypes :: !ComponentTypes    -- ^ 'ComponentType' defined in the model
     , _symbolTable    :: !SymbolTable       -- ^ the 'SymbolTable'
     , _boundVars      :: [(Name, SomeType)] -- ^ list of variables bound by a quantifier or lambda
+    , _scope          :: !Scope             -- ^ the current scope
     }
 
 makeLenses ''TcInfo
@@ -77,14 +79,16 @@ makeLenses ''TcInfo
 -- | Run a type checker action.
 runTypeChecker ::
        TypeChecker a -> ComponentTypes -> SymbolTable -> Result' a
-runTypeChecker m types symTable = runReaderT m (TcInfo types symTable [])
+runTypeChecker m types symTable =
+    runReaderT m (TcInfo types symTable [] GlobalScope)
 
 
 -- | Looks up the type of a given identifier in the symbol table. If the
 -- identifier is undefined, an error is thrown.
 getIdentifierType :: Name -> Region -> TypeChecker SomeType
 getIdentifierType name rgn = do
-    varTy <- view (symbolTable.at name)
+    sc <- view scope
+    varTy <- view (symbolTable.at (sc, name))
     case varTy of
         Just ty -> return ty
         Nothing -> throwOne rgn UndefinedIdentifier
@@ -99,6 +103,11 @@ lookupBoundVar name = do
   where
     lookupVar n = find ((n ==) . fst . fst)
     toIndexAndType ((_, aTy), i) = (i, aTy)
+
+
+-- | Run a 'TypeChecker' in the local 'Scope' of the given compoent type.
+localScope :: TypeName -> TypeChecker a -> TypeChecker a
+localScope tyName = local (scope .~ LocalScope tyName)
 
 
 -- | When a given user-defined component type exists, execute the given

@@ -90,7 +90,7 @@ addConstant (U.Constant (Loc name rgn) msTy e) = do
     Dict <- return (dictShow ty)
     v <- evalExpr (e' `withLocOf` e)
 
-    insertSymbol name (SomeType ty)
+    insertSymbol GlobalScope name (SomeType ty)
     insertConstant name (SomeExpr (T.Literal v) ty)
 
     let c' = T.Constant (Loc name rgn) msTy' (SomeExpr e' ty `withLocOf` e)
@@ -101,7 +101,7 @@ addFunctionSignature :: UFunction -> Builder ()
 addFunctionSignature (U.Function (Loc name _) params sTy _) = do
     paramTys <- traverse (fmap snd . fromSyntaxType . U.paramType) params
     tyResult <- snd <$> fromSyntaxType sTy
-    insertSymbol name (foldr mkTyFunc tyResult paramTys)
+    insertSymbol GlobalScope name (foldr mkTyFunc tyResult paramTys)
   where
     mkTyFunc (SomeType a) (SomeType b) = SomeType (a --> b)
 
@@ -122,7 +122,7 @@ addFunction (U.Function (Loc name _) params sTy body) = do
 addGlobal :: UGlobal -> Builder ()
 addGlobal (U.Global (U.VarDecl (Loc name _) vTy _)) = do
     ty <- fromSyntaxVarType vTy
-    insertSymbol name ty
+    insertSymbol GlobalScope name ty
 
 
 addComponentType :: ComponentTypeDef -> Builder ()
@@ -162,11 +162,10 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
         if len' > 0
             then
                 let tyArray = TyArray (0, len' - 1) tyComponent
-                in insertSymbol name (SomeType tyArray)
+                in insertSymbol GlobalScope name (SomeType tyArray)
             else throwOne (getLoc len) (InvalidUpperBound len')
     -- add single component
-    Nothing ->
-        insertSymbol name (SomeType tyComponent)
+    Nothing -> insertSymbol GlobalScope name (SomeType tyComponent)
   where
     tyComponent = TyComponent (Set.singleton tyName)
 
@@ -241,8 +240,8 @@ runTypeChecker m = do
     lift (TC.runTypeChecker m compTys symTable)
 
 
-insertSymbol :: Name -> SomeType -> Builder ()
-insertSymbol name ty = modelInfo.symbolTable.at name .= Just ty
+insertSymbol :: Scope -> Name -> SomeType -> Builder ()
+insertSymbol sc name ty = modelInfo.symbolTable.at (sc, name) .= Just ty
 
 
 insertConstant :: Name -> SomeExpr -> Builder ()

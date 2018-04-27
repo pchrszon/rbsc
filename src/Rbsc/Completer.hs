@@ -67,7 +67,7 @@ runCompleter m symTable sys =
     in over (traverse._Right) (view system) results
   where
     gen = mkNameGen deriveFromTypeIdent takenNames
-    takenNames = Map.keysSet symTable
+    takenNames = Set.map snd (Map.keysSet symTable)
 
 
 -- | Lift a nondeterministic choice into the 'Completer' monad.
