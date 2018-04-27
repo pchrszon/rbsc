@@ -97,7 +97,7 @@ buildSystem depth model info = do
     -- is fine, since the partially evaluated constraints are only used to
     -- extract the 'boundto' and 'in' relations, but not for evaluating the
     -- constraints.
-    constrs' <- traverse (reduce' (view constants info) depth) constrs
+    constrs' <- traverse (reduce' (view constants info) depth) (reverse constrs)
 
     -- Split conjunctions into individual constraints.
     let constrs'' = concatMap clauses constrs'
@@ -105,7 +105,9 @@ buildSystem depth model info = do
     -- Extract relations 'boundto' and 'in' from the partially evaluated
     -- constraints.
     let compTys = view componentTypes info
-    sys' <- execStateT (traverse (insertRelation compTys) constrs'') sys
+    (sys', _) <- execStateT
+            (traverse (insertRelation compTys) constrs'')
+            (sys, Map.empty)
 
     return (Result sys' constrs arrayInfos)
   where
@@ -126,7 +128,9 @@ buildSystem depth model info = do
         _ -> modifying constraints (e :)
 
     insertRelation ::
-        ComponentTypes -> Loc (Expr Bool) -> StateT System (Either Error) ()
+           ComponentTypes
+        -> Loc (Expr Bool)
+        -> StateT (System, Map RoleName Region) (Either Error) ()
     insertRelation compTys (Loc e _) = case e of
         BoundTo
             (Loc (LitComponent roleName roleTyName) rgnRole)
@@ -136,7 +140,11 @@ buildSystem depth model info = do
                 | not (canPlayRole compTys playerTyName roleTyName) ->
                     throw rgnPlayer (InvalidBinding roleTyName playerTyName)
                 | otherwise ->
-                    boundTo.at roleName .= Just playerName
+                    use (_2.at roleName) >>= \case
+                        Just first -> throw rgnRole (RoleAlreadyBound first)
+                        Nothing    -> do
+                            _1.boundTo.at roleName .= Just playerName
+                            _2.at roleName .= Just rgnRole
 
         Element
             (Loc (LitComponent roleName roleTyName) rgnRole)
@@ -146,7 +154,7 @@ buildSystem depth model info = do
                 | not (isCompartmentType compTyName) ->
                     throw rgnComp NotACompartment
                 | otherwise ->
-                    containedIn.at roleName .= Just compartmentName
+                    _1.containedIn.at roleName .= Just compartmentName
 
         _ -> return ()
 

@@ -134,6 +134,22 @@ spec = do
             `shouldSatisfy`
             has (_Left.traverse.errorDesc._InvalidBinding)
 
+        it "detects multiple bindings of the same role" $
+            buildSystem'
+                [model|
+                    natural type N;
+                    role type R(N);
+                    system
+                        { n: N
+                        , m: N
+                        , r: R
+                        , r boundto n
+                        , r boundto m
+                        }
+                |]
+            `shouldSatisfy`
+            has (_Left.traverse.errorDesc._RoleAlreadyBound)
+
         it "detects invalid use of 'in' relation" $
             buildSystem'
                 [model|

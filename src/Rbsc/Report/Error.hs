@@ -46,6 +46,7 @@ data ErrorDesc
     | NotARole
     | NotACompartment
     | InvalidBinding !TypeName !TypeName
+    | RoleAlreadyBound !Region
     | InvalidLowerBound !Int
     | InvalidCardinalities !Int !Int
     | TooManyRoles !Name [(TypeName, Int)]
@@ -148,6 +149,13 @@ toReport (Error rgn desc) = case desc of
                 "a role of type " <> getTypeName roleTyName <>
                 " cannot be bound to a player of type " <>
                 getTypeName playerTyName
+            ]
+
+    RoleAlreadyBound first ->
+        errorReport "role bound multiple times"
+            [ errorPart rgn . Just $
+                "this role has been bound already"
+            , hintPart first (Just "the first binding was here")
             ]
 
     InvalidLowerBound lower ->
