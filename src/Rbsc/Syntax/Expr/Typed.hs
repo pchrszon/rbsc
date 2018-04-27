@@ -8,7 +8,7 @@
 -- | Typed expressions.
 module Rbsc.Syntax.Expr.Typed
     ( Expr(..)
-    , Scope(..)
+    , Scoped(..)
     , Quantifier(..)
     , TQuantifiedType
 
@@ -64,8 +64,8 @@ data Expr t where
     Element     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound       :: Int -> Type t -> Expr t
     Count       :: Set TypeName -> Expr Component -> Expr Integer
-    Lambda      :: Type a -> Scope b -> Expr (Fn (a -> b))
-    Quantified  :: Quantifier t -> TQuantifiedType -> Scope t -> Expr t
+    Lambda      :: Type a -> Scoped b -> Expr (Fn (a -> b))
+    Quantified  :: Quantifier t -> TQuantifiedType -> Scoped t -> Expr t
 
 deriving instance Show (Expr t)
 
@@ -82,10 +82,10 @@ deriving instance Show (Quantifier t)
 type TQuantifiedType = QuantifiedType (Set TypeName) (Expr Integer)
 
 
--- | A Scope contains an expression with a bound variable.
+-- | A scoped expression contains a bound variable.
 --
 -- Variables bound by a quantifier are identified by their de Bruijn index.
-newtype Scope t = Scope (Expr t) deriving (Show)
+newtype Scoped t = Scoped (Expr t) deriving (Show)
 
 
 -- | An 'Expr' tagged with its 'Type'.
@@ -100,8 +100,8 @@ type Constants = Map Name SomeExpr
 
 
 -- | Instantiate all variables bound by the outermost binder.
-instantiate :: forall t. Scope t -> SomeExpr -> Expr t
-instantiate (Scope body) (SomeExpr s ty) = go 0 body
+instantiate :: forall t. Scoped t -> SomeExpr -> Expr t
+instantiate (Scoped body) (SomeExpr s ty) = go 0 body
   where
     go :: Int -> Expr a -> Expr a
     go i = \case
@@ -129,9 +129,9 @@ instantiate (Scope body) (SomeExpr s ty) = go 0 body
                 Nothing   -> error "instantiate: type error"
             | otherwise -> Bound i' ty'
         Count tySet e -> Count tySet (go i e)
-        Lambda ty' (Scope body') -> Lambda ty' (Scope (go (succ i) body'))
-        Quantified q qdTy (Scope body') ->
-            Quantified q (goQdType i qdTy) (Scope (go (succ i) body'))
+        Lambda ty' (Scoped body') -> Lambda ty' (Scoped (go (succ i) body'))
+        Quantified q qdTy (Scoped body') ->
+            Quantified q (goQdType i qdTy) (Scoped (go (succ i) body'))
 
     goQdType i = \case
         QdTypeComponent tySet    -> QdTypeComponent tySet
@@ -179,10 +179,10 @@ descend f = \case
     Element l r        -> Element <$> traverse f l <*> traverse f r
     Bound i ty         -> pure (Bound i ty)
     Count tySet e      -> Count tySet <$> f e
-    Lambda ty (Scope body) -> Lambda ty . Scope <$> f body
-    Quantified q qdTy@(QdTypeComponent _) (Scope body) ->
-        Quantified q qdTy . Scope <$> f body
-    Quantified q (QdTypeInt (lower, upper)) (Scope body) ->
+    Lambda ty (Scoped body) -> Lambda ty . Scoped <$> f body
+    Quantified q qdTy@(QdTypeComponent _) (Scoped body) ->
+        Quantified q qdTy . Scoped <$> f body
+    Quantified q (QdTypeInt (lower, upper)) (Scoped body) ->
         Quantified q
             <$> (QdTypeInt <$> ((,) <$> f lower <*> f upper))
-            <*> (Scope <$> f body)
+            <*> (Scoped <$> f body)

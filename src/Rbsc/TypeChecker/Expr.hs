@@ -196,7 +196,7 @@ tcFunctionDef params (SomeType tyRes) body =
         return (foldr mkLambda (SomeExpr body' tyRes) params)
   where
     mkLambda (_, SomeType ty) (SomeExpr e tyRes') =
-        SomeExpr (T.Lambda ty (T.Scope e)) (ty --> tyRes')
+        SomeExpr (T.Lambda ty (T.Scoped e)) (ty --> tyRes')
 
 
 fromFunctionName :: FunctionName -> SomeExpr
@@ -267,7 +267,7 @@ tcQuantifier q varName varTy body qdTy = do
     SomeQuantifier q' <- return (typedQuantifier q)
     let qTy = quantifierType q'
     body' <- local (over boundVars ((varName, varTy) :)) $ body `hasType` qTy
-    T.Quantified q' qdTy (T.Scope body') `withType` qTy
+    T.Quantified q' qdTy (T.Scoped body') `withType` qTy
 
 
 data SomeQuantifier where
