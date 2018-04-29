@@ -182,6 +182,11 @@ toLiteral e = case e of
             Just x  -> return (Literal x)
             Nothing -> throw rgn (IndexOutOfBounds (Array.bounds arr) i)
 
+    Index (LitArray arr) (Loc (Literal (fromIntegral -> i)) rgn)
+        | i >= NonEmpty.length arr ->
+            throw rgn (IndexOutOfBounds (0, NonEmpty.length arr - 1) i)
+        | otherwise -> return (arr NonEmpty.!! i)
+
     Apply (Literal (Fn f)) (Literal arg) ->
         return (Literal (f arg))
 

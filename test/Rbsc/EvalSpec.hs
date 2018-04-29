@@ -114,6 +114,11 @@ spec = do
             `shouldBe`
             Right "RelOp Lt (ArithOp Add (Identifier \"y\" TyInt) (Literal 1)) (Literal 2)"
 
+        it "resolves array accesses for non-constant arrays" $
+            reduce' TyInt [expr| {y, z}[1] |]
+            `shouldBe`
+            Right "Identifier \"z\" TyInt"
+
 
 modelInfo :: ModelInfo
 modelInfo =
@@ -126,6 +131,8 @@ modelInfo =
                 const x: int = 1;
 
                 global y: [0..1];
+
+                global z: [0..1];
 
                 function f(i: int) : int = f(i);
 
