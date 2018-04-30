@@ -31,6 +31,9 @@ data Error = Error
 
 data ErrorDesc
     = ParseError !Text
+    | DuplicateModule !Region
+    | UndefinedModule
+
     | UndefinedType
     | DuplicateType !Region
     | NonRoleInCompartment
@@ -67,6 +70,16 @@ toReport :: Error -> Report
 toReport (Error rgn desc) = case desc of
     ParseError err ->
         errorReport "syntax error" [errorPart rgn (Just err)]
+
+    DuplicateModule first ->
+        errorReport "duplicate module definition"
+            [ errorPart rgn (Just "a module of the same name already exists")
+            , hintPart first (Just "first definition was here")
+            ]
+
+    UndefinedModule ->
+        errorReport "undefined module" [errorPart rgn Nothing]
+
 
     UndefinedType ->
         errorReport "undefined type" [errorPart rgn Nothing]

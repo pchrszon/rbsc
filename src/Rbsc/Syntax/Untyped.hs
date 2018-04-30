@@ -38,6 +38,9 @@ module Rbsc.Syntax.Untyped
     ) where
 
 
+import Data.Map.Strict (Map)
+
+
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name          as Syntax
 
@@ -63,8 +66,7 @@ data Model = Model
     , modelRoleTypes        :: [RoleTypeDef]
     , modelCompartmentTypes :: [UCompartmentTypeDef]
     , modelSystem           :: [LExpr]
-    , modelImplementations  :: [UImplementation]
-    , modelModules          :: [UModule]
+    , modelImpls            :: Map TypeName [UModuleBody]
     } deriving (Show)
 
 

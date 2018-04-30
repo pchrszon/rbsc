@@ -4,7 +4,7 @@ module Rbsc.Parser
 
 
 import Control.Lens
-import Control.Monad.State.Strict
+import Control.Monad.Except
 
 import           Data.Either        (partitionEithers)
 import qualified Data.List.NonEmpty as NonEmpty
@@ -46,11 +46,11 @@ parse path content = fmap fromEither $ do
 
     return $ case result of
         Left err -> Left [fromParseError sourceMap err]
-        Right errorOrDefs ->
+        Right errorOrDefs -> do
             let (errors, defs) = partitionEithers errorOrDefs
-            in if null errors
-                   then Right (toModel defs)
-                   else Left (fmap (fromParseError sourceMap) errors)
+            if null errors
+                then toModel defs
+                else throwError (fmap (fromParseError sourceMap) errors)
 
 
 modelFile :: MonadIO m => ParserT m [ErrorOrDef]

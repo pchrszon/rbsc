@@ -37,8 +37,8 @@ data Implementation comp expr = Implementation
 -- | An 'Implementation' can either reference a list of modules or directly
 -- provide the implementation.
 data ImplBody comp expr
-    = ImplModules (NonEmpty (Loc Name))
-    | ImplSingle (ModuleBody comp expr)
+    = ImplSingle (ModuleBody comp expr)
+    | ImplModules (NonEmpty (Loc Name))
     deriving (Show)
 
 
