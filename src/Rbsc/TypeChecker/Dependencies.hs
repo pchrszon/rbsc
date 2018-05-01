@@ -27,6 +27,7 @@ import qualified Data.Set           as Set
 
 
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Type (Scope (..), ScopedName (..))
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
@@ -80,6 +81,7 @@ sortDefinitions idents = do
             DefConstant _ -> "constant"
             DefFunction _ -> "function"
             DefGlobal _   -> "global variable"
+            DefLocal _ _  -> "local variable"
             DefComponentType _ -> "type"
             DefComponent (ComponentDef _ _ Nothing)  -> "component"
             DefComponent (ComponentDef _ _ (Just _)) -> "component array"
@@ -98,11 +100,12 @@ type LDependency = Loc Dependency
 -- | Insert an 'IdentifierDef' into the dependency graph.
 insert :: IdentifierDef -> Analyzer ()
 insert def = case def of
-    DefConstant c      -> insertConstant c
-    DefFunction f      -> insertFunction f
-    DefGlobal g        -> insertGlobal g
-    DefComponentType t -> insertComponentType t
-    DefComponent c     -> insertComponents c
+    DefConstant c        -> insertConstant c
+    DefFunction f        -> insertFunction f
+    DefGlobal g          -> insertGlobal g
+    DefLocal tyName decl -> insertLocal tyName decl
+    DefComponentType t   -> insertComponentType t
+    DefComponent c       -> insertComponents c
 
 
 insertConstant :: UConstant -> Analyzer ()
@@ -132,25 +135,45 @@ insertGlobal g@(Global (VarDecl (Loc _ rgn) vTy _)) =
         dependOnIdentifiers identsTy
 
 
+insertLocal :: TypeName -> UVarDecl -> Analyzer ()
+insertLocal tyName decl@(VarDecl (Loc _ rgn) vTy _) =
+    newDependency (DepDefinition (DefLocal tyName decl)) rgn $ do
+        identsTy <- identsInVarType vTy
+        dependOnIdentifiers identsTy
+
+
 insertComponentType :: ComponentTypeDef -> Analyzer ()
-insertComponentType t = newDependency (DepDefinition (DefComponentType t)) rgn $
-    case t of
-        TypeDefCompartment (CompartmentTypeDef _ multiRoleLists) ->
-            for_ multiRoleLists $ \multiRoles ->
-                for_ multiRoles $ \(MultiRole _ mBounds) -> case mBounds of
-                    Just (lower, upper) -> do
-                        identsLower <- identsInExpr lower
-                        identsUpper <- identsInExpr upper
-                        dependOnIdentifiers identsLower
-                        dependOnIdentifiers identsUpper
-                    Nothing -> return ()
-        _ -> return ()
+insertComponentType t =
+    newDependency (DepDefinition (DefComponentType t)) rgn $ do
+        locals <- getLocalVars
+        for_ locals $ \decl ->
+            dependOn (DepDefinition (DefLocal tyName decl)) rgn
+
+        case t of
+            TypeDefCompartment (CompartmentTypeDef _ multiRoleLists) ->
+                for_ multiRoleLists $ \multiRoles ->
+                    for_ multiRoles $ \(MultiRole _ mBounds) -> case mBounds of
+                        Just (lower, upper) -> do
+                            identsLower <- identsInExpr lower
+                            identsUpper <- identsInExpr upper
+                            dependOnIdentifiers identsLower
+                            dependOnIdentifiers identsUpper
+                        Nothing -> return ()
+            _ -> return ()
   where
-    rgn = getLoc $ case t of
+    Loc tyName rgn = case t of
         TypeDefNatural nt     -> ntdName nt
         TypeDefRole rt        -> rtdName rt
         TypeDefCompartment ct -> ctdName ct
 
+    getLocalVars :: Analyzer [UVarDecl]
+    getLocalVars =
+        mapMaybe (getLocalVar . unLoc) . Map.elems <$> view identifiers
+
+    getLocalVar :: IdentifierDef -> Maybe UVarDecl
+    getLocalVar = \case
+        DefLocal _ decl -> Just decl
+        _               -> Nothing
 
 insertComponents :: ComponentDef -> Analyzer ()
 insertComponents c@(ComponentDef (Loc _ rgn) tyName mLen) =
@@ -173,14 +196,17 @@ dependOnIdentifier :: Loc Name -> Analyzer ()
 dependOnIdentifier (Loc name rgn) = do
     params <- view parameters
 
-    -- if the identifier is bound by a parameter, we skip it, since it does
-    -- not depend on any identifier definition
-    unless (name `Set.member` params) $ view (identifiers.at name) >>= \case
-        Just (Loc def _) -> do
-            deps <- depsFromIdentifierDef def
-            for_ deps $ \dep ->
-                dependOn dep rgn
-        Nothing -> throw rgn UndefinedIdentifier
+    -- If the identifier is bound by a parameter, we skip it, since it does
+    -- not depend on any identifier definition.
+    unless (name `Set.member` params) $
+        -- We only check global identifiers, because no definition can
+        -- directly depend on a local variable without a qualifier.
+        view (identifiers.at (ScopedName GlobalScope name)) >>= \case
+            Just (Loc def _) -> do
+                deps <- depsFromIdentifierDef def
+                for_ deps $ \dep ->
+                    dependOn dep rgn
+            Nothing -> throw rgn UndefinedIdentifier
 
 
 depsFromIdentifierDef :: IdentifierDef -> Analyzer [Dependency]
@@ -251,8 +277,8 @@ identsInComponentTypeSet cts = do
             filterIdents (_DefComponentType._TypeDefCompartment) idents
         ComponentTypeSet tySet -> Set.map (fmap getTypeName) tySet
   where
-    filterIdents p =
-        Set.fromList .  fmap (uncurry withLocOf) . filter (has (_2.to unLoc.p))
+    filterIdents p = Set.fromList . fmap toIdent . filter (has (_2.to unLoc.p))
+    toIdent (ScopedName _ name, Loc _ rgn) = Loc name rgn
 
 
 identsInVarType :: UVarType -> Analyzer (Set (Loc Name))
@@ -302,7 +328,7 @@ runAnalyzer idents m =
   where
     info  = AnalyzerInfo idents Set.empty funcs Nothing False
     funcs = Map.fromAscList (catMaybes (fmap getFunc (Map.toAscList idents)))
-    getFunc (name, def) = case def of
+    getFunc (ScopedName _ name, def) = case def of
         Loc (DefFunction f) _ -> Just (name, f)
         _                     -> Nothing
 

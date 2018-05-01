@@ -33,6 +33,7 @@ import Rbsc.Data.ComponentType
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
 import Rbsc.Data.System
+import Rbsc.Data.Type
 
 import Rbsc.Util.NameGen
 
@@ -67,7 +68,7 @@ runCompleter m symTable sys =
     in over (traverse._Right) (view system) results
   where
     gen = mkNameGen deriveFromTypeIdent takenNames
-    takenNames = Set.map snd (Map.keysSet symTable)
+    takenNames = Set.map (\(ScopedName _ name) -> name) (Map.keysSet symTable)
 
 
 -- | Lift a nondeterministic choice into the 'Completer' monad.

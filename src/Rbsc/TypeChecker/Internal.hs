@@ -88,7 +88,7 @@ runTypeChecker m types symTable =
 getIdentifierType :: Name -> Region -> TypeChecker SomeType
 getIdentifierType name rgn = do
     sc <- view scope
-    varTy <- view (symbolTable.at (sc, name))
+    varTy <- view (symbolTable.at (ScopedName sc name))
     case varTy of
         Just ty -> return ty
         Nothing -> throwOne rgn UndefinedIdentifier

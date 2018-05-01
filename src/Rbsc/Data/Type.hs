@@ -18,6 +18,7 @@ module Rbsc.Data.Type
 
       -- * Symbol tables
     , Scope(..)
+    , ScopedName(..)
     , SymbolTable
 
       -- * Type equality
@@ -118,10 +119,14 @@ data Scope
     deriving (Eq, Ord, Show)
 
 
+-- | A 'Name' with its 'Scope'.
+data ScopedName = ScopedName !Scope !Name deriving (Eq, Ord, Show)
+
+
 
 -- | The symbol table holds the type of each identifier in the model
 -- source.
-type SymbolTable = Map (Scope, Name) SomeType
+type SymbolTable = Map ScopedName SomeType
 
 
 -- | Check the equality of 'Type's.

@@ -37,6 +37,9 @@ spec = describe "sortDefinitions" $ do
                 function playerIn(p: component, c: compartment) : bool =
                     exists r: role. r in c & r boundto p;
                 const k = arr(n)[0];
+                impl N {
+                    x : bool;
+                }
             |]
         `shouldBe`
         Right
@@ -46,6 +49,7 @@ spec = describe "sortDefinitions" $ do
             , "arr"
             , "f"
             , "k"
+            , "N_x"
             , "N"
             , "sig_playerIn"
             , "playerIn"
@@ -70,9 +74,11 @@ dependencies m = do
 getName :: Dependency -> Name
 getName = \case
     DepDefinition def -> case def of
-        DefConstant c  -> unLoc (constName c)
-        DefFunction f  -> unLoc (functionName f)
-        DefGlobal g    -> unLoc (declName (getGlobal g))
+        DefConstant c        -> unLoc (constName c)
+        DefFunction f        -> unLoc (functionName f)
+        DefGlobal g          -> unLoc (declName (getGlobal g))
+        DefLocal tyName decl ->
+            getTypeName tyName <> "_" <> unLoc (declName decl)
         DefComponentType t -> getTypeName . unLoc $ case t of
             TypeDefNatural nt     -> ntdName nt
             TypeDefRole rt        -> rtdName rt

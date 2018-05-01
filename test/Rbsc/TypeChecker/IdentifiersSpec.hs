@@ -14,6 +14,8 @@ import qualified Data.Map.Strict as Map
 import Test.Hspec
 
 
+import Rbsc.Data.Type (Scope (..), ScopedName (..))
+
 import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
@@ -26,33 +28,46 @@ import Rbsc.TypeChecker.Identifiers
 
 spec :: Spec
 spec = describe "identifierDefs" $ do
-    it "extracts all constants, functions and components" $
+    it "extracts all identifiers" $
         identifierDefs
             [model|
+                natural type N;
+
                 const n : int = 5;
 
                 function f(x : int) : int = x;
 
+                global x : bool;
+
                 system {
                     c : Comp
+                }
+
+                impl N {
+                    x : bool;
                 }
             |]
         `shouldBeLike`
         Right
-            [ ("n", DefConstant
+            [ (ScopedName GlobalScope "N", DefComponentType
+                (TypeDefNatural (NaturalTypeDef (dummyLoc "N"))))
+            , (ScopedName GlobalScope "n", DefConstant
                 (Constant (dummyLoc "n") (Just TyInt) (dummyLoc (LitInt 5))))
-            , ("f", DefFunction
+            , (ScopedName GlobalScope "f", DefFunction
                 (Function
                     (dummyLoc "f")
                     [Parameter (dummyLoc "x") TyInt]
                     TyInt
                     (dummyLoc (Identifier "x"))))
-
-            , ("c", DefComponent
+            , (ScopedName GlobalScope "x", DefGlobal
+                (Global (VarDecl (dummyLoc "x") VarTyBool Nothing)))
+            , (ScopedName GlobalScope "c", DefComponent
                 (ComponentDef
                     (dummyLoc "c")
                     (dummyLoc "Comp")
                     Nothing))
+            , (ScopedName (LocalScope "N") "x", DefLocal "N"
+                (VarDecl (dummyLoc "x") VarTyBool Nothing))
             ]
 
     it "detects duplicated identifiers" $
@@ -70,7 +85,7 @@ spec = describe "identifierDefs" $ do
 
 shouldBeLike ::
        Either [Error] Identifiers
-    -> Either [Error] (Map Name IdentifierDef)
+    -> Either [Error] (Map ScopedName IdentifierDef)
     -> Expectation
 shouldBeLike x y = over _Right (Map.map unLoc) x `shouldBe` y
 

@@ -36,6 +36,8 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
+import Rbsc.Data.Type
+
 import Rbsc.Report.Error
 import Rbsc.Report.Region
 
@@ -43,14 +45,14 @@ import Rbsc.Syntax.Untyped
 
 
 -- | A Map of all definitions of identifiers within the model.
-type Identifiers = Map Name (Loc IdentifierDef)
-
+type Identifiers = Map ScopedName (Loc IdentifierDef)
 
 -- | The definition of an identifier.
 data IdentifierDef
     = DefConstant UConstant -- ^ the identifier represents a constant
     | DefFunction UFunction -- ^ the identifier represents a function
     | DefGlobal UGlobal -- ^ the identifier represents a global variable
+    | DefLocal !TypeName UVarDecl -- ^ the identifier represents a local variable
     | DefComponentType ComponentTypeDef -- ^ the identifier represents a component type
     | DefComponent ComponentDef -- ^ the identifier represents a component or a component array
     deriving (Eq, Ord, Show)
@@ -102,36 +104,49 @@ identifierDefs Model{..} = runBuilder $ do
     insertComponentTypes rtdName TypeDefRole modelRoleTypes
     insertComponentTypes ctdName TypeDefCompartment modelCompartmentTypes
     insertComponents modelSystem
+    insertLocalVars modelImpls
 
 
 insertConstants :: [UConstant] -> Builder ()
-insertConstants = traverse_ (insert <$> constName <*> DefConstant)
+insertConstants = traverse_ (insert GlobalScope <$> constName <*> DefConstant)
 
 
 insertFunctions :: [UFunction] -> Builder ()
-insertFunctions = traverse_ (insert <$> functionName <*> DefFunction)
+insertFunctions =
+    traverse_ (insert GlobalScope <$> functionName <*> DefFunction)
 
 
 insertGlobals :: [UGlobal] -> Builder ()
-insertGlobals = traverse_ (insert <$> (declName . getGlobal) <*> DefGlobal)
+insertGlobals =
+    traverse_ (insert GlobalScope <$> (declName . getGlobal) <*> DefGlobal)
 
 
 insertComponentTypes ::
        (a -> Loc TypeName) -> (a -> ComponentTypeDef) -> [a] -> Builder ()
 insertComponentTypes getName con =
     traverse_
-        (insert <$> (fmap getTypeName . getName) <*> (DefComponentType . con))
+        (insert GlobalScope <$> (fmap getTypeName . getName) <*>
+         (DefComponentType . con))
 
 
 insertComponents :: [LExpr] -> Builder ()
 insertComponents es = for_ es $ \case
     HasType' (Loc (Identifier name) rgn) tyName ->
-        insert (Loc name rgn)
+        insert GlobalScope (Loc name rgn)
             (DefComponent (ComponentDef (Loc name rgn) tyName Nothing))
     HasType' (Index' (Loc (Identifier name) rgn) len) tyName ->
-        insert (Loc name rgn)
+        insert GlobalScope (Loc name rgn)
             (DefComponent (ComponentDef (Loc name rgn) tyName (Just len)))
     _ -> return ()
+
+
+insertLocalVars :: Map TypeName [UModuleBody] -> Builder ()
+insertLocalVars = traverse_ insertVarsForType . Map.assocs
+  where
+    insertVarsForType (tyName, bodies) =
+        for_ bodies $ \body ->
+            for_ (bodyVars body) $
+                insert (LocalScope tyName) <$> declName <*> DefLocal tyName
 
 
 type Builder a = State BuilderState a
@@ -145,10 +160,11 @@ runBuilder m
     BuilderState idents errs = execState m (BuilderState Map.empty [])
 
 
-insert :: Loc Name -> IdentifierDef -> Builder ()
-insert (Loc name rgn) def = use (identifiers.at name) >>= \case
-    Just def' -> throw' (Error rgn (DuplicateIdentifier (getLoc def')))
-    Nothing -> identifiers.at name .= Just (Loc def rgn)
+insert :: Scope -> Loc Name -> IdentifierDef -> Builder ()
+insert sc (Loc name rgn) def =
+    use (identifiers.at (ScopedName sc name)) >>= \case
+        Just def' -> throw' (Error rgn (DuplicateIdentifier (getLoc def')))
+        Nothing -> identifiers.at (ScopedName sc name) .= Just (Loc def rgn)
 
 
 throw' :: Error -> Builder ()

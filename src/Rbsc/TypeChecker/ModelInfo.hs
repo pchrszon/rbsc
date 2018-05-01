@@ -31,7 +31,7 @@ import Rbsc.Report.Result
 import           Rbsc.Syntax.Typed   (SomeExpr (..), TConstant, TType)
 import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped (UConstant, UFunction, UGlobal, UType,
-                                      UVarType)
+                                      UVarDecl, UVarType)
 import qualified Rbsc.Syntax.Untyped as U
 
 import           Rbsc.TypeChecker.ComponentTypes
@@ -66,11 +66,12 @@ getModelInfo depth m = do
 addDependency :: Dependency -> Builder ()
 addDependency = \case
     DepDefinition def -> case def of
-        DefConstant c      -> addConstant c
-        DefFunction f      -> addFunction f
-        DefGlobal g        -> addGlobal g
-        DefComponentType t -> addComponentType t
-        DefComponent c     -> addComponents c
+        DefConstant c        -> addConstant c
+        DefFunction f        -> addFunction f
+        DefGlobal g          -> addGlobal g
+        DefLocal tyName decl -> addLocal tyName decl
+        DefComponentType t   -> addComponentType t
+        DefComponent c       -> addComponents c
     DepFunctionSignature f -> addFunctionSignature f
 
 
@@ -123,6 +124,12 @@ addGlobal :: UGlobal -> Builder ()
 addGlobal (U.Global (U.VarDecl (Loc name _) vTy _)) = do
     ty <- fromSyntaxVarType vTy
     insertSymbol GlobalScope name ty
+
+
+addLocal :: TypeName -> UVarDecl -> Builder ()
+addLocal tyName (U.VarDecl (Loc name _) vTy _) = do
+    ty <- fromSyntaxVarType vTy
+    insertSymbol (LocalScope tyName) name ty
 
 
 addComponentType :: ComponentTypeDef -> Builder ()
@@ -241,7 +248,8 @@ runTypeChecker m = do
 
 
 insertSymbol :: Scope -> Name -> SomeType -> Builder ()
-insertSymbol sc name ty = modelInfo.symbolTable.at (sc, name) .= Just ty
+insertSymbol sc name ty =
+    modelInfo.symbolTable.at (ScopedName sc name) .= Just ty
 
 
 insertConstant :: Name -> SomeExpr -> Builder ()

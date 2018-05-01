@@ -48,7 +48,7 @@ tcModel U.Model{..} consts = T.Model consts
 
 tcGlobal :: UGlobal -> TypeChecker (Name, Maybe LSomeExpr)
 tcGlobal (Global (VarDecl (Loc name _) _ mInit)) =
-    view (symbolTable.at (GlobalScope, name)) >>= \case
+    view (symbolTable.at (ScopedName GlobalScope name)) >>= \case
         Just (SomeType ty) -> case mInit of
             Just e -> do
                 e' <- e `hasType` ty
