@@ -20,6 +20,7 @@ import qualified Data.Set        as Set
 
 import Rbsc.Data.ComponentType
 import Rbsc.Data.ModelInfo
+import Rbsc.Data.Scope
 import Rbsc.Data.Type
 
 import Rbsc.Eval

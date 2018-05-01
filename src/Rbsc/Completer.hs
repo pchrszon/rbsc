@@ -32,8 +32,8 @@ import qualified Data.Text       as T
 import Rbsc.Data.ComponentType
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
+import Rbsc.Data.Scope
 import Rbsc.Data.System
-import Rbsc.Data.Type
 
 import Rbsc.Util.NameGen
 

@@ -14,6 +14,7 @@ import Test.Hspec
 
 
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Scope
 import Rbsc.Data.Type
 
 import Rbsc.Parser.TH

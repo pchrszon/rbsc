@@ -51,6 +51,7 @@ import           Data.Text.Prettyprint.Doc (pretty)
 
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name
+import Rbsc.Data.Scope
 import Rbsc.Data.Type
 
 import Rbsc.Report.Error

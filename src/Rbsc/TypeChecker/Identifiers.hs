@@ -36,7 +36,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
-import Rbsc.Data.Type
+import Rbsc.Data.Scope
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region

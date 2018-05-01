@@ -17,8 +17,6 @@ module Rbsc.Data.Type
     , SomeType(..)
 
       -- * Symbol tables
-    , Scope(..)
-    , ScopedName(..)
     , SymbolTable
 
       -- * Type equality
@@ -55,6 +53,7 @@ import Rbsc.Data.Array
 import Rbsc.Data.Component
 import Rbsc.Data.Function
 import Rbsc.Data.Name
+import Rbsc.Data.Scope
 
 
 -- | Value-level representation of types.
@@ -110,17 +109,6 @@ deriving instance Show SomeType
 
 instance Pretty SomeType where
     pretty (SomeType ty) = pretty ty
-
-
--- | The scope defines the visibility of symbols.
-data Scope
-    = GlobalScope
-    | LocalScope !TypeName
-    deriving (Eq, Ord, Show)
-
-
--- | A 'Name' with its 'Scope'.
-data ScopedName = ScopedName !Scope !Name deriving (Eq, Ord, Show)
 
 
 

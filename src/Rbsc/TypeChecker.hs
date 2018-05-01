@@ -14,6 +14,7 @@ import Control.Lens
 import           Rbsc.Data.ModelInfo (ModelInfo)
 import qualified Rbsc.Data.ModelInfo as MI
 import           Rbsc.Data.Type
+import           Rbsc.Data.Scope
 
 import Rbsc.Eval
 

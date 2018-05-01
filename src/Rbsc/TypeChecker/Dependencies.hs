@@ -27,7 +27,7 @@ import qualified Data.Set           as Set
 
 
 import Rbsc.Data.ComponentType
-import Rbsc.Data.Type (Scope (..), ScopedName (..))
+import Rbsc.Data.Scope
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region

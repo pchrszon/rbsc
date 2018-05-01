@@ -14,7 +14,7 @@ import qualified Data.Map.Strict as Map
 import Test.Hspec
 
 
-import Rbsc.Data.Type (Scope (..), ScopedName (..))
+import Rbsc.Data.Scope
 
 import Rbsc.Parser.TH
 
