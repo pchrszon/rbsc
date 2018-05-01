@@ -13,7 +13,6 @@ module Rbsc.Syntax.Typed
     , TParameter
 
       -- * Variables
-    , TGlobal
     , TVarDecl
 
       -- * Types
@@ -33,7 +32,6 @@ import Rbsc.Syntax.ComponentType  as Syntax
 import Rbsc.Syntax.Constant       as Syntax
 import Rbsc.Syntax.Expr.Typed     as Syntax
 import Rbsc.Syntax.Function       as Syntax
-import Rbsc.Syntax.Global         as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
 import Rbsc.Syntax.Type           as Syntax
@@ -56,7 +54,6 @@ type TFunction  = Function LSomeExpr
 type TParameter = Parameter LSomeExpr
 
 
-type TGlobal  = Global LSomeExpr
 type TVarDecl = VarDecl LSomeExpr
 
 

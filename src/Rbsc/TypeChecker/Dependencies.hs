@@ -128,9 +128,9 @@ insertFunction f@(Function (Loc _ rgn) _ _ e) = do
             dependOnIdentifiers idents
 
 
-insertGlobal :: UGlobal -> Analyzer ()
-insertGlobal g@(Global (VarDecl (Loc _ rgn) vTy _)) =
-    newDependency (DepDefinition (DefGlobal g)) rgn $ do
+insertGlobal :: UVarDecl -> Analyzer ()
+insertGlobal decl@(VarDecl (Loc _ rgn) vTy _) =
+    newDependency (DepDefinition (DefGlobal decl)) rgn $ do
         identsTy <- identsInVarType vTy
         dependOnIdentifiers identsTy
 
@@ -214,7 +214,7 @@ depsFromIdentifierDef = \case
     DefFunction f -> do
         inBody <- view inFunctionBody
         if inBody
-            -- Funcions can be recursive (also mutually recursive), so we
+            -- Functions can be recursive (also mutually recursive), so we
             -- cannot add a dependency for f (since this could introduce a
             -- cycle in the dependency graph). However, we add a dependency
             -- to the signature of f, because we will need to know the type

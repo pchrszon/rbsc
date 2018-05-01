@@ -60,7 +60,7 @@ spec = describe "identifierDefs" $ do
                     TyInt
                     (dummyLoc (Identifier "x"))))
             , (ScopedName GlobalScope "x", DefGlobal
-                (Global (VarDecl (dummyLoc "x") VarTyBool Nothing)))
+                (VarDecl (dummyLoc "x") VarTyBool Nothing))
             , (ScopedName GlobalScope "c", DefComponent
                 (ComponentDef
                     (dummyLoc "c")

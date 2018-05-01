@@ -31,8 +31,8 @@ import Rbsc.Report.Result
 
 import           Rbsc.Syntax.Typed   (SomeExpr (..), TConstant, TType)
 import qualified Rbsc.Syntax.Typed   as T
-import           Rbsc.Syntax.Untyped (UConstant, UFunction, UGlobal, UType,
-                                      UVarDecl, UVarType)
+import           Rbsc.Syntax.Untyped (UConstant, UFunction, UType, UVarDecl,
+                                      UVarType)
 import qualified Rbsc.Syntax.Untyped as U
 
 import           Rbsc.TypeChecker.ComponentTypes
@@ -69,8 +69,8 @@ addDependency = \case
     DepDefinition def -> case def of
         DefConstant c        -> addConstant c
         DefFunction f        -> addFunction f
-        DefGlobal g          -> addGlobal g
-        DefLocal tyName decl -> addLocal tyName decl
+        DefGlobal decl       -> addVariable GlobalScope decl
+        DefLocal tyName decl -> addVariable (LocalScope tyName) decl
         DefComponentType t   -> addComponentType t
         DefComponent c       -> addComponents c
     DepFunctionSignature f -> addFunctionSignature f
@@ -121,16 +121,10 @@ addFunction (U.Function (Loc name _) params sTy body) = do
         return (unLoc n, ty)
 
 
-addGlobal :: UGlobal -> Builder ()
-addGlobal (U.Global (U.VarDecl (Loc name _) vTy _)) = do
+addVariable :: Scope -> UVarDecl -> Builder ()
+addVariable sc (U.VarDecl (Loc name _) vTy _) = do
     ty <- fromSyntaxVarType vTy
-    insertSymbol GlobalScope name ty
-
-
-addLocal :: TypeName -> UVarDecl -> Builder ()
-addLocal tyName (U.VarDecl (Loc name _) vTy _) = do
-    ty <- fromSyntaxVarType vTy
-    insertSymbol (LocalScope tyName) name ty
+    insertSymbol sc name ty
 
 
 addComponentType :: ComponentTypeDef -> Builder ()

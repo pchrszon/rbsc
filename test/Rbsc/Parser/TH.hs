@@ -97,8 +97,6 @@ deriving instance Data expr => Data (Constant expr)
 deriving instance Data expr => Data (Function expr)
 deriving instance Data expr => Data (Parameter expr)
 
-deriving instance Data expr => Data (Global expr)
-
 deriving instance Data expr => Data (VarDecl expr)
 
 deriving instance Data NaturalTypeDef

@@ -17,7 +17,6 @@ module Rbsc.Syntax.Untyped
     , UParameter
 
       -- * Variables
-    , UGlobal
     , UVarDecl
 
       -- * Implementation
@@ -48,7 +47,6 @@ import Rbsc.Syntax.ComponentType  as Syntax
 import Rbsc.Syntax.Constant       as Syntax
 import Rbsc.Syntax.Expr.Untyped   as Syntax
 import Rbsc.Syntax.Function       as Syntax
-import Rbsc.Syntax.Global         as Syntax
 import Rbsc.Syntax.Impl           as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
@@ -61,7 +59,7 @@ import Rbsc.Syntax.VarType        as Syntax
 data Model = Model
     { modelConstants        :: [UConstant]
     , modelFunctions        :: [UFunction]
-    , modelGlobals          :: [UGlobal]
+    , modelGlobals          :: [UVarDecl]
     , modelNaturalTypes     :: [NaturalTypeDef]
     , modelRoleTypes        :: [RoleTypeDef]
     , modelCompartmentTypes :: [UCompartmentTypeDef]
@@ -81,7 +79,6 @@ type UFunction  = Function LExpr
 type UParameter = Parameter LExpr
 
 
-type UGlobal  = Global LExpr
 type UVarDecl = VarDecl LExpr
 
 

@@ -39,7 +39,7 @@ type ErrorOrDef = Either (ParseError Char Dec) Definition
 data Definition
     = DefConstant UConstant
     | DefFunction UFunction
-    | DefGlobal UGlobal
+    | DefGlobal UVarDecl
     | DefNaturalType NaturalTypeDef
     | DefRoleType RoleTypeDef
     | DefCompartmentType UCompartmentTypeDef

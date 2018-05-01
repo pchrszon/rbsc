@@ -47,8 +47,8 @@ tcModel U.Model{..} consts = T.Model consts
     <*> traverse tcConstraint modelSystem
 
 
-tcGlobal :: UGlobal -> TypeChecker (Name, Maybe LSomeExpr)
-tcGlobal (Global (VarDecl (Loc name _) _ mInit)) =
+tcGlobal :: UVarDecl -> TypeChecker (Name, Maybe LSomeExpr)
+tcGlobal (VarDecl (Loc name _) _ mInit) =
     view (symbolTable.at (ScopedName GlobalScope name)) >>= \case
         Just (SomeType ty) -> case mInit of
             Just e -> do

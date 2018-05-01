@@ -51,7 +51,7 @@ type Identifiers = Map ScopedName (Loc IdentifierDef)
 data IdentifierDef
     = DefConstant UConstant -- ^ the identifier represents a constant
     | DefFunction UFunction -- ^ the identifier represents a function
-    | DefGlobal UGlobal -- ^ the identifier represents a global variable
+    | DefGlobal UVarDecl -- ^ the identifier represents a global variable
     | DefLocal !TypeName UVarDecl -- ^ the identifier represents a local variable
     | DefComponentType ComponentTypeDef -- ^ the identifier represents a component type
     | DefComponent ComponentDef -- ^ the identifier represents a component or a component array
@@ -116,9 +116,8 @@ insertFunctions =
     traverse_ (insert GlobalScope <$> functionName <*> DefFunction)
 
 
-insertGlobals :: [UGlobal] -> Builder ()
-insertGlobals =
-    traverse_ (insert GlobalScope <$> (declName . getGlobal) <*> DefGlobal)
+insertGlobals :: [UVarDecl] -> Builder ()
+insertGlobals = traverse_ (insert GlobalScope <$> declName <*> DefGlobal)
 
 
 insertComponentTypes ::
