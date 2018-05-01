@@ -201,7 +201,7 @@ dependOnIdentifier (Loc name rgn) = do
     unless (name `Set.member` params) $
         -- We only check global identifiers, because no definition can
         -- directly depend on a local variable without a qualifier.
-        view (identifiers.at (ScopedName GlobalScope name)) >>= \case
+        view (identifiers.at (ScopedName Global name)) >>= \case
             Just (Loc def _) -> do
                 deps <- depsFromIdentifierDef def
                 for_ deps $ \dep ->

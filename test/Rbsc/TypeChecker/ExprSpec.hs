@@ -85,5 +85,5 @@ types = Map.fromList
 
 symbolTable :: SymbolTable
 symbolTable = Map.fromList
-    [ (ScopedName GlobalScope "n", SomeType (TyComponent (Set.singleton "N")))
+    [ (ScopedName Global "n", SomeType (TyComponent (Set.singleton "N")))
     ]

@@ -108,33 +108,33 @@ identifierDefs Model{..} = runBuilder $ do
 
 
 insertConstants :: [UConstant] -> Builder ()
-insertConstants = traverse_ (insert GlobalScope <$> constName <*> DefConstant)
+insertConstants = traverse_ (insert Global <$> constName <*> DefConstant)
 
 
 insertFunctions :: [UFunction] -> Builder ()
 insertFunctions =
-    traverse_ (insert GlobalScope <$> functionName <*> DefFunction)
+    traverse_ (insert Global <$> functionName <*> DefFunction)
 
 
 insertGlobals :: [UVarDecl] -> Builder ()
-insertGlobals = traverse_ (insert GlobalScope <$> declName <*> DefGlobal)
+insertGlobals = traverse_ (insert Global <$> declName <*> DefGlobal)
 
 
 insertComponentTypes ::
        (a -> Loc TypeName) -> (a -> ComponentTypeDef) -> [a] -> Builder ()
 insertComponentTypes getName con =
     traverse_
-        (insert GlobalScope <$> (fmap getTypeName . getName) <*>
+        (insert Global <$> (fmap getTypeName . getName) <*>
          (DefComponentType . con))
 
 
 insertComponents :: [LExpr] -> Builder ()
 insertComponents es = for_ es $ \case
     HasType' (Loc (Identifier name) rgn) tyName ->
-        insert GlobalScope (Loc name rgn)
+        insert Global (Loc name rgn)
             (DefComponent (ComponentDef (Loc name rgn) tyName Nothing))
     HasType' (Index' (Loc (Identifier name) rgn) len) tyName ->
-        insert GlobalScope (Loc name rgn)
+        insert Global (Loc name rgn)
             (DefComponent (ComponentDef (Loc name rgn) tyName (Just len)))
     _ -> return ()
 
@@ -145,7 +145,7 @@ insertLocalVars = traverse_ insertVarsForType . Map.assocs
     insertVarsForType (tyName, bodies) =
         for_ bodies $ \body ->
             for_ (bodyVars body) $
-                insert (LocalScope tyName) <$> declName <*> DefLocal tyName
+                insert (Local tyName) <$> declName <*> DefLocal tyName
 
 
 type Builder a = State BuilderState a

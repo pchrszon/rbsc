@@ -81,7 +81,7 @@ makeLenses ''TcInfo
 runTypeChecker ::
        TypeChecker a -> ComponentTypes -> SymbolTable -> Result' a
 runTypeChecker m types symTable =
-    runReaderT m (TcInfo types symTable [] GlobalScope)
+    runReaderT m (TcInfo types symTable [] Global)
 
 
 -- | Looks up the type of a given identifier in the symbol table. If the
@@ -108,7 +108,7 @@ lookupBoundVar name = do
 
 -- | Run a 'TypeChecker' in the local 'Scope' of the given compoent type.
 localScope :: TypeName -> TypeChecker a -> TypeChecker a
-localScope tyName = local (scope .~ LocalScope tyName)
+localScope tyName = local (scope .~ Local tyName)
 
 
 -- | When a given user-defined component type exists, execute the given

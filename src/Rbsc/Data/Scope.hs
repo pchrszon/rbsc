@@ -10,8 +10,8 @@ import Rbsc.Data.Name
 
 -- | The scope defines the visibility of symbols.
 data Scope
-    = GlobalScope
-    | LocalScope !TypeName
+    = Global
+    | Local !TypeName
     deriving (Eq, Ord, Show)
 
 

@@ -49,24 +49,24 @@ spec = describe "identifierDefs" $ do
             |]
         `shouldBeLike`
         Right
-            [ (ScopedName GlobalScope "N", DefComponentType
+            [ (ScopedName Global "N", DefComponentType
                 (TypeDefNatural (NaturalTypeDef (dummyLoc "N"))))
-            , (ScopedName GlobalScope "n", DefConstant
+            , (ScopedName Global "n", DefConstant
                 (Constant (dummyLoc "n") (Just TyInt) (dummyLoc (LitInt 5))))
-            , (ScopedName GlobalScope "f", DefFunction
+            , (ScopedName Global "f", DefFunction
                 (Function
                     (dummyLoc "f")
                     [Parameter (dummyLoc "x") TyInt]
                     TyInt
                     (dummyLoc (Identifier "x"))))
-            , (ScopedName GlobalScope "x", DefGlobal
+            , (ScopedName Global "x", DefGlobal
                 (VarDecl (dummyLoc "x") VarTyBool Nothing))
-            , (ScopedName GlobalScope "c", DefComponent
+            , (ScopedName Global "c", DefComponent
                 (ComponentDef
                     (dummyLoc "c")
                     (dummyLoc "Comp")
                     Nothing))
-            , (ScopedName (LocalScope "N") "x", DefLocal "N"
+            , (ScopedName (Local "N") "x", DefLocal "N"
                 (VarDecl (dummyLoc "x") VarTyBool Nothing))
             ]
 

@@ -69,8 +69,8 @@ addDependency = \case
     DepDefinition def -> case def of
         DefConstant c        -> addConstant c
         DefFunction f        -> addFunction f
-        DefGlobal decl       -> addVariable GlobalScope decl
-        DefLocal tyName decl -> addVariable (LocalScope tyName) decl
+        DefGlobal decl       -> addVariable Global decl
+        DefLocal tyName decl -> addVariable (Local tyName) decl
         DefComponentType t   -> addComponentType t
         DefComponent c       -> addComponents c
     DepFunctionSignature f -> addFunctionSignature f
@@ -92,7 +92,7 @@ addConstant (U.Constant (Loc name rgn) msTy e) = do
     Dict <- return (dictShow ty)
     v <- evalExpr (e' `withLocOf` e)
 
-    insertSymbol GlobalScope name (SomeType ty)
+    insertSymbol Global name (SomeType ty)
     insertConstant name (SomeExpr (T.Literal v) ty)
 
     let c' = T.Constant (Loc name rgn) msTy' (SomeExpr e' ty `withLocOf` e)
@@ -103,7 +103,7 @@ addFunctionSignature :: UFunction -> Builder ()
 addFunctionSignature (U.Function (Loc name _) params sTy _) = do
     paramTys <- traverse (fmap snd . fromSyntaxType . U.paramType) params
     tyResult <- snd <$> fromSyntaxType sTy
-    insertSymbol GlobalScope name (foldr mkTyFunc tyResult paramTys)
+    insertSymbol Global name (foldr mkTyFunc tyResult paramTys)
   where
     mkTyFunc (SomeType a) (SomeType b) = SomeType (a --> b)
 
@@ -164,10 +164,10 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
         if len' > 0
             then
                 let tyArray = TyArray (0, len' - 1) tyComponent
-                in insertSymbol GlobalScope name (SomeType tyArray)
+                in insertSymbol Global name (SomeType tyArray)
             else throwOne (getLoc len) (InvalidUpperBound len')
     -- add single component
-    Nothing -> insertSymbol GlobalScope name (SomeType tyComponent)
+    Nothing -> insertSymbol Global name (SomeType tyComponent)
   where
     tyComponent = TyComponent (Set.singleton tyName)
 
