@@ -56,6 +56,7 @@ data Expr t where
     EqOp        :: Eq t => EqOp -> Expr t -> Expr t -> Expr Bool
     RelOp       :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool
     LogicOp     :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
+    Member      :: Expr Component -> Name -> Type t -> Expr t
     Index       :: Show t => Expr (Array t) -> Loc (Expr Integer) -> Expr t
     Apply       :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
     IfThenElse  :: Expr Bool -> Expr t -> Expr t -> Expr t
@@ -117,6 +118,7 @@ instantiate (Scoped body) (SomeExpr s ty) = go 0 body
         EqOp eOp l r        -> EqOp eOp (go i l) (go i r)
         RelOp rOp l r       -> RelOp rOp (go i l) (go i r)
         LogicOp lOp l r     -> LogicOp lOp (go i l) (go i r)
+        Member e name ty'   -> Member (go i e) name ty'
         Index e idx         -> Index (go i e) (fmap (go i) idx)
         Apply f e           -> Apply (go i f) (go i e)
         IfThenElse c t e    -> IfThenElse (go i c) (go i t) (go i e)
@@ -171,6 +173,7 @@ descend f = \case
     EqOp eOp l r       -> EqOp eOp <$> f l <*> f r
     RelOp rOp l r      -> RelOp rOp <$> f l <*> f r
     LogicOp lOp l r    -> LogicOp lOp <$> f l <*> f r
+    Member e name ty   -> Member <$> f e <*> pure name <*> pure ty
     Index e idx        -> Index <$> f e <*> traverse f idx
     Apply g e          -> Apply <$> f g <*> f e
     IfThenElse c t e   -> IfThenElse <$> f c <*> f t <*> f e

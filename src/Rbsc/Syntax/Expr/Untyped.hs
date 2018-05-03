@@ -43,6 +43,7 @@ data Expr
     | EqOp !EqOp LExpr LExpr
     | RelOp !RelOp LExpr LExpr
     | LogicOp !LogicOp LExpr LExpr
+    | Member LExpr !Name
     | Index LExpr LExpr
     | Call LExpr [LExpr]
     | IfThenElse LExpr LExpr LExpr
@@ -81,6 +82,7 @@ instance Plated LExpr where
         EqOp eOp l r -> EqOp eOp <$> f l <*> f r
         RelOp rOp l r -> RelOp rOp <$> f l <*> f r
         LogicOp lOp l r -> LogicOp lOp <$> f l <*> f r
+        Member e' name -> Member <$> f e' <*> pure name
         Index e' idx -> Index <$> f e' <*> f idx
         Call e' args -> Call <$> f e' <*> traverse f args
         IfThenElse c t e' -> IfThenElse <$> f c <*> f t <*> f e'

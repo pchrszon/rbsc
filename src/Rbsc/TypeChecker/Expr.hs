@@ -15,15 +15,19 @@ module Rbsc.TypeChecker.Expr
 import Control.Lens
 import Control.Monad.Reader
 
+import           Data.Function
+import           Data.List          (nubBy)
 import           Data.List.NonEmpty (NonEmpty (..), fromList)
 import qualified Data.Map.Strict    as Map
 import           Data.Set           (Set)
 import qualified Data.Set           as Set
+import           Data.Traversable
 
 
 import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Function
+import Rbsc.Data.Scope
 import Rbsc.Data.Type
 
 import Rbsc.Report.Error
@@ -107,6 +111,16 @@ tcExpr (Loc e rgn) = case e of
         l' <- l `hasType` TyBool
         r' <- r `hasType` TyBool
         T.LogicOp lOp l' r' `withType` TyBool
+
+    U.Member inner name -> do
+        tyComponent <- getTyComponent
+        (inner', ty) <- inner `hasType'` tyComponent
+        case ty of
+            TyComponent tySet -> do
+                memberTys <- getLocalVarTypes name tySet
+                SomeType memberTy <- getMemberType rgn name memberTys
+                T.Member inner' name memberTy `withType` memberTy
+
 
     U.Index inner idx -> do
         SomeExpr inner' ty <- tcExpr inner
@@ -254,6 +268,36 @@ tcCall (Loc (SomeExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
     tcCall (Loc (SomeExpr (T.Apply f arg') tyRes) rgn) args
 tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
     throwOne rgn (NotAFunction (renderType ty))
+
+
+getLocalVarTypes ::
+       Name -> Set TypeName -> TypeChecker [(TypeName, Maybe SomeType)]
+getLocalVarTypes name tySet = for (Set.toList tySet) $ \tyName -> do
+    mTy <- view (symbolTable.at (ScopedName (Local tyName) name))
+    return (tyName, mTy)
+
+
+getMemberType ::
+       Region -> Name -> [(TypeName, Maybe SomeType)] -> TypeChecker SomeType
+getMemberType rgn name memberTys
+    | not (null undefineds) = throwOne rgn (UndefinedMember undefineds name)
+    | otherwise = case nubBy ((==) `on` snd) defineds of
+        [] -> error "getMemberType: empty list"
+        [(_, ty)] -> return ty
+        ((firstTyName, SomeType firstTy):(secondTyName, SomeType secondTy):_) ->
+            throwOne
+                rgn
+                (ConflictingMemberTypes
+                     name
+                     firstTyName
+                     (renderType firstTy)
+                     secondTyName
+                     (renderType secondTy))
+  where
+    (defineds, undefineds) = foldr f ([], []) memberTys
+    f memberTy (ds, us) = case memberTy of
+        (tyName, Just ty) -> ((tyName, ty) : ds, us)
+        (tyName, Nothing) -> (ds, tyName : us)
 
 
 tcQuantifier ::

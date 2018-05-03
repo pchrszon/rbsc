@@ -59,7 +59,7 @@ componentTypeSet = choice
 term :: Parser LExpr
 term = label "expression" $ quantified <|> do
     e <- atom
-    postfix <- many (index <|> call)
+    postfix <- many (member <|> index <|> call)
     return (apply postfix e)
   where
     apply = foldr (.) id . reverse
@@ -76,6 +76,13 @@ atom = choice
     , countFunction
     , ident
     ]
+
+
+member :: Parser (LExpr -> LExpr)
+member = do
+    _ <- operator "."
+    Loc name rgn <- identifier
+    return (\e -> Loc (Member e name) (getLoc e <> rgn))
 
 
 index :: Parser (LExpr -> LExpr)

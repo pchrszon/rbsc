@@ -38,6 +38,7 @@ module Rbsc.TypeChecker.Internal
     ) where
 
 
+import Control.Applicative
 import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -89,8 +90,9 @@ runTypeChecker m types symTable =
 getIdentifierType :: Name -> Region -> TypeChecker SomeType
 getIdentifierType name rgn = do
     sc <- view scope
-    varTy <- view (symbolTable.at (ScopedName sc name))
-    case varTy of
+    varTyLocal  <- view (symbolTable.at (ScopedName sc name))
+    varTyGlobal <- view (symbolTable.at (ScopedName Global name))
+    case varTyLocal <|> varTyGlobal of
         Just ty -> return ty
         Nothing -> throwOne rgn UndefinedIdentifier
 
@@ -185,5 +187,5 @@ typeError expected actual =
 
 
 -- | Create a humen-readable textual representation of a 'Type'.
-renderType :: Type r -> Text
+renderType :: Type t -> Text
 renderType = Text.pack . show . pretty

@@ -32,6 +32,7 @@ spec = describe "identifierDefs" $ do
         identifierDefs
             [model|
                 natural type N;
+                natural type K;
 
                 const n : int = 5;
 
@@ -46,11 +47,17 @@ spec = describe "identifierDefs" $ do
                 impl N {
                     x : bool;
                 }
+
+                impl K {
+                    y : bool;
+                }
             |]
         `shouldBeLike`
         Right
             [ (ScopedName Global "N", DefComponentType
                 (TypeDefNatural (NaturalTypeDef (dummyLoc "N"))))
+            , (ScopedName Global "K", DefComponentType
+                (TypeDefNatural (NaturalTypeDef (dummyLoc "K"))))
             , (ScopedName Global "n", DefConstant
                 (Constant (dummyLoc "n") (Just TyInt) (dummyLoc (LitInt 5))))
             , (ScopedName Global "f", DefFunction
@@ -68,6 +75,8 @@ spec = describe "identifierDefs" $ do
                     Nothing))
             , (ScopedName (Local "N") "x", DefLocal "N"
                 (VarDecl (dummyLoc "x") VarTyBool Nothing))
+            , (ScopedName (Local "K") "y", DefLocal "K"
+                (VarDecl (dummyLoc "y") VarTyBool Nothing))
             ]
 
     it "detects duplicated identifiers" $

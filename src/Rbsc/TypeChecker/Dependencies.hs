@@ -172,8 +172,8 @@ insertComponentType t =
 
     getLocalVar :: IdentifierDef -> Maybe UVarDecl
     getLocalVar = \case
-        DefLocal _ decl -> Just decl
-        _               -> Nothing
+        DefLocal tyName' decl | tyName' == tyName -> Just decl
+        _ -> Nothing
 
 insertComponents :: ComponentDef -> Analyzer ()
 insertComponents c@(ComponentDef (Loc _ rgn) tyName mLen) =

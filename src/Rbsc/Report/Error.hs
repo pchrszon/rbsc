@@ -43,6 +43,8 @@ data ErrorDesc
 
     | TypeError [Text] !Text
     | NotComparable !Text
+    | UndefinedMember [TypeName] !Name
+    | ConflictingMemberTypes !Name !TypeName !Text !TypeName !Text
     | NotAnArray !Text
     | NotAFunction !Text
     | WrongNumberOfArguments !Int !Int
@@ -122,6 +124,29 @@ toReport (Error rgn desc) = case desc of
         errorReport "uncomparable values"
             [ errorPart rgn . Just $
                 "values of type " <> ty <> " are not comparable"
+            ]
+
+    UndefinedMember [tyName] name ->
+        errorReport "undefined local variable"
+            [ errorPart rgn . Just $
+                "local variable " <> name <> " is undefined for type " <>
+                getTypeName tyName
+            ]
+
+    UndefinedMember tyNames name ->
+        errorReport "undefined local variable"
+            [ errorPart rgn . Just $
+                "local variable " <> name <> " is undefined for the types " <>
+                list "and" (fmap getTypeName tyNames)
+            ]
+
+    ConflictingMemberTypes name firstTyName firstTy secondTyName secondTy ->
+        errorReport "conflicting variable types"
+            [ errorPart rgn . Just $
+                "local variable " <> name <> " of component type " <>
+                getTypeName firstTyName <> " has type " <> firstTy <>
+                ",\nbut " <> name <> " of component type " <>
+                getTypeName secondTyName <> " has type " <> secondTy
             ]
 
     NotAnArray actual ->

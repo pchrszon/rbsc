@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 
@@ -7,14 +8,10 @@ module Rbsc.TypeChecker.ExprSpec (spec) where
 
 import Control.Lens
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set        as Set
-
 import Test.Hspec
 
 
-import Rbsc.Data.ComponentType
-import Rbsc.Data.Scope
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
 
 import Rbsc.Parser.TH
@@ -27,6 +24,7 @@ import qualified Rbsc.Syntax.Expr.Untyped as U
 
 import Rbsc.TypeChecker.Expr
 import Rbsc.TypeChecker.Internal (extract, runTypeChecker)
+import Rbsc.TypeChecker.ModelInfo
 
 
 spec :: Spec
@@ -45,6 +43,16 @@ spec = describe "typeCheck" $ do
         typeCheck TyBool [expr| n > 5 |]
         `shouldSatisfy`
         has (_Left.traverse.errorDesc._NotComparable)
+
+    it "reports undefined local variables" $
+        typeCheck TyInt [expr| n.y |]
+        `shouldSatisfy`
+        has (_Left.traverse.errorDesc._UndefinedMember)
+
+    it "reports conflicting local variable types" $
+        typeCheck TyInt [expr| forall c: {N, K}. c.x > 0 |]
+        `shouldSatisfy`
+        has (_Left.traverse.errorDesc._ConflictingMemberTypes)
 
     it "reports indexing of non-array values" $
         typeCheck TyBool [expr| n[1] |]
@@ -74,16 +82,28 @@ spec = describe "typeCheck" $ do
 
 typeCheck :: Type t -> Loc U.Expr -> Either [Error] String
 typeCheck ty e = toEither $ do
-    te <- runTypeChecker (tcExpr e) types symbolTable
+    te <- runTypeChecker
+            (tcExpr e)
+            (view componentTypes modelInfo)
+            (view symbolTable modelInfo)
     show <$> extract ty (getLoc e) te
 
 
-types :: ComponentTypes
-types = Map.fromList
-    [ ("N", NaturalType)
-    ]
+modelInfo :: ModelInfo
+modelInfo =
+    let Right (info, _) = toEither . getModelInfo 10 $
+            [model|
+                natural type N;
+                natural type K;
 
-symbolTable :: SymbolTable
-symbolTable = Map.fromList
-    [ (ScopedName Global "n", SomeType (TyComponent (Set.singleton "N")))
-    ]
+                system { n: N, k: K }
+
+                impl N {
+                    x : bool;
+                }
+
+                impl K {
+                    x : [0..1];
+                }
+            |]
+    in info
