@@ -15,6 +15,7 @@ module Rbsc.TypeChecker.Internal
     , componentTypes
     , symbolTable
     , boundVars
+    , scope
 
     , runTypeChecker
 

@@ -45,6 +45,7 @@ data ErrorDesc
     | NotComparable !Text
     | UndefinedMember [TypeName] !Name
     | ConflictingMemberTypes !Name !TypeName !Text !TypeName !Text
+    | SelfOutsideImpl
     | NotAnArray !Text
     | NotAFunction !Text
     | WrongNumberOfArguments !Int !Int
@@ -147,6 +148,12 @@ toReport (Error rgn desc) = case desc of
                 getTypeName firstTyName <> " has type " <> firstTy <>
                 ",\nbut " <> name <> " of component type " <>
                 getTypeName secondTyName <> " has type " <> secondTy
+            ]
+
+    SelfOutsideImpl ->
+        errorReport "self is undefined in this context"
+            [ errorPart rgn . Just $
+                "the self keyword can only be used in impl or module blocks"
             ]
 
     NotAnArray actual ->

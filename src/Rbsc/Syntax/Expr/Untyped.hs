@@ -35,6 +35,7 @@ data Expr
     | LitDouble !Double
     | LitFunction !FunctionName
     | LitArray (NonEmpty LExpr)
+    | Self
     | Identifier !Name
     | Not LExpr
     | Negate LExpr
@@ -74,6 +75,7 @@ instance Plated LExpr where
         LitDouble d -> pure (LitDouble d)
         LitFunction name -> pure (LitFunction name)
         LitArray es -> LitArray <$> traverse f es
+        Self -> pure Self
         Identifier name -> pure (Identifier name)
         Not e' -> Not <$> f e'
         Negate e' -> Negate <$> f e'

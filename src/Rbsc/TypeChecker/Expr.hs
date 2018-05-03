@@ -61,6 +61,12 @@ tcExpr (Loc e rgn) = case e of
     U.LitArray es ->
         tcArray es
 
+    U.Self -> do
+        sc <- view scope
+        case sc of
+            Global       -> throwOne rgn SelfOutsideImpl
+            Local tyName -> T.Self `withType` TyComponent (Set.singleton tyName)
+
     U.Identifier name ->
         lookupBoundVar name >>= \case
             Just (i, SomeType ty) ->

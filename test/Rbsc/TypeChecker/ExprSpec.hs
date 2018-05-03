@@ -54,6 +54,11 @@ spec = describe "typeCheck" $ do
         `shouldSatisfy`
         has (_Left.traverse.errorDesc._ConflictingMemberTypes)
 
+    it "reports use of the self keyword in global scope" $
+        typeCheck TyInt [expr| self.x |]
+        `shouldSatisfy`
+        has (_Left.traverse.errorDesc._SelfOutsideImpl)
+
     it "reports indexing of non-array values" $
         typeCheck TyBool [expr| n[1] |]
         `shouldSatisfy`

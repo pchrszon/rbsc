@@ -74,6 +74,7 @@ atom = choice
     , ifThenElse
     , function
     , countFunction
+    , self
     , ident
     ]
 
@@ -161,6 +162,10 @@ countFunction = do
     e <- Count <$> componentTypeSet <*> (comma *> expr)
     end <- symbol ")"
     return (Loc e (start <> end))
+
+
+self :: Parser LExpr
+self = Loc Self <$> reserved "self"
 
 
 ident :: Parser LExpr

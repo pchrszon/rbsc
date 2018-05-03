@@ -37,6 +37,7 @@ reservedWords =
     , "system"
     , "impl"
     , "module"
+    , "self"
     , "min"
     , "minf"
     , "max"

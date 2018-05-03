@@ -47,6 +47,7 @@ data Expr t where
     Literal     :: Show t => t -> Expr t
     LitArray    :: Show t => NonEmpty (Expr t) -> Expr (Array t)
     LitFunction :: TypedFunction t -> Expr (Fn t)
+    Self        :: Expr Component
     Identifier  :: Name -> Type t -> Expr t
     Cast        :: Expr Integer -> Expr Double
     Not         :: Expr Bool -> Expr Bool
@@ -109,6 +110,7 @@ instantiate (Scoped body) (SomeExpr s ty) = go 0 body
         Literal x           -> Literal x
         LitArray es         -> LitArray (fmap (go i) es)
         LitFunction f       -> LitFunction f
+        Self                -> Self
         Identifier name ty' -> Identifier name ty'
         Cast e              -> Cast (go i e)
         Not e               -> Not (go i e)
@@ -164,6 +166,7 @@ descend f = \case
     Literal x          -> pure (Literal x)
     LitArray es        -> LitArray <$> traverse f es
     LitFunction g      -> pure (LitFunction g)
+    Self               -> pure Self
     Identifier name ty -> pure (Identifier name ty)
     Cast e             -> Cast <$> f e
     Not e              -> Not <$> f e
