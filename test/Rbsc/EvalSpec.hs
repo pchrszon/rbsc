@@ -7,10 +7,12 @@ module Rbsc.EvalSpec (spec) where
 
 
 import Control.Lens
+import Control.Monad.Reader
 
 import Test.Hspec
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
 
@@ -88,6 +90,21 @@ spec = do
             `shouldBe`
             Right 1
 
+        it "evaluates actions" $
+            evalAct [expr| a |]
+            `shouldBe`
+            Right (Action "a")
+
+        it "evaluates local actions" $
+            evalAct [expr| n.a |]
+            `shouldBe`
+            Right (LocalAction "n" "a")
+
+        it "evaluates indexed actions" $
+            evalAct [expr| n.a[2] |]
+            `shouldBe`
+            Right (IndexedAction (LocalAction "n" "a") 2)
+
         it "detects division by zero" $
             eval' TyDouble [expr| 1.0 / 0 |]
             `shouldSatisfy`
@@ -164,6 +181,17 @@ eval' ty e = do
             (view componentTypes modelInfo)
             (view symbolTable modelInfo) >>=
             extract ty (getLoc e))
+    over _Left (: []) (eval (view constants modelInfo) 10 (e' `withLocOf` e))
+
+
+evalAct :: Loc U.Expr -> Either [Error] Action
+evalAct e = do
+    e' <-
+        toEither (runTypeChecker
+            (local (inAction .~ True) (tcExpr e))
+            (view componentTypes modelInfo)
+            (view symbolTable modelInfo) >>=
+            extract TyAction (getLoc e))
     over _Left (: []) (eval (view constants modelInfo) 10 (e' `withLocOf` e))
 
 

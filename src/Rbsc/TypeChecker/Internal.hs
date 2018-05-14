@@ -16,6 +16,7 @@ module Rbsc.TypeChecker.Internal
     , symbolTable
     , boundVars
     , scope
+    , inAction
 
     , runTypeChecker
 
@@ -63,6 +64,8 @@ import Rbsc.Report.Result
 import           Rbsc.Syntax.Expr.Typed (SomeExpr (..))
 import qualified Rbsc.Syntax.Expr.Typed as T
 
+import Rbsc.Util (toMaybe)
+
 
 -- | The @TypeChecker@ monad.
 type TypeChecker a = ReaderT TcInfo (Result Errors) a
@@ -74,6 +77,7 @@ data TcInfo = TcInfo
     , _symbolTable    :: !SymbolTable       -- ^ the 'SymbolTable'
     , _boundVars      :: [(Name, SomeType)] -- ^ list of variables bound by a quantifier or lambda
     , _scope          :: !Scope             -- ^ the current scope
+    , _inAction       :: !Bool              -- ^ indicates whether the expression should return an action
     }
 
 makeLenses ''TcInfo
@@ -83,7 +87,7 @@ makeLenses ''TcInfo
 runTypeChecker ::
        TypeChecker a -> ComponentTypes -> SymbolTable -> Result' a
 runTypeChecker m types symTable =
-    runReaderT m (TcInfo types symTable [] Global)
+    runReaderT m (TcInfo types symTable [] Global False)
 
 
 -- | Looks up the type of a given identifier in the symbol table. If the
@@ -91,9 +95,15 @@ runTypeChecker m types symTable =
 getIdentifierType :: Name -> Region -> TypeChecker SomeType
 getIdentifierType name rgn = do
     sc <- view scope
+
     varTyLocal  <- view (symbolTable.at (ScopedName sc name))
     varTyGlobal <- view (symbolTable.at (ScopedName Global name))
-    case varTyLocal <|> varTyGlobal of
+
+    -- If we are inside action brackets, all undefined identifiers are
+    -- actions.
+    varTyAction <- toMaybe (SomeType TyAction) <$> view inAction
+
+    case varTyLocal <|> varTyGlobal <|> varTyAction of
         Just ty -> return ty
         Nothing -> throwOne rgn UndefinedIdentifier
 

@@ -31,6 +31,7 @@ import Data.Map.Strict    (Map)
 import Data.Set           (Set)
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.Array
 import Rbsc.Data.Component
 import Rbsc.Data.Function
@@ -50,6 +51,7 @@ data Expr t where
     Self        :: Expr Component
     Identifier  :: Name -> Type t -> Expr t
     Cast        :: Expr Integer -> Expr Double
+    ActionArray :: Expr Action -> Expr (Array Action)
     Not         :: Expr Bool -> Expr Bool
     Negate      :: Num t => Expr t -> Expr t
     ArithOp     :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
@@ -113,6 +115,7 @@ instantiate (Scoped body) (SomeExpr s ty) = go 0 body
         Self                -> Self
         Identifier name ty' -> Identifier name ty'
         Cast e              -> Cast (go i e)
+        ActionArray e       -> ActionArray (go i e)
         Not e               -> Not (go i e)
         Negate e            -> Negate (go i e)
         ArithOp aOp l r     -> ArithOp aOp (go i l) (go i r)
@@ -169,6 +172,7 @@ descend f = \case
     Self               -> pure Self
     Identifier name ty -> pure (Identifier name ty)
     Cast e             -> Cast <$> f e
+    ActionArray e      -> ActionArray <$> f e
     Not e              -> Not <$> f e
     Negate e           -> Negate <$> f e
     ArithOp aOp l r    -> ArithOp aOp <$> f l <*> f r

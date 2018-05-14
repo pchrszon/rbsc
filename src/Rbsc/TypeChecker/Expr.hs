@@ -12,6 +12,7 @@ module Rbsc.TypeChecker.Expr
     ) where
 
 
+import Control.Applicative
 import Control.Lens
 import Control.Monad.Reader
 
@@ -40,6 +41,8 @@ import qualified Rbsc.Syntax.Expr.Untyped   as U
 import           Rbsc.Syntax.Quantification
 
 import Rbsc.TypeChecker.Internal
+
+import Rbsc.Util (toMaybe)
 
 
 -- | Type check an untyped expression. If the expression is well-typed,
@@ -130,11 +133,14 @@ tcExpr (Loc e rgn) = case e of
 
     U.Index inner idx -> do
         SomeExpr inner' ty <- tcExpr inner
+        idx' <- idx `hasType` TyInt
         case ty of
             TyArray _ elemTy -> do
-                idx' <- idx `hasType` TyInt
                 Dict <- return (dictShow elemTy)
-                T.Index inner' (Loc idx' (getLoc idx)) `withType` elemTy
+                T.Index inner' (idx' `withLocOf` idx) `withType` elemTy
+            TyAction ->
+                T.Index (T.ActionArray inner') (idx' `withLocOf` idx) `withType`
+                TyAction
             _ -> throwOne (getLoc inner) (NotAnArray (renderType ty))
 
     U.Call f args -> do
@@ -276,13 +282,22 @@ tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
     throwOne rgn (NotAFunction (renderType ty))
 
 
+-- | @getLocalVarTypes name tySet@ returns the type of the member @name@
+-- for each type in @tySet@. If a type does not have a member of the given
+-- @name@, then @Nothing@ is returned for that type.
 getLocalVarTypes ::
        Name -> Set TypeName -> TypeChecker [(TypeName, Maybe SomeType)]
 getLocalVarTypes name tySet = for (Set.toList tySet) $ \tyName -> do
-    mTy <- view (symbolTable.at (ScopedName (Local tyName) name))
-    return (tyName, mTy)
+    mTy  <- view (symbolTable.at (ScopedName (Local tyName) name))
+
+    -- If we are inside action brackets, all undefined members are actions.
+    mAct <- toMaybe (SomeType TyAction) <$> view inAction
+
+    return (tyName, mTy <|> mAct)
 
 
+-- | @getMemberType@ checks whether all members are defined and their types
+-- agree. If so, the single common member type is returned.
 getMemberType ::
        Region -> Name -> [(TypeName, Maybe SomeType)] -> TypeChecker SomeType
 getMemberType rgn name memberTys

@@ -10,6 +10,6 @@ import Rbsc.Data.Name
 -- | An action used for synchronization.
 data Action
     = Action !Name
-    | LocalAction !Name Action
+    | LocalAction !Name !Name
     | IndexedAction Action !Int
-    deriving (Show)
+    deriving (Eq, Show)

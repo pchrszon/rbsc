@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms       #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE ViewPatterns          #-}
 
@@ -27,6 +28,7 @@ import           Data.Set           (Set)
 import qualified Data.Set           as Set
 
 
+import           Rbsc.Data.Action
 import           Rbsc.Data.Array     (Array)
 import qualified Rbsc.Data.Array     as Array
 import           Rbsc.Data.Component
@@ -138,6 +140,9 @@ reduce cs depth (Loc e rgn) = runReducer (go e) cs depth rgn
 -- sub-expressions are literals.
 toLiteral :: Expr t -> Reducer (Expr t)
 toLiteral e = case e of
+    Identifier name TyAction ->
+        return (Literal (Action name))
+
     Identifier name ty ->
         view (constants.at name) >>= \case
             Just (SomeExpr e' ty') -> case typeEq ty ty' of -- if the identifier is a constant ...
@@ -177,15 +182,21 @@ toLiteral e = case e of
     LogicOp lOp (Literal l) (Literal r) ->
         return (Literal (logicOp lOp l r))
 
-    Index (Literal arr) (Loc (Literal (fromIntegral -> i)) rgn) ->
+    Member (Literal comp) name TyAction ->
+        return (Literal (LocalAction (view compName comp) name))
+
+    Index (Literal arr) (LitIndex i rgn) ->
         case Array.index arr i of
             Just x  -> return (Literal x)
             Nothing -> throw rgn (IndexOutOfBounds (Array.bounds arr) i)
 
-    Index (LitArray arr) (Loc (Literal (fromIntegral -> i)) rgn)
+    Index (LitArray arr) (LitIndex i rgn)
         | i >= NonEmpty.length arr ->
             throw rgn (IndexOutOfBounds (0, NonEmpty.length arr - 1) i)
         | otherwise -> return (arr NonEmpty.!! i)
+
+    Index (ActionArray (Literal act)) (LitIndex i _) ->
+        return (Literal (IndexedAction act i))
 
     Apply (Literal (Fn f)) (Literal arg) ->
         return (Literal (f arg))
@@ -205,6 +216,10 @@ toLiteral e = case e of
         return (Literal (genericLength (filter (isElement comp) comps)))
 
     _ -> return e
+
+
+pattern LitIndex :: (Num a, Integral t, Show t) => a -> Region -> Loc (Expr t)
+pattern LitIndex i rgn <- Loc (Literal (fromIntegral -> i)) rgn
 
 
 -- | Transforms an array into an array value if the array only consists of

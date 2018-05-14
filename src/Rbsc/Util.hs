@@ -5,6 +5,7 @@
 module Rbsc.Util
     ( inverseLookup
     , appendIndex
+    , toMaybe
     , topoSort
     ) where
 
@@ -29,6 +30,12 @@ inverseLookup value = fmap fst . filter ((value ==) . snd) . Map.assocs
 -- | Append an 'Integer' to a 'Text'.
 appendIndex :: Text -> Integer -> Text
 appendIndex base i = base `append` pack (show i)
+
+
+-- | @toMaybe x b@ returns @Just x@ if @b@ is @True@, else @Nothing@.
+toMaybe :: a -> Bool -> Maybe a
+toMaybe x True  = Just x
+toMaybe _ False = Nothing
 
 
 -- | @topoSort nodes outgoingEdges@ sorts the @nodes@ topologically. If
