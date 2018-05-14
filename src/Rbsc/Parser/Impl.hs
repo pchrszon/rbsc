@@ -53,7 +53,7 @@ command = label "command" $ Command
     <*> (operator "->" *> updates)
 
 
-updates :: Parser (UBody (Update ComponentTypeSet))
+updates :: Parser (UBody (Update UQuantifiedType))
 updates =
     try singleUpdate <|>
     body update (`sepBy1` operator "+") <* semi

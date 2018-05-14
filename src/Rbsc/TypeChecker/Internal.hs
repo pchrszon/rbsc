@@ -90,8 +90,10 @@ runTypeChecker m types symTable =
     runReaderT m (TcInfo types symTable [] Global False)
 
 
--- | Looks up the type of a given identifier in the symbol table. If the
--- identifier is undefined, an error is thrown.
+-- | Looks up the type of a given identifier in the symbol table. First,
+-- the local scope is checked, then the global scope.  If the identifier is
+-- undefined and the identifier does not appear within an action expression, an
+-- error is thrown.
 getIdentifierType :: Name -> Region -> TypeChecker SomeType
 getIdentifierType name rgn = do
     sc <- view scope

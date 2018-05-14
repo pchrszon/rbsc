@@ -7,7 +7,6 @@ module Rbsc.EvalSpec (spec) where
 
 
 import Control.Lens
-import Control.Monad.Reader
 
 import Test.Hspec
 
@@ -188,7 +187,7 @@ evalAct :: Loc U.Expr -> Either [Error] Action
 evalAct e = do
     e' <-
         toEither (runTypeChecker
-            (local (inAction .~ True) (tcExpr e))
+            (tcAction e)
             (view componentTypes modelInfo)
             (view symbolTable modelInfo) >>=
             extract TyAction (getLoc e))

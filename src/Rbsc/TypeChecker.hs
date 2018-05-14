@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
 
@@ -14,7 +13,6 @@ import Control.Lens
 import           Rbsc.Data.ModelInfo (ModelInfo)
 import qualified Rbsc.Data.ModelInfo as MI
 import           Rbsc.Data.Type
-import           Rbsc.Data.Scope
 
 import Rbsc.Eval
 
@@ -27,6 +25,7 @@ import           Rbsc.Syntax.Untyped hiding (Model (..), Type (..))
 import qualified Rbsc.Syntax.Untyped as U
 
 import Rbsc.TypeChecker.Expr
+import Rbsc.TypeChecker.Impl
 import Rbsc.TypeChecker.Internal
 import Rbsc.TypeChecker.ModelInfo
 
@@ -43,19 +42,9 @@ typeCheck depth model = do
 
 tcModel :: U.Model -> [TConstant] -> TypeChecker T.Model
 tcModel U.Model{..} consts = T.Model consts
-    <$> traverse tcGlobal modelGlobals
+    <$> traverse tcVarDecl modelGlobals
     <*> traverse tcConstraint modelSystem
-
-
-tcGlobal :: UVarDecl -> TypeChecker (Name, Maybe LSomeExpr)
-tcGlobal (VarDecl (Loc name _) _ mInit) =
-    view (symbolTable.at (ScopedName Global name)) >>= \case
-        Just (SomeType ty) -> case mInit of
-            Just e -> do
-                e' <- e `hasType` ty
-                return (name, Just (SomeExpr e' ty `withLocOf` e))
-            Nothing -> return (name, Nothing)
-        Nothing -> error ("tcGlobal: " ++ show name ++ " not in symbol table")
+    <*> tcImpls modelImpls
 
 
 tcConstraint :: LExpr -> TypeChecker (Loc (T.Expr Bool))

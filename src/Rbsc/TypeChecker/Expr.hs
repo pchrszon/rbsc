@@ -7,7 +7,9 @@
 -- | Type checking of expressions.
 module Rbsc.TypeChecker.Expr
     ( tcExpr
+    , tcAction
     , tcFunctionDef
+    , tcQuantifiedType
     , hasType
     ) where
 
@@ -43,6 +45,13 @@ import           Rbsc.Syntax.Quantification
 import Rbsc.TypeChecker.Internal
 
 import Rbsc.Util (toMaybe)
+
+
+-- | Type check an action.
+tcAction :: Loc U.Expr -> TypeChecker SomeExpr
+tcAction e = local (inAction .~ True) $ do
+    e' <- e `hasType` TyAction
+    e' `withType` TyAction
 
 
 -- | Type check an untyped expression. If the expression is well-typed,
@@ -197,16 +206,13 @@ tcExpr (Loc e rgn) = case e of
         inner' <- inner `hasType` tyComponent
         T.Count tySet' inner' `withType` TyInt
 
-    U.Quantified q var (QdTypeComponent tySet) body -> do
-        compTys <- view componentTypes
-        tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
-        let varTy = SomeType (TyComponent tySet')
-        tcQuantifier q var varTy body (QdTypeComponent tySet')
-
-    U.Quantified q var (QdTypeInt (lower, upper)) body -> do
-        lower' <- lower `hasType` TyInt
-        upper' <- upper `hasType` TyInt
-        tcQuantifier q var (SomeType TyInt) body (QdTypeInt (lower', upper'))
+    U.Quantified q var qdTy body -> do
+        (qdTy', varTy) <- tcQuantifiedType qdTy
+        SomeQuantifier q' <- return (typedQuantifier q)
+        let qTy = quantifierType q'
+        body' <- local (over boundVars ((var, varTy) :)) $
+            body `hasType` qTy
+        T.Quantified q' qdTy' (T.Scoped body') `withType` qTy
 
 
 -- | @tcFunctionDef params tyRes body@ checks an untyped function
@@ -321,18 +327,17 @@ getMemberType rgn name memberTys
         (tyName, Nothing) -> (ds, tyName : us)
 
 
-tcQuantifier ::
-       U.Quantifier
-    -> Name
-    -> SomeType
-    -> Loc U.Expr
-    -> T.TQuantifiedType
-    -> TypeChecker SomeExpr
-tcQuantifier q varName varTy body qdTy = do
-    SomeQuantifier q' <- return (typedQuantifier q)
-    let qTy = quantifierType q'
-    body' <- local (over boundVars ((varName, varTy) :)) $ body `hasType` qTy
-    T.Quantified q' qdTy (T.Scoped body') `withType` qTy
+tcQuantifiedType ::
+       QuantifiedType ComponentTypeSet (Loc U.Expr)
+    -> TypeChecker (T.TQuantifiedType, SomeType)
+tcQuantifiedType (QdTypeComponent tySet) = do
+    compTys <- view componentTypes
+    tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
+    return (QdTypeComponent tySet', SomeType (TyComponent tySet'))
+tcQuantifiedType (QdTypeInt (lower, upper)) = do
+    lower' <- lower `hasType` TyInt
+    upper' <- upper `hasType` TyInt
+    return (QdTypeInt (lower', upper'), SomeType TyInt)
 
 
 data SomeQuantifier where

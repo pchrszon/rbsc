@@ -30,6 +30,7 @@ module Rbsc.Syntax.Untyped
     , UBody
     , UBodyItem
     , ULoop
+    , UQuantifiedType
 
       -- * Types
     , UType
@@ -82,18 +83,20 @@ type UParameter = Parameter LExpr
 type UVarDecl = VarDecl LExpr
 
 
-type UImplementation = Implementation ComponentTypeSet LExpr
-type UImplBody       = ImplBody ComponentTypeSet LExpr
-type UModule         = Module ComponentTypeSet LExpr
-type UModuleBody     = ModuleBody ComponentTypeSet LExpr
+type UImplementation = Implementation [VarDecl LExpr] UQuantifiedType LExpr
+type UImplBody       = ImplBody [VarDecl LExpr] UQuantifiedType LExpr
+type UModule         = Module [VarDecl LExpr] UQuantifiedType LExpr
+type UModuleBody     = ModuleBody [VarDecl LExpr] UQuantifiedType LExpr
 
-type UCommand    = Command ComponentTypeSet LExpr
-type UUpdate     = Update ComponentTypeSet LExpr
+type UCommand    = Command UQuantifiedType LExpr
+type UUpdate     = Update UQuantifiedType LExpr
 type UAssignment = Assignment LExpr
 
-type UBody a     = Body a ComponentTypeSet LExpr
-type UBodyItem a = BodyItem a ComponentTypeSet LExpr
-type ULoop a     = Loop a ComponentTypeSet LExpr
+type UBody a     = Body a UQuantifiedType LExpr
+type UBodyItem a = BodyItem a UQuantifiedType LExpr
+type ULoop a     = Loop a UQuantifiedType LExpr
+
+type UQuantifiedType = QuantifiedType ComponentTypeSet LExpr
 
 
 type UType    = Type LExpr
