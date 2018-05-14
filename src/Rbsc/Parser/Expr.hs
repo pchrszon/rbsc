@@ -119,10 +119,10 @@ litNumber = do
 
 litArray :: Parser LExpr
 litArray = do
-    start <- symbol "{"
+    start <- symbol "["
     e  <- expr
     es <- many (comma *> expr)
-    end <- symbol "}"
+    end <- symbol "]"
     return (Loc (LitArray (e :| es)) (start <> end))
 
 

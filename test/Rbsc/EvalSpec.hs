@@ -111,7 +111,7 @@ spec = do
             has (_Left.traverse.errorDesc._DivisionByZero)
 
         it "detects out-of-bound array accesses" $
-            eval' TyInt [expr| {0, 1, 2}[3] |]
+            eval' TyInt [expr| [0, 1, 2][3] |]
             `shouldSatisfy`
             has (_Left.traverse.errorDesc._IndexOutOfBounds)
 
@@ -132,7 +132,7 @@ spec = do
             Right "RelOp Lt (ArithOp Add (Identifier \"y\" TyInt) (Literal 1)) (Literal 2)"
 
         it "resolves array accesses for non-constant arrays" $
-            reduce' TyInt [expr| {y, z}[1] |]
+            reduce' TyInt [expr| [y, z][1] |]
             `shouldBe`
             Right "Identifier \"z\" TyInt"
 
