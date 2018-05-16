@@ -23,8 +23,8 @@ module Rbsc.Syntax.Typed
     , TCommand
     , TUpdate
     , TAssignment
-    , TBody
-    , TBodyItem
+    , TElem
+    , TElemMulti
     , TLoop
 
       -- * Types
@@ -32,6 +32,7 @@ module Rbsc.Syntax.Typed
     , TVarType
 
       -- * Initial values
+    , TInits
     , TInit
 
       -- * Expressions
@@ -61,9 +62,9 @@ import Rbsc.Syntax.VarType        as Syntax
 -- | Typed abstract syntax of a model.
 data Model = Model
     { modelConstants :: [TConstant]
-    , modelGlobals   :: [TInit]
+    , modelGlobals   :: TInits
     , modelSystem    :: [Loc (Expr Bool)]
-    , modelImpls     :: Map TypeName [TModuleBody]
+    , modelImpls     :: Map TypeName [TModuleBody ElemMulti]
     }
 
 
@@ -77,25 +78,25 @@ type TParameter = Parameter LSomeExpr
 type TVarDecl = VarDecl LSomeExpr
 
 
-type TImplementation = Implementation [TInit] TQuantifiedType LSomeExpr
-type TImplBody       = ImplBody [TInit] TQuantifiedType LSomeExpr
-type TModule         = Module [TInit] TQuantifiedType LSomeExpr
-type TModuleBody     = ModuleBody [TInit] TQuantifiedType LSomeExpr
+type TImplementation  = Implementation ElemMulti TInits TQuantifiedType LSomeExpr
+type TImplBody        = ImplBody ElemMulti TInits TQuantifiedType LSomeExpr
+type TModule          = Module ElemMulti TInits TQuantifiedType LSomeExpr
+type TModuleBody elem = ModuleBody elem TInits TQuantifiedType LSomeExpr
 
-type TCommand    = Command TQuantifiedType LSomeExpr
-type TUpdate     = Update TQuantifiedType LSomeExpr
-type TAssignment = Assignment LSomeExpr
+type TInits = [TInit]
+type TInit  = (Name, Maybe LSomeExpr)
 
-type TBody a     = Body a TQuantifiedType LSomeExpr
-type TBodyItem a = BodyItem a TQuantifiedType LSomeExpr
-type TLoop a     = Loop a TQuantifiedType LSomeExpr
+type TCommand elem = Command elem TQuantifiedType LSomeExpr
+type TUpdate elem  = Update elem TQuantifiedType LSomeExpr
+type TAssignment   = Assignment LSomeExpr
+
+type TElem      = Elem TQuantifiedType LSomeExpr
+type TElemMulti = ElemMulti TQuantifiedType LSomeExpr
+type TLoop      = Loop TQuantifiedType LSomeExpr
 
 
 type TType    = Type LSomeExpr
 type TVarType = VarType LSomeExpr
-
-
-type TInit = (Name, Maybe LSomeExpr)
 
 
 type LSomeExpr = Loc SomeExpr

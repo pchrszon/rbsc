@@ -1,3 +1,7 @@
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances  #-}
+
+
 -- | Abstract syntax of component implementations.
 module Rbsc.Syntax.Impl
     ( Implementation(..)
@@ -10,8 +14,8 @@ module Rbsc.Syntax.Impl
     , Update(..)
     , Assignment(..)
 
-    , Body(..)
-    , BodyItem(..)
+    , Elem(..)
+    , ElemMulti(..)
     , Loop(..)
     ) where
 
@@ -20,74 +24,111 @@ import Data.List.NonEmpty (NonEmpty)
 
 
 import Rbsc.Data.Name
+
 import Rbsc.Report.Region
 
 
 -- | An implementation of a component.
-data Implementation vars ty expr = Implementation
+data Implementation elem vars ty expr = Implementation
     { implTypeName :: Loc TypeName
-    , implBody     :: ImplBody vars ty expr
-    } deriving (Show)
+    , implBody     :: ImplBody elem vars ty expr
+    }
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (Implementation ElemMulti vars ty expr)
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (Implementation Elem vars ty expr)
 
 
 -- | An 'Implementation' can either reference a list of modules or directly
 -- provide the implementation.
-data ImplBody vars ty expr
-    = ImplSingle (ModuleBody vars ty expr)
+data ImplBody elem vars ty expr
+    = ImplSingle (ModuleBody elem vars ty expr)
     | ImplModules (NonEmpty (Loc Name))
-    deriving (Show)
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (ImplBody ElemMulti vars ty expr)
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (ImplBody Elem vars ty expr)
 
 
 -- | A module describing the operational behavior of a component.
-data Module vars ty expr = Module
+data Module elem vars ty expr = Module
     { modName :: Loc Name
-    , modBody :: ModuleBody vars ty expr
-    } deriving (Show)
+    , modBody :: ModuleBody elem vars ty expr
+    }
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (Module ElemMulti vars ty expr)
+
+deriving instance
+         (Show vars, Show ty, Show expr) => Show (Module Elem vars ty expr)
 
 
 -- | The body of a module.
-data ModuleBody vars ty expr = ModuleBody
+data ModuleBody elem vars ty expr = ModuleBody
     { bodyVars     :: vars
-    , bodyCommands :: Body (Command ty) ty expr
-    } deriving (Show)
+    , bodyCommands :: [elem ty expr (Command elem ty expr)]
+    }
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (ModuleBody ElemMulti vars ty expr)
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (ModuleBody Elem vars ty expr)
 
 
 -- | A guarded command.
-data Command ty expr = Command
+data Command elem ty expr = Command
     { cmdAction  :: Maybe expr
     , cmdGuard   :: expr
-    , cmdUpdates :: Body (Update ty) ty expr
-    } deriving (Show)
+    , cmdUpdates :: [elem ty expr (Update elem ty expr)]
+    }
+
+deriving instance (Show ty, Show expr) => Show (Command ElemMulti ty expr)
+deriving instance (Show ty, Show expr) => Show (Command Elem ty expr)
 
 
 -- | A stochastic update.
-data Update ty expr = Update
+data Update elem ty expr = Update
     { updProb        :: Maybe expr
-    , updAssignments :: Body Assignment ty expr
-    } deriving (Show)
+    , updAssignments :: [elem ty expr (Assignment expr)]
+    }
+
+deriving instance (Show ty, Show expr) => Show (Update ElemMulti ty expr)
+deriving instance (Show ty, Show expr) => Show (Update Elem ty expr)
 
 
 -- | An assignment to a (possibly indexed) variable.
 data Assignment expr = Assignment (Loc Name) [expr] expr deriving (Show)
 
 
--- | A @Body@ consists of a list of @BodyItem@s.
-newtype Body a ty expr = Body [BodyItem a ty expr] deriving (Show)
+-- | An @Elem ty expr a@ is a single element of type @a@.
+newtype Elem ty expr a = Elem a deriving (Show)
 
 
--- | A @BodyItem a ty expr@ is either a single item of type @a@,
+-- | A @ElemMulti ty expr a@ is either a single element of type @a@,
 -- a @forall@ block or an @if@ block.
-data BodyItem a ty expr
-    = ItemSingle (a expr)
-    | ItemLoop (Loop (Body a ty) ty expr)
-    | ItemIf expr (Body a ty expr)
+data ElemMulti ty expr a
+    = ElemSingle a
+    | ElemLoop (Loop ty expr a)
+    | ElemIf expr [ElemMulti ty expr a]
     deriving (Show)
 
 
 -- | @Loop a ty expr@ represents a @forall@ block surrounding a body of type
 -- @a@. @ty@ is the type representing component types.
-data Loop a ty expr = Loop
+data Loop ty expr a = Loop
     { loopVar  :: Loc Name
     , loopType :: ty
-    , loopBody :: a expr
+    , loopBody :: [ElemMulti ty expr a]
     } deriving (Show)

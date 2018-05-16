@@ -32,29 +32,29 @@ import Rbsc.TypeChecker.Internal
 
 
 tcImpls ::
-       Map TypeName [UModuleBody] -> TypeChecker (Map TypeName [TModuleBody])
+       Map TypeName [UModuleBody] -> TypeChecker (Map TypeName [TModuleBody ElemMulti])
 tcImpls = Map.traverseWithKey tc
   where
     tc tyName bs = localScope tyName (traverse tcModuleBody bs)
 
 
-tcModuleBody :: UModuleBody -> TypeChecker TModuleBody
+tcModuleBody :: UModuleBody -> TypeChecker (TModuleBody ElemMulti)
 tcModuleBody ModuleBody{..} = ModuleBody
     <$> traverse tcVarDecl bodyVars
-    <*> tcBody tcCommand bodyCommands
+    <*> tcElemMultis tcCommand bodyCommands
 
 
-tcCommand :: UCommand -> TypeChecker TCommand
+tcCommand :: UCommand -> TypeChecker (TCommand ElemMulti)
 tcCommand Command{..} = Command
     <$> traverse (\act -> (`withLocOf` act) <$> tcAction act) cmdAction
     <*> someExpr cmdGuard TyBool
-    <*> tcBody tcUpdate cmdUpdates
+    <*> tcElemMultis tcUpdate cmdUpdates
 
 
-tcUpdate :: UUpdate -> TypeChecker TUpdate
+tcUpdate :: UUpdate -> TypeChecker (TUpdate ElemMulti)
 tcUpdate Update {..} = Update
     <$> traverse (`someExpr` TyDouble) updProb
-    <*> tcBody tcAssignment updAssignments
+    <*> tcElemMultis tcAssignment updAssignments
 
 
 tcAssignment :: UAssignment -> TypeChecker TAssignment
@@ -75,31 +75,25 @@ tcIndices rgn (i:is) (SomeType (TyArray _ elemTy)) = do
 tcIndices rgn (_:_) (SomeType ty) = throwOne rgn (NotAnArray (renderType ty))
 
 
-tcBody ::
-       (a LExpr -> TypeChecker (b LSomeExpr))
-    -> UBody a
-    -> TypeChecker (TBody b)
-tcBody tc (Body items) = Body <$> traverse (tcBodyItem tc) items
+tcElemMultis ::
+       (a -> TypeChecker b)
+    -> [UElemMulti a]
+    -> TypeChecker [TElemMulti b]
+tcElemMultis tc = traverse (tcElemMulti tc)
 
 
-tcBodyItem ::
-       (a LExpr -> TypeChecker (b LSomeExpr))
-    -> UBodyItem a
-    -> TypeChecker (TBodyItem b)
-tcBodyItem tc = \case
-    ItemSingle x  -> ItemSingle <$> tc x
-    ItemLoop l    -> ItemLoop <$> tcLoop (tcBody tc) l
-    ItemIf e body -> ItemIf <$> someExpr e TyBool <*> tcBody tc body
-
-
-tcLoop ::
-       (a LExpr -> TypeChecker (b LSomeExpr))
-    -> ULoop a
-    -> TypeChecker (TLoop b)
-tcLoop tc (Loop (Loc var rgn) qdTy body) = do
-    (qdTy', varTy) <- tcQuantifiedType qdTy
-    body' <- local (over boundVars ((var, varTy) :)) $ tc body
-    return (Loop (Loc var rgn) qdTy' body')
+tcElemMulti ::
+       (a -> TypeChecker b) -> UElemMulti a -> TypeChecker (TElemMulti b)
+tcElemMulti tc =
+    \case
+        ElemSingle x  -> ElemSingle <$> tc x
+        ElemLoop l    -> ElemLoop <$> tcLoop l
+        ElemIf e body -> ElemIf <$> someExpr e TyBool <*> tcElemMultis tc body
+  where
+    tcLoop (Loop (Loc var rgn) qdTy body) = do
+        (qdTy', varTy) <- tcQuantifiedType qdTy
+        body' <- local (over boundVars ((var, varTy) :)) $ tcElemMultis tc body
+        return (Loop (Loc var rgn) qdTy' body')
 
 
 tcVarDecl :: UVarDecl -> TypeChecker TInit

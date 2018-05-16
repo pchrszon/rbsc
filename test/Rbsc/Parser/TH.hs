@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
@@ -107,17 +108,17 @@ deriving instance Data expr => Data (MultiRole expr)
 deriving instance Data expr => Data (Syntax.Type expr)
 deriving instance Data expr => Data (VarType expr)
 
-deriving instance (Data expr, Data ty, Data vars) => Data (Implementation vars ty expr)
-deriving instance (Data expr, Data ty, Data vars) => Data (ImplBody vars ty expr)
-deriving instance (Data expr, Data ty, Data vars) => Data (Module vars ty expr)
-deriving instance (Data expr, Data ty, Data vars) => Data (ModuleBody vars ty expr)
-deriving instance (Data expr, Data ty) => Data (Command ty expr)
-deriving instance (Data expr, Data ty) => Data (Update ty expr)
+deriving instance (Data expr, Data ty, Data vars) => Data (Implementation ElemMulti vars ty expr)
+deriving instance (Data expr, Data ty, Data vars) => Data (ImplBody ElemMulti vars ty expr)
+deriving instance (Data expr, Data ty, Data vars) => Data (Module ElemMulti vars ty expr)
+deriving instance (Data expr, Data ty, Data vars) => Data (ModuleBody ElemMulti vars ty expr)
+deriving instance (Data expr, Data ty) => Data (Command ElemMulti ty expr)
+deriving instance (Data expr, Data ty) => Data (Update ElemMulti ty expr)
 deriving instance Data expr => Data (Assignment expr)
 
-deriving instance (Typeable a, Data expr, Data ty, Data (a expr)) => Data (Body a ty expr)
-deriving instance (Typeable a, Data expr, Data ty, Data (a expr)) => Data (BodyItem a ty expr)
-deriving instance (Typeable a, Data expr, Data ty, Data (a expr)) => Data (Loop a ty expr)
+deriving instance (Data ty, Data expr, Data a) => Data (Elem ty expr a)
+deriving instance (Data ty, Data expr, Data a) => Data (ElemMulti ty expr a)
+deriving instance (Data ty, Data expr, Data a) => Data (Loop ty expr a)
 
 deriving instance Data Expr
 deriving instance Data FunctionName

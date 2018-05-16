@@ -43,7 +43,7 @@ modul = Module <$> (reserved "module" *> identifier) <*> braces moduleBody
 
 
 moduleBody :: Parser UModuleBody
-moduleBody = ModuleBody <$> many (varDecl <* semi) <*> body command many
+moduleBody = ModuleBody <$> many (varDecl <* semi) <*> elemMultis command many
 
 
 command :: Parser UCommand
@@ -53,24 +53,24 @@ command = label "command" $ Command
     <*> (operator "->" *> updates)
 
 
-updates :: Parser (UBody (Update UQuantifiedType))
+updates :: Parser [UElemMulti UUpdate]
 updates =
     try singleUpdate <|>
-    body update (`sepBy1` operator "+") <* semi
+    elemMultis update (`sepBy1` operator "+") <* semi
   where
     singleUpdate = do
         as <- assignments <* semi
-        return (Body [ItemSingle (Update Nothing as)])
+        return [ElemSingle (Update Nothing as)]
 
 
 update :: Parser UUpdate
 update = Update <$> (Just <$> (expr <* operator ":")) <*> assignments
 
 
-assignments :: Parser (UBody Assignment)
+assignments :: Parser [UElemMulti UAssignment]
 assignments =
-    Body [] <$ reserved "true" <|>
-    body assignment (`sepBy1` operator "&")
+    [] <$ reserved "true" <|>
+    elemMultis assignment (`sepBy1` operator "&")
 
 
 assignment :: Parser UAssignment
@@ -80,24 +80,23 @@ assignment = label "assignment" . parens $ Assignment
     <*> (symbol "'" *> equals *> expr)
 
 
--- | Parser for a 'Body'. @body p c@ parses items using the parser @p@.
--- Items are combined into a list using the parser combinator @c@.
-body ::
+-- | Parser for a list of 'ElemMulti'. @elemMultis p c@ parses elements using
+-- the parser @p@. Elements are combined into a list using the parser
+-- combinator @c@.
+elemMultis ::
        Monad m
-    => ParserT m (a (Loc Expr))
-    -> (ParserT m (UBodyItem a) -> ParserT m [UBodyItem a])
-    -> ParserT m (UBody a)
-body p c = Body <$> c bodyItem
+    => ParserT m a
+    -> (ParserT m (UElemMulti a) -> ParserT m [UElemMulti a])
+    -> ParserT m [UElemMulti a]
+elemMultis p c = c elemMulti
   where
-    bodyItem = choice
-        [ ItemLoop   <$> loop (body p c)
-        , ItemIf     <$> (reserved "if" *> expr) <*> braces (body p c)
-        , ItemSingle <$> p
+    elemMulti = choice
+        [ ElemLoop   <$> loop
+        , ElemIf     <$> (reserved "if" *> expr) <*> braces (elemMultis p c)
+        , ElemSingle <$> p
         ]
 
-
-loop :: Monad m => ParserT m (a LExpr) -> ParserT m (ULoop a)
-loop p = label "forall" $ Loop
-    <$> (reserved "forall" *> identifier)
-    <*> option (QdTypeComponent AllComponents) (colon *> quantifiedType)
-    <*> braces p
+    loop = label "forall" $ Loop
+        <$> (reserved "forall" *> identifier)
+        <*> option (QdTypeComponent AllComponents) (colon *> quantifiedType)
+        <*> braces (elemMultis p c)
