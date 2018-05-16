@@ -1,5 +1,7 @@
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE LambdaCase         #-}
+{-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 
 -- | Abstract syntax of component implementations.
@@ -26,6 +28,8 @@ import Data.List.NonEmpty (NonEmpty)
 import Rbsc.Data.Name
 
 import Rbsc.Report.Region
+
+import Rbsc.Syntax.Expr.Typed
 
 
 -- | An implementation of a component.
@@ -97,6 +101,19 @@ data Command elem ty expr = Command
 deriving instance (Show ty, Show expr) => Show (Command ElemMulti ty expr)
 deriving instance (Show ty, Show expr) => Show (Command Elem ty expr)
 
+instance (HasExprs ty, HasExprs expr) =>
+         HasExprs (Command ElemMulti ty expr) where
+    exprs f Command {..} = Command
+        <$> traverse (exprs f) cmdAction
+        <*> exprs f cmdGuard
+        <*> traverse (exprs f) cmdUpdates
+
+instance HasExprs expr => HasExprs (Command Elem ty expr) where
+    exprs f Command {..} = Command
+        <$> traverse (exprs f) cmdAction
+        <*> exprs f cmdGuard
+        <*> traverse (exprs f) cmdUpdates
+
 
 -- | A stochastic update.
 data Update elem ty expr = Update
@@ -107,13 +124,31 @@ data Update elem ty expr = Update
 deriving instance (Show ty, Show expr) => Show (Update ElemMulti ty expr)
 deriving instance (Show ty, Show expr) => Show (Update Elem ty expr)
 
+instance (HasExprs ty, HasExprs expr) =>
+         HasExprs (Update ElemMulti ty expr) where
+    exprs f Update {..} =
+        Update <$> traverse (exprs f) updProb <*>
+        traverse (exprs f) updAssignments
+
+instance HasExprs expr => HasExprs (Update Elem ty expr) where
+    exprs f Update {..} =
+        Update <$> traverse (exprs f) updProb <*>
+        traverse (exprs f) updAssignments
+
 
 -- | An assignment to a (possibly indexed) variable.
 data Assignment expr = Assignment (Loc Name) [expr] expr deriving (Show)
 
+instance HasExprs expr => HasExprs (Assignment expr) where
+    exprs f (Assignment name idxs e) =
+        Assignment name <$> traverse (exprs f) idxs <*> exprs f e
+
 
 -- | An @Elem ty expr a@ is a single element of type @a@.
 newtype Elem ty expr a = Elem a deriving (Show)
+
+instance HasExprs a => HasExprs (Elem ty expr a) where
+    exprs f (Elem x) = Elem <$> exprs f x
 
 
 -- | A @ElemMulti ty expr a@ is either a single element of type @a@,
@@ -124,6 +159,12 @@ data ElemMulti ty expr a
     | ElemIf expr [ElemMulti ty expr a]
     deriving (Show)
 
+instance (HasExprs ty, HasExprs expr, HasExprs a) => HasExprs (ElemMulti ty expr a) where
+    exprs f = \case
+        ElemSingle x   -> ElemSingle <$> exprs f x
+        ElemLoop l     -> ElemLoop <$> exprs f l
+        ElemIf e elems -> ElemIf <$> exprs f e <*> traverse (exprs f) elems
+
 
 -- | @Loop a ty expr@ represents a @forall@ block surrounding a body of type
 -- @a@. @ty@ is the type representing component types.
@@ -132,3 +173,8 @@ data Loop ty expr a = Loop
     , loopType :: ty
     , loopBody :: [ElemMulti ty expr a]
     } deriving (Show)
+
+instance (HasExprs ty, HasExprs expr, HasExprs a) =>
+         HasExprs (Loop ty expr a) where
+    exprs f Loop {..} =
+        Loop loopVar <$> exprs f loopType <*> traverse (exprs f) loopBody

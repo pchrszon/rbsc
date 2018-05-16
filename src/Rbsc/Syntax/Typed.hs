@@ -65,7 +65,7 @@ data Model = Model
     , modelGlobals   :: TInits
     , modelSystem    :: [Loc (Expr Bool)]
     , modelImpls     :: Map TypeName [TModuleBody ElemMulti]
-    }
+    } deriving (Show)
 
 
 type TConstant = Constant LSomeExpr

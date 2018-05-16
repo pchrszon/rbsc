@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
@@ -7,7 +8,9 @@
 
 -- | Typed expressions.
 module Rbsc.Syntax.Expr.Typed
-    ( Expr(..)
+    ( HasExprs(..)
+
+    , Expr(..)
     , Scoped(..)
     , Quantifier(..)
     , TQuantifiedType
@@ -18,6 +21,7 @@ module Rbsc.Syntax.Expr.Typed
 
     , instantiate
 
+    , transformExprs
     , transform
     , transformM
     , descend
@@ -41,6 +45,16 @@ import Rbsc.Report.Region
 
 import Rbsc.Syntax.Operators
 import Rbsc.Syntax.Quantification
+
+
+-- | Any syntax tree node @n@ that 'HasExprs' provides a traversal of all
+-- 'Expr's contained in that node and its subtree.
+class HasExprs a where
+    exprs :: Applicative f => (forall t. Expr t -> f (Expr t)) -> a -> f a
+
+
+instance HasExprs a => HasExprs (Loc a) where
+    exprs f (Loc e rgn) = Loc <$> exprs f e <*> pure rgn
 
 
 -- | Typed abstract syntax of expressions.
@@ -73,6 +87,9 @@ data Expr t where
 
 deriving instance Show (Expr t)
 
+instance HasExprs (Expr t) where
+    exprs f = f
+
 
 data Quantifier t where
     Forall  :: Quantifier Bool
@@ -84,6 +101,11 @@ deriving instance Show (Quantifier t)
 
 
 type TQuantifiedType = QuantifiedType (Set TypeName) (Expr Integer)
+
+instance HasExprs (QuantifiedType ty (Expr Integer)) where
+    exprs f = \case
+        QdTypeComponent c        -> pure (QdTypeComponent c)
+        QdTypeInt (lower, upper) -> QdTypeInt <$> ((,) <$> f lower <*> f upper)
 
 
 -- | A scoped expression contains a bound variable.
@@ -97,6 +119,9 @@ data SomeExpr where
     SomeExpr :: Expr t -> Type t -> SomeExpr
 
 deriving instance Show SomeExpr
+
+instance HasExprs SomeExpr where
+    exprs f (SomeExpr e ty) = SomeExpr <$> f e <*> pure ty
 
 
 -- | The table of constants.
@@ -143,6 +168,11 @@ instantiate (Scoped body) (SomeExpr s ty) = go 0 body
     goQdType i = \case
         QdTypeComponent tySet    -> QdTypeComponent tySet
         QdTypeInt (lower, upper) -> QdTypeInt (go i lower, go i upper)
+
+
+-- | Transform every expression in a syntax tree node.
+transformExprs :: HasExprs a => (forall t. Expr t -> Expr t) -> a -> a
+transformExprs f = runIdentity . exprs (Identity . transform f)
 
 
 -- | Transform every element in an expression tree, in a bottom-up manner.
