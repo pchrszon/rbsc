@@ -12,6 +12,7 @@ module Rbsc.Eval
     ( RecursionDepth
     , eval
     , reduce
+    , componentConsts
     ) where
 
 
@@ -120,17 +121,18 @@ reduce cs depth (Loc e rgn) = runReducer (go e) cs depth rgn
         Lambda _ _ -> return e'
 
         Quantified q (QdTypeComponent tySet) sc -> do
-            comps <- components tySet <$> view constants
+            comps <- componentConsts tySet <$> view constants
             go (quantifier q (fmap (instantiate sc) comps))
 
-        Quantified q (QdTypeInt (lower, upper)) sc -> do
+        Quantified q (QdTypeInt (Loc lower rgnL, Loc upper rgnU)) sc -> do
             lower' <- go lower
             upper' <- go upper
             case (lower', upper') of
                 (Literal l, Literal u) -> do
                     let es = fmap (\i -> SomeExpr (Literal i) TyInt) [l .. u]
                     go (quantifier q (fmap (instantiate sc) es))
-                _ -> return (Quantified q (QdTypeInt (lower', upper')) sc)
+                _ -> return (Quantified q
+                        (QdTypeInt (Loc lower' rgnL, Loc upper' rgnU)) sc)
 
         _ -> descend go e' >>= toLiteral
 
@@ -212,7 +214,7 @@ toLiteral e = case e of
             (view compContainedIn role == Just (view compName compartment)))
 
     Count tySet (Literal comp) -> do
-        comps <- components tySet <$> view constants
+        comps <- componentConsts tySet <$> view constants
         return (Literal (genericLength (filter (isElement comp) comps)))
 
     _ -> return e
@@ -258,8 +260,8 @@ quantifier q = foldr qOp neutralElement
 
 -- | Get a list of all constants that have a component type contained in
 -- the given set.
-components :: Set TypeName -> Constants -> [SomeExpr]
-components tySet = mapMaybe f . Map.elems
+componentConsts :: Set TypeName -> Constants -> [SomeExpr]
+componentConsts tySet = mapMaybe f . Map.elems
   where
     f = \case
         e@(SomeExpr _ (TyComponent ty))

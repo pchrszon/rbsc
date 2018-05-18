@@ -12,6 +12,8 @@ module Rbsc.Data.System
     , instancesOfType
     , boundRoles
     , containedRoles
+
+    , toComponents
     ) where
 
 
@@ -19,6 +21,8 @@ import Control.Lens
 import Data.Map.Strict           (Map, assocs)
 import Data.Text.Prettyprint.Doc
 
+
+import Rbsc.Data.Component
 import Rbsc.Data.Name
 
 import Rbsc.Util
@@ -71,3 +75,15 @@ boundRoles name = inverseLookup name . view boundTo
 -- | Get all roles contained in a given compartment.
 containedRoles :: Name -> System -> [RoleName]
 containedRoles name = inverseLookup name . view containedIn
+
+
+-- | Get all 'Component's that comprise the 'System'.
+toComponents :: System -> [Component]
+toComponents sys = fmap toComponent (view (instances.to assocs) sys)
+  where
+    toComponent (name, tyName) = Component
+        { _compName        = name
+        , _compTypeName    = tyName
+        , _compBoundTo     = view (boundTo.at name) sys
+        , _compContainedIn = view (containedIn.at name) sys
+        }

@@ -337,7 +337,8 @@ tcQuantifiedType (QdTypeComponent tySet) = do
 tcQuantifiedType (QdTypeInt (lower, upper)) = do
     lower' <- lower `hasType` TyInt
     upper' <- upper `hasType` TyInt
-    return (QdTypeInt (lower', upper'), SomeType TyInt)
+    let qdTy = QdTypeInt (lower' `withLocOf` lower, upper' `withLocOf` upper)
+    return (qdTy, SomeType TyInt)
 
 
 data SomeQuantifier where

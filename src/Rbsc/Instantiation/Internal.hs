@@ -197,8 +197,8 @@ updateModelInfo :: ModelInfo -> [ArrayInfo] -> System -> (System, ModelInfo)
 updateModelInfo info arrayInfos sys =
     (sys, over constants (Map.union consts) info)
   where
-    consts = Map.union arrays componentConsts
-    componentConsts = generateConstants sys instances'
+    consts = Map.union arrays components
+    components = generateConstants sys instances'
     (arrays, instances') = generateArrays sys arrayInfos
 
 

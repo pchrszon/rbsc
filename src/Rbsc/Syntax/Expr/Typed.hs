@@ -20,10 +20,12 @@ module Rbsc.Syntax.Expr.Typed
     , Constants
 
     , instantiate
+    , instantiateExprs
 
-    , transformExprs
     , transform
     , transformM
+    , transformExprs
+
     , descend
     ) where
 
@@ -100,12 +102,13 @@ data Quantifier t where
 deriving instance Show (Quantifier t)
 
 
-type TQuantifiedType = QuantifiedType (Set TypeName) (Expr Integer)
+type TQuantifiedType = QuantifiedType (Set TypeName) (Loc (Expr Integer))
 
-instance HasExprs (QuantifiedType ty (Expr Integer)) where
+instance HasExprs (QuantifiedType ty (Loc (Expr Integer))) where
     exprs f = \case
-        QdTypeComponent c        -> pure (QdTypeComponent c)
-        QdTypeInt (lower, upper) -> QdTypeInt <$> ((,) <$> f lower <*> f upper)
+        QdTypeComponent c -> pure (QdTypeComponent c)
+        QdTypeInt (lower, upper) ->
+            QdTypeInt <$> ((,) <$> traverse f lower <*> traverse f upper)
 
 
 -- | A scoped expression contains a bound variable.
@@ -166,13 +169,14 @@ instantiate (Scoped body) (SomeExpr s ty) = go 0 body
             Quantified q (goQdType i qdTy) (Scoped (go (succ i) body'))
 
     goQdType i = \case
-        QdTypeComponent tySet    -> QdTypeComponent tySet
-        QdTypeInt (lower, upper) -> QdTypeInt (go i lower, go i upper)
+        QdTypeComponent tySet -> QdTypeComponent tySet
+        QdTypeInt (lower, upper) ->
+            QdTypeInt (fmap (go i) lower, fmap (go i) upper)
 
 
--- | Transform every expression in a syntax tree node.
-transformExprs :: HasExprs a => (forall t. Expr t -> Expr t) -> a -> a
-transformExprs f = runIdentity . exprs (Identity . transform f)
+-- | Instantiate the outermost binder in all expressions in a syntax tree.
+instantiateExprs :: HasExprs a => SomeExpr -> a -> a
+instantiateExprs s = transformExprs (\e -> instantiate (Scoped e) s)
 
 
 -- | Transform every element in an expression tree, in a bottom-up manner.
@@ -190,6 +194,11 @@ transformM f = go
   where
     go :: Expr t -> m (Expr t)
     go e = descend go e >>= f
+
+
+-- | Transform every expression in a syntax tree node.
+transformExprs :: HasExprs a => (forall t. Expr t -> Expr t) -> a -> a
+transformExprs f = runIdentity . exprs (Identity . transform f)
 
 
 -- | Traverse the children of an 'Expr'.
@@ -224,5 +233,5 @@ descend f = \case
         Quantified q qdTy . Scoped <$> f body
     Quantified q (QdTypeInt (lower, upper)) (Scoped body) ->
         Quantified q
-            <$> (QdTypeInt <$> ((,) <$> f lower <*> f upper))
+            <$> (QdTypeInt <$> ((,) <$> traverse f lower <*> traverse f upper))
             <*> (Scoped <$> f body)

@@ -1,6 +1,7 @@
 module Rbsc.Compiler where
 
 
+import Control.Lens
 import Control.Monad
 
 import Data.Foldable
@@ -26,36 +27,53 @@ import Rbsc.Report.Error as Error
 import Rbsc.Report.Warning as Warning
 
 import Rbsc.Syntax.Untyped
+import qualified Rbsc.Syntax.Typed as T
+
+import Rbsc.Translator.Instantiation
 
 import Rbsc.TypeChecker
 
 import Rbsc.Visualization.System
 
 
-compile :: FilePath -> IO ()
+compile :: FilePath -> IO [[T.TModuleBody Elem]]
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
 
-    let (result, warnings) = toEither' (generateSystems parseResult)
+    let (result, warnings) = toEither' $ do
+            (model, sysInfos) <- generateSystems parseResult
+            bodiess <- traverse (instantiateComponents model) sysInfos
+            return (bodiess, sysInfos)
 
     case result of
         Left errors -> do
             printErrors errors
             unless (null errors) (putStrLn "")
             printWarnings warnings
-        Right results -> do
+            return []
+        Right (bodiess, results) -> do
             printWarnings warnings
             let systems = fmap fst results
             traverse_ printSystem systems
-            drawSystems systems
+            -- drawSystems systems
+            return bodiess
 
 
-generateSystems :: Result' Model -> Result' [(System, ModelInfo)]
+generateSystems :: Result' Model -> Result' (T.Model, [(System, ModelInfo)])
 generateSystems parseResult = do
     model          <- parseResult
     (model', info) <- typeCheck 10 model
-    generateInstances 10 model' info
+    is             <- generateInstances 10 model' info
+    return (model', is)
+
+
+instantiateComponents ::
+       T.Model -> (System, ModelInfo) -> Result' [T.TModuleBody Elem]
+instantiateComponents m (sys, info) =
+    fromEither' .
+    fmap concat . traverse (instantiateComponent (view constants info) 10 m) $
+    toComponents sys
 
 
 printSystem :: System -> IO ()
