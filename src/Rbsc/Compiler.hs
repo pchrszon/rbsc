@@ -63,7 +63,7 @@ compile path = do
             return bodiess
 
 
-generateSystems :: Result' Model -> Result' (T.Model, [(System, ModelInfo)])
+generateSystems :: Result Model -> Result (T.Model, [(System, ModelInfo)])
 generateSystems parseResult = flip runReaderT (10 :: RecursionDepth) $ do
     model          <- lift parseResult
     (model', info) <- typeCheck model
@@ -72,7 +72,7 @@ generateSystems parseResult = flip runReaderT (10 :: RecursionDepth) $ do
 
 
 instantiateComponents ::
-       T.Model -> (System, ModelInfo) -> Result' [T.TModuleBody Elem]
+       T.Model -> (System, ModelInfo) -> Result [T.TModuleBody Elem]
 instantiateComponents m (sys, info) = flip runReaderT (Info info 10) .
     fmap concat . traverse (instantiateComponent m) $
     toComponents sys

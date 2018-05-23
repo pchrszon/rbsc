@@ -68,7 +68,7 @@ import Rbsc.Util (toMaybe)
 
 
 -- | The @TypeChecker@ monad.
-type TypeChecker a = ReaderT TcInfo (Result Errors) a
+type TypeChecker a = ReaderT TcInfo Result a
 
 
 -- | The information provided to the type checker.
@@ -90,8 +90,7 @@ instance HasSymbolTable TcInfo where
 
 
 -- | Run a type checker action.
-runTypeChecker ::
-       TypeChecker a -> ComponentTypes -> SymbolTable -> Result' a
+runTypeChecker :: TypeChecker a -> ComponentTypes -> SymbolTable -> Result a
 runTypeChecker m types symTable =
     runReaderT m (TcInfo types symTable [] Global False)
 
@@ -153,7 +152,7 @@ getExpr expected (SomeExpr e actual) = do
 -- | @extract expected region e@ extracts an expression @e@ wrapped in
 -- 'SomeExpr'. If @e@ does not have the @expected@ type, a type error is
 -- thrown.
-extract :: Type t -> Region -> SomeExpr -> Result' (T.Expr t)
+extract :: MonadError Error m => Type t -> Region -> SomeExpr -> m (T.Expr t)
 extract expected rgn (SomeExpr e actual) = do
     Refl <- expect expected rgn actual
     return e

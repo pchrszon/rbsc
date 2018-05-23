@@ -34,9 +34,9 @@ import Rbsc.TypeChecker.ModelInfo
 
 
 typeCheck ::
-       (MonadReader r (t (Result Errors)), HasRecursionDepth r, MonadTrans t)
+       (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
     => U.Model
-    -> t (Result Errors) (T.Model, ModelInfo)
+    -> t Result (T.Model, ModelInfo)
 typeCheck model = do
     (info, consts') <- getModelInfo model
     let compTys  = view MI.componentTypes info

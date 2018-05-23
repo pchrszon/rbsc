@@ -34,13 +34,10 @@ import Rbsc.Syntax.Typed
 -- the system block of the model. For each system, an extended 'ModelInfo'
 -- is returned that contains constants for each component instance.
 generateInstances ::
-       ( MonadReader r (t (Result Errors))
-       , HasRecursionDepth r
-       , MonadTrans t
-       )
+       (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
     => Model
     -> ModelInfo
-    -> t (Result Errors) [(System, ModelInfo)]
+    -> t Result [(System, ModelInfo)]
 generateInstances model info = do
     depth <- view recursionDepth
     lift (runReaderT generate (Info info depth))

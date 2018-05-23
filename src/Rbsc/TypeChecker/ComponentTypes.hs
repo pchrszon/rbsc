@@ -20,7 +20,7 @@ import Rbsc.Report.Result
 import Rbsc.Syntax.Untyped
 
 
-validateComponentTypes :: ComponentTypes -> Model -> Result' ()
+validateComponentTypes :: ComponentTypes -> Model -> Result ()
 validateComponentTypes types model
     | null errors = return ()
     | otherwise   = throwMany errors

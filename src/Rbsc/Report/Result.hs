@@ -11,12 +11,12 @@
 -- | This module provides the 'Result' monad.
 module Rbsc.Report.Result
     ( Result
-    , Result'
-    , Errors
+
     , fromEither
     , fromEither'
     , toEither
     , toEither'
+
     , throwOne
     , throwMany
     , warn
@@ -44,12 +44,12 @@ import Rbsc.Report.Warning
 
 
 -- | A @Result@ contains a 'Bag' of 'Warning's and either the result of
--- a computation or errors.
-data Result e a
-    = Result (Bag Warning) (Either e a)
+-- a computation or a @Bag@ of 'Error's.
+data Result a
+    = Result (Bag Warning) (Either (Bag Error) a)
     deriving (Eq, Show, Functor, Foldable, Traversable)
 
-instance Semigroup e => Applicative (Result e) where
+instance Applicative Result where
     pure = Result mempty . Right
 
     Result wl l <*> Result wr r =
@@ -59,14 +59,14 @@ instance Semigroup e => Applicative (Result e) where
             (Left es , _)        -> Left es
             (_       , Left es)  -> Left es
 
-instance Semigroup e => Monad (Result e) where
+instance Monad Result where
     Result ws r >>= k = case r of
         Left es -> Result ws (Left es)
         Right x ->
             let Result ws' r' = k x
             in Result (ws <> ws') r'
 
-instance MonadError Error (Result Errors) where
+instance MonadError Error Result where
     throwError = Result mempty . Left . Bag.singleton
     catchError (Result ws (Right x)) _ = Result ws (Right x)
     catchError (Result ws (Left es)) h = case toList es of
@@ -79,31 +79,23 @@ instance MonadError Error (Result Errors) where
             in Result (ws <> ws') (Left (Bag.fromList es'))
 
 
--- | The 'Result' type where the error type is specialized to 'Errors'.
-type Result' a = Result Errors a
-
-
--- | A 'Bag' of 'Error's.
-type Errors = Bag Error
-
-
 -- | Throw a single 'Error'.
 throwOne :: MonadError Error m => Region -> ErrorDesc -> m a
 throwOne rgn = throwError . Error rgn
 
 
 -- | Throw many 'Error's.
-throwMany :: [Error] -> Result Errors a
+throwMany :: [Error] -> Result a
 throwMany = Result mempty . Left . Bag.fromList
 
 
 -- | Emit a 'Warning'.
-warn :: Warning -> Result e ()
+warn :: Warning -> Result ()
 warn w = Result (Bag.singleton w) (Right ())
 
 
 -- | Convert an 'Either' value into a 'Result' value.
-fromEither :: Either [Error] a -> Result (Bag Error) a
+fromEither :: Either [Error] a -> Result a
 fromEither = \case
     Right x -> Result mempty (Right x)
     Left es -> Result mempty (Left (Bag.fromList es))
@@ -111,15 +103,15 @@ fromEither = \case
 
 -- | Convert an 'Either', possibly containing only a single 'Error', into
 -- a 'Result'.
-fromEither' :: Either Error a -> Result (Bag Error) a
+fromEither' :: Either Error a -> Result a
 fromEither' = fromEither . over _Left (: [])
 
 
 -- | Convert a 'Result' into an 'Either' value, discarding all 'Warning's.
-toEither :: Result (Bag Error) a -> Either [Error] a
+toEither :: Result a -> Either [Error] a
 toEither = fst . toEither'
 
 
 -- | Convert a 'Result' into a list of 'Warning's and an 'Either' value.
-toEither' :: Result (Bag Error) a -> (Either [Error] a, [Warning])
+toEither' :: Result a -> (Either [Error] a, [Warning])
 toEither' (Result ws r) = (over _Left toList r, toList ws)

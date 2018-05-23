@@ -66,9 +66,9 @@ instance HasConstants BuilderState where
 -- constants requires type checking the constant definitions, the checked
 -- definitions are returned as well.
 getModelInfo ::
-       (MonadReader r (t (Result Errors)), HasRecursionDepth r, MonadTrans t)
+       (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
     => U.Model
-    -> t (Result Errors) (ModelInfo, [TConstant])
+    -> t Result (ModelInfo, [TConstant])
 getModelInfo m = do
     idents <- lift (fromEither (identifierDefs m))
     deps   <- lift (fromEither' (sortDefinitions idents))
@@ -223,10 +223,10 @@ fromSyntaxVarType = \case
         return (SomeType (TyArray (lowerVal, upperVal) ty))
 
 
-type Builder a = StateT BuilderState (Result Errors) a
+type Builder a = StateT BuilderState Result a
 
 
-runBuilder :: Builder a -> RecursionDepth -> Result' (ModelInfo, [TConstant])
+runBuilder :: Builder a -> RecursionDepth -> Result (ModelInfo, [TConstant])
 runBuilder m depth = do
     BuilderState mi defs _ <- execStateT m initial
     return (mi, defs)
