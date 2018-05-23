@@ -7,9 +7,12 @@ module Rbsc.TypeChecker.ExprSpec (spec) where
 
 
 import Control.Lens
+import Control.Monad.Reader
 
 import Test.Hspec
 
+
+import Rbsc.Config
 
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
@@ -21,9 +24,10 @@ import Rbsc.Report.Region
 import Rbsc.Report.Result
 
 import qualified Rbsc.Syntax.Expr.Untyped as U
+import           Rbsc.Syntax.Untyped      (Model)
 
 import Rbsc.TypeChecker.Expr
-import Rbsc.TypeChecker.Internal (extract, runTypeChecker)
+import Rbsc.TypeChecker.Internal  (extract, runTypeChecker)
 import Rbsc.TypeChecker.ModelInfo
 
 
@@ -85,6 +89,24 @@ spec = describe "typeCheck" $ do
         has (_Left.traverse.errorDesc._UndefinedIdentifier)
 
 
+testModel :: Model
+testModel =
+    [model|
+        natural type N;
+        natural type K;
+
+        system { n: N, k: K }
+
+        impl N {
+            x : bool;
+        }
+
+        impl K {
+            x : [0..1];
+        }
+    |]
+
+
 typeCheck :: Type t -> Loc U.Expr -> Either [Error] String
 typeCheck ty e = toEither $ do
     te <- runTypeChecker
@@ -96,19 +118,7 @@ typeCheck ty e = toEither $ do
 
 modelInfo :: ModelInfo
 modelInfo =
-    let Right (info, _) = toEither . getModelInfo 10 $
-            [model|
-                natural type N;
-                natural type K;
-
-                system { n: N, k: K }
-
-                impl N {
-                    x : bool;
-                }
-
-                impl K {
-                    x : [0..1];
-                }
-            |]
+    let Right (info, _) =
+            toEither
+                (runReaderT (getModelInfo testModel) (10 :: RecursionDepth))
     in info

@@ -14,6 +14,7 @@ module Rbsc.Data.ComponentType
     , _CompartmentType
 
     , ComponentTypes
+    , HasComponentTypes(..)
 
     , ComponentTypeSet(..)
     , normalizeTypeSet
@@ -45,16 +46,22 @@ data ComponentType
     | CompartmentType [[RoleRef]]
     deriving (Eq, Show)
 
+
 data RoleRef = RoleRef
     { refType   :: TypeName
     , refBounds :: (Int, Int)
     } deriving (Eq, Show)
+
 
 makePrisms ''ComponentType
 
 
 -- | User-defined component types indexed by their name.
 type ComponentTypes = Map TypeName ComponentType
+
+
+class HasComponentTypes a where
+    componentTypes :: Lens' a ComponentTypes
 
 
 -- | A set of component types.

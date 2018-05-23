@@ -7,11 +7,15 @@ module Rbsc.EvalSpec (spec) where
 
 
 import Control.Lens
+import Control.Monad.Reader
 
 import Test.Hspec
 
 
+import Rbsc.Config
+
 import Rbsc.Data.Action
+import Rbsc.Data.Info
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
 
@@ -26,6 +30,7 @@ import Rbsc.Report.Region
 import Rbsc.Report.Result (toEither)
 
 import qualified Rbsc.Syntax.Expr.Untyped as U
+import           Rbsc.Syntax.Untyped      (Model)
 
 import Rbsc.TypeChecker
 import Rbsc.TypeChecker.Expr
@@ -136,51 +141,58 @@ spec = do
             Right "Identifier \"z\" TyInt"
 
 
-modelInfo :: ModelInfo
-modelInfo =
-    let Right (model', info) = toEither . typeCheck 10 $
-            [model|
-                natural type N;
-                role type R(N);
-                compartment type C(R);
+testModel :: Model
+testModel =
+    [model|
+        natural type N;
+        role type R(N);
+        compartment type C(R);
 
-                const x: int = 1;
+        const x: int = 1;
 
-                global y: [0..1];
+        global y: [0..1];
 
-                global z: [0..1];
+        global z: [0..1];
 
-                function f(i: int) : int = f(i);
+        function f(i: int) : int = f(i);
 
-                function square(x: int) : int = x * x;
+        function square(x: int) : int = x * x;
 
-                function hasZero(f: int -> int, from: int, to: int) : bool =
-                    exists x: [from .. to]. f(x) = 0;
+        function hasZero(f: int -> int, from: int, to: int) : bool =
+            exists x: [from .. to]. f(x) = 0;
 
-                function playerIn(p: component, c: compartment) : bool =
-                    exists r: role. r in c & r boundto p;
+        function playerIn(p: component, c: compartment) : bool =
+            exists r: role. r in c & r boundto p;
 
-                system {
-                    n : N,
-                    r : R,
-                    c : C,
-                    r boundto n,
-                    r in c
-                }
-            |]
-        Right [(_, info')] = toEither (generateInstances 10 model' info)
+        system {
+            n : N,
+            r : R,
+            c : C,
+            r boundto n,
+            r in c
+        }
+    |]
+
+
+testModelInfo :: ModelInfo
+testModelInfo =
+    let Right [(_, info')] =
+            toEither . flip runReaderT (10 :: RecursionDepth) $ do
+                (model', info) <- typeCheck testModel
+                generateInstances model' info
     in info'
 
 
 eval' :: Type t -> Loc U.Expr -> Either [Error] t
 eval' ty e = do
-    e' <-
-        toEither (runTypeChecker
-            (tcExpr e)
-            (view componentTypes modelInfo)
-            (view symbolTable modelInfo) >>=
-            extract ty (getLoc e))
-    over _Left (: []) (eval (view constants modelInfo) 10 (e' `withLocOf` e))
+    e' <- toEither
+            (runTypeChecker
+                 (tcExpr e)
+                 (view componentTypes testModelInfo)
+                 (view symbolTable testModelInfo) >>=
+             extract ty (getLoc e))
+    over _Left (: [])
+        (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
 
 
 evalAct :: Loc U.Expr -> Either [Error] Action
@@ -188,10 +200,11 @@ evalAct e = do
     e' <-
         toEither (runTypeChecker
             (tcAction e)
-            (view componentTypes modelInfo)
-            (view symbolTable modelInfo) >>=
+            (view componentTypes testModelInfo)
+            (view symbolTable testModelInfo) >>=
             extract TyAction (getLoc e))
-    over _Left (: []) (eval (view constants modelInfo) 10 (e' `withLocOf` e))
+    over _Left (: [])
+        (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
 
 
 reduce' :: Type t -> Loc U.Expr -> Either [Error] String
@@ -199,9 +212,9 @@ reduce' ty e = do
     e' <-
         toEither (runTypeChecker
             (tcExpr e)
-            (view componentTypes modelInfo)
-            (view symbolTable modelInfo) >>=
+            (view componentTypes testModelInfo)
+            (view symbolTable testModelInfo) >>=
             extract ty (getLoc e))
-    e'' <- over _Left (: []) $
-        reduce (view constants modelInfo) 10 (e' `withLocOf` e)
+    e'' <- over _Left (: [])
+        (runReaderT (reduce (e' `withLocOf` e)) (Info testModelInfo 10))
     return (show e'')

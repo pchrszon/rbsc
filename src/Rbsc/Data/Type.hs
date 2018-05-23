@@ -1,9 +1,9 @@
-{-# LANGUAGE ConstraintKinds    #-}
-{-# LANGUAGE GADTs              #-}
-{-# LANGUAGE LambdaCase         #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE StandaloneDeriving   #-}
+{-# LANGUAGE TypeOperators        #-}
 
 
 -- | The type system of the modeling language and its embedding into the
@@ -18,6 +18,7 @@ module Rbsc.Data.Type
 
       -- * Symbol tables
     , SymbolTable
+    , HasSymbolTable(..)
 
       -- * Type equality
     , (:~:)(..)
@@ -40,12 +41,14 @@ module Rbsc.Data.Type
     ) where
 
 
+import Control.Lens
+
 import Data.Constraint           (Dict (..))
-import Data.Foldable (toList)
+import Data.Foldable             (toList)
 import Data.Map.Strict           (Map)
+import Data.Set                  (Set)
 import Data.Text.Prettyprint.Doc
 import Data.Type.Equality        ((:~:) (..))
-import Data.Set (Set)
 
 
 import Rbsc.Data.Action
@@ -115,6 +118,10 @@ instance Pretty SomeType where
 -- | The symbol table holds the type of each identifier in the model
 -- source.
 type SymbolTable = Map ScopedName SomeType
+
+
+class HasSymbolTable a where
+    symbolTable :: Lens' a SymbolTable
 
 
 -- | Check the equality of 'Type's.

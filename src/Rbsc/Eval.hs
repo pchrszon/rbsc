@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
@@ -9,7 +10,7 @@
 
 -- | Evaluation of typed expressions.
 module Rbsc.Eval
-    ( RecursionDepth
+    ( MonadEval
     , eval
     , reduce
     , componentConsts
@@ -29,6 +30,8 @@ import           Data.Set           (Set)
 import qualified Data.Set           as Set
 
 
+import Rbsc.Config
+
 import           Rbsc.Data.Action
 import           Rbsc.Data.Array     (Array)
 import qualified Rbsc.Data.Array     as Array
@@ -40,23 +43,48 @@ import           Rbsc.Data.Type
 import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 
-import Rbsc.Syntax.Expr.Typed     (Constants)
+import Rbsc.Syntax.Expr.Typed     (Constants, HasConstants (..))
 import Rbsc.Syntax.Expr.Typed     as T
 import Rbsc.Syntax.Operators
 import Rbsc.Syntax.Quantification
 
 
--- | The recursion depth.
-type RecursionDepth = Int
+type MonadEval r m
+     = ( MonadError Error m
+       , MonadReader r m
+       , HasRecursionDepth r
+       , HasConstants r
+       )
 
 
 data ReducerInfo = ReducerInfo
-    { _constants      :: Constants
+    { _riConstants    :: Constants
     , _remainingDepth :: !RecursionDepth
     , _region         :: !Region
     }
 
 makeLenses ''ReducerInfo
+
+
+-- | Evaluate an expression under a given set of constants.
+eval :: MonadEval r m => Loc (Expr t) -> m t
+eval e = do
+    depth <- view recursionDepth
+    cs    <- view constants
+    case evalInternal cs depth e of
+        Left err -> throwError err
+        Right x  -> return x
+
+
+-- | Reduce an expression as far as possible by evaluating constant
+-- sub-expressions.
+reduce :: MonadEval r m => Loc (Expr t) -> m (Loc (Expr t))
+reduce e = do
+    depth <- view recursionDepth
+    cs    <- view constants
+    case reduceInternal cs depth e of
+        Left err -> throwError err
+        Right e' -> return e'
 
 
 type Reducer a = ReaderT ReducerInfo (Either Error) a
@@ -66,19 +94,21 @@ runReducer ::
 runReducer m cs depth rgn = runReaderT m (ReducerInfo cs depth rgn)
 
 
--- | Evaluate an expression under a given set of constants.
-eval :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Error t
-eval cs depth e = do
-    e' <- reduce cs depth e
+evalInternal :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Error t
+evalInternal cs depth e = do
+    Loc e' _ <- reduceInternal cs depth e
     case e' of
         Literal x -> return x
         _         -> throw (getLoc e) NotConstant
 
 
--- | Reduce an expression as far as possible by evaluating constant
--- sub-expressions.
-reduce :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Error (Expr t)
-reduce cs depth (Loc e rgn) = runReducer (go e) cs depth rgn
+reduceInternal ::
+       Constants
+    -> RecursionDepth
+    -> Loc (Expr t)
+    -> Either Error (Loc (Expr t))
+reduceInternal cs depth (Loc e rgn) =
+    Loc <$> runReducer (go e) cs depth rgn <*> pure rgn
   where
     go :: Expr t -> Reducer (Expr t)
     go e' = case e' of
@@ -121,7 +151,7 @@ reduce cs depth (Loc e rgn) = runReducer (go e) cs depth rgn
         Lambda _ _ -> return e'
 
         Quantified q (QdTypeComponent tySet) sc -> do
-            comps <- componentConsts tySet <$> view constants
+            comps <- componentConsts tySet <$> view riConstants
             go (quantifier q (fmap (instantiate sc) comps))
 
         Quantified q (QdTypeInt (Loc lower rgnL, Loc upper rgnU)) sc -> do
@@ -146,7 +176,7 @@ toLiteral e = case e of
         return (Literal (Action name))
 
     Identifier name ty ->
-        view (constants.at name) >>= \case
+        view (riConstants.at name) >>= \case
             Just (SomeExpr e' ty') -> case typeEq ty ty' of -- if the identifier is a constant ...
                 Just Refl -> return e' -- ... then replace by constant value
                 Nothing   -> error "toLiteral: type error"
@@ -214,7 +244,7 @@ toLiteral e = case e of
             (view compContainedIn role == Just (view compName compartment)))
 
     Count tySet (Literal comp) -> do
-        comps <- componentConsts tySet <$> view constants
+        comps <- componentConsts tySet <$> view riConstants
         return (Literal (genericLength (filter (isElement comp) comps)))
 
     _ -> return e

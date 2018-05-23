@@ -1,8 +1,8 @@
 module Rbsc.Compiler where
 
 
-import Control.Lens
 import Control.Monad
+import Control.Monad.Reader
 
 import Data.Foldable
 
@@ -14,6 +14,9 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal
 import System.Process (callCommand)
 
 
+import Rbsc.Config
+
+import Rbsc.Data.Info
 import Rbsc.Data.System
 import Rbsc.Data.ModelInfo
 
@@ -61,18 +64,17 @@ compile path = do
 
 
 generateSystems :: Result' Model -> Result' (T.Model, [(System, ModelInfo)])
-generateSystems parseResult = do
-    model          <- parseResult
-    (model', info) <- typeCheck 10 model
-    is             <- generateInstances 10 model' info
+generateSystems parseResult = flip runReaderT (10 :: RecursionDepth) $ do
+    model          <- lift parseResult
+    (model', info) <- typeCheck model
+    is             <- generateInstances model' info
     return (model', is)
 
 
 instantiateComponents ::
        T.Model -> (System, ModelInfo) -> Result' [T.TModuleBody Elem]
-instantiateComponents m (sys, info) =
-    fromEither' .
-    fmap concat . traverse (instantiateComponent (view constants info) 10 m) $
+instantiateComponents m (sys, info) = flip runReaderT (Info info 10) .
+    fmap concat . traverse (instantiateComponent m) $
     toComponents sys
 
 

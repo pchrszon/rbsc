@@ -73,14 +73,20 @@ type TypeChecker a = ReaderT TcInfo (Result Errors) a
 
 -- | The information provided to the type checker.
 data TcInfo = TcInfo
-    { _componentTypes :: !ComponentTypes    -- ^ 'ComponentType' defined in the model
-    , _symbolTable    :: !SymbolTable       -- ^ the 'SymbolTable'
-    , _boundVars      :: [(Name, SomeType)] -- ^ list of variables bound by a quantifier or lambda
-    , _scope          :: !Scope             -- ^ the current scope
-    , _inAction       :: !Bool              -- ^ indicates whether the expression should return an action
+    { _tciComponentTypes :: !ComponentTypes    -- ^ 'ComponentType' defined in the model
+    , _tciSymbolTable    :: !SymbolTable       -- ^ the 'SymbolTable'
+    , _boundVars         :: [(Name, SomeType)] -- ^ list of variables bound by a quantifier or lambda
+    , _scope             :: !Scope             -- ^ the current scope
+    , _inAction          :: !Bool              -- ^ indicates whether the expression should return an action
     }
 
 makeLenses ''TcInfo
+
+instance HasComponentTypes TcInfo where
+    componentTypes = tciComponentTypes
+
+instance HasSymbolTable TcInfo where
+    symbolTable = tciSymbolTable
 
 
 -- | Run a type checker action.
@@ -155,7 +161,7 @@ extract expected rgn (SomeExpr e actual) = do
 
 -- | @expect expected rgn actual@ returns a witness that the types
 -- @expected@ and @actual@ are equal (w.r.t. 'typeEq').
-expect :: MonadError Errors m => Type s -> Region -> Type t -> m (s :~: t)
+expect :: MonadError Error m => Type s -> Region -> Type t -> m (s :~: t)
 expect expected rgn actual =
     case typeEq expected actual of
         Just Refl -> return Refl

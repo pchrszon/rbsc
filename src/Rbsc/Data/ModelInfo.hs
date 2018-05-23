@@ -5,14 +5,15 @@
 -- defined in the model.
 module Rbsc.Data.ModelInfo
     ( ModelInfo(..)
-
-    , ComponentTypes
-    , SymbolTable
-    , Constants
+    , emptyModelInfo
 
     , componentTypes
     , symbolTable
     , constants
+
+    , ComponentTypes
+    , SymbolTable
+    , Constants
     ) where
 
 
@@ -28,9 +29,23 @@ import Rbsc.Syntax.Expr.Typed
 -- | The @ModelInfo@ holds the types of identifiers, the user-defined types
 -- and the values of constants defined in the model.
 data ModelInfo = ModelInfo
-    { _componentTypes :: !ComponentTypes
-    , _symbolTable    :: !SymbolTable
-    , _constants      :: !Constants
+    { _miComponentTypes :: !ComponentTypes
+    , _miSymbolTable    :: !SymbolTable
+    , _miConstants      :: !Constants
     } deriving (Show)
 
 makeLenses ''ModelInfo
+
+instance HasComponentTypes ModelInfo where
+    componentTypes = miComponentTypes
+
+instance HasSymbolTable ModelInfo where
+    symbolTable = miSymbolTable
+
+instance HasConstants ModelInfo where
+    constants = miConstants
+
+
+-- | Empty @ModelInfo@.
+emptyModelInfo :: ModelInfo
+emptyModelInfo = ModelInfo mempty mempty mempty

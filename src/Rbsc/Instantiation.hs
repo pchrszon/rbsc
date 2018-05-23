@@ -1,3 +1,6 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+
+
 -- | Instantiation of system instances.
 module Rbsc.Instantiation
     ( generateInstances
@@ -6,6 +9,7 @@ module Rbsc.Instantiation
 
 import Control.Lens
 import Control.Monad
+import Control.Monad.Reader
 
 import Data.Either
 import Data.Foldable
@@ -13,10 +17,11 @@ import Data.Foldable
 
 import Rbsc.Completer
 
+import Rbsc.Config
+
+import Rbsc.Data.Info
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.System
-
-import Rbsc.Eval
 
 import Rbsc.Instantiation.Internal
 
@@ -29,24 +34,31 @@ import Rbsc.Syntax.Typed
 -- the system block of the model. For each system, an extended 'ModelInfo'
 -- is returned that contains constants for each component instance.
 generateInstances ::
-       RecursionDepth
-    -> Model
+       ( MonadReader r (t (Result Errors))
+       , HasRecursionDepth r
+       , MonadTrans t
+       )
+    => Model
     -> ModelInfo
-    -> Result' [(System, ModelInfo)]
-generateInstances depth model info = do
-    (sysInfos, cycles) <- fromEither' generate
-    traverse_ (warn . InstantiationCycle) cycles
-    return sysInfos
+    -> t (Result Errors) [(System, ModelInfo)]
+generateInstances model info = do
+    depth <- view recursionDepth
+    lift (runReaderT generate (Info info depth))
   where
     generate = do
-        Result sys cs arrayInfos <- buildSystem depth model info
+        -- Partition the system block of the model into a 'System' and
+        -- a list of other constraints.
+        (sys, constraints, arrayInfos) <- buildSystem model
 
         -- We only have to check the upper role cardinality bounds, since in case
         -- the lower bounds are violated, the 'completeSystem' function will
         -- generate the missing roles.
-        checkCompartmentUpperBounds (view componentTypes info) sys
+        checkCompartmentUpperBounds sys
 
-        let (cycles, syss) = partitionEithers (completeSystem info sys)
-            sysInfos = fmap (updateModelInfo info arrayInfos) syss
-        sysInfos' <- filterM (checkConstraints depth cs . snd) sysInfos
-        return (sysInfos', cycles)
+        (cycles, syss) <- partitionEithers <$> completeSystem sys
+        lift (traverse_ (warn . InstantiationCycle) cycles)
+
+        let sysInfos = fmap (updateModelInfo info arrayInfos) syss
+
+        flip filterM sysInfos $ \(_, info') ->
+            local (set modelInfo info') (checkConstraints constraints)

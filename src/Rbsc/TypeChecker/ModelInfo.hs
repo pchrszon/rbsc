@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase       #-}
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 -- | Construction of the symbol table and evaluation of constants.
@@ -10,6 +11,7 @@ module Rbsc.TypeChecker.ModelInfo
 
 
 import Control.Lens
+import Control.Monad.Reader
 import Control.Monad.State.Strict
 
 import           Data.Foldable
@@ -17,6 +19,8 @@ import qualified Data.Map.Strict as Map
 import           Data.Semigroup
 import qualified Data.Set        as Set
 
+
+import Rbsc.Config
 
 import Rbsc.Data.ComponentType
 import Rbsc.Data.ModelInfo
@@ -29,7 +33,8 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed   (SomeExpr (..), TConstant, TType)
+import           Rbsc.Syntax.Typed   (HasConstants (..), SomeExpr (..),
+                                      TConstant, TType)
 import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped (UConstant, UFunction, UType, UVarDecl,
                                       UVarType)
@@ -43,24 +48,36 @@ import qualified Rbsc.TypeChecker.Internal       as TC
 
 
 data BuilderState = BuilderState
-    { _modelInfo      :: !ModelInfo
-    , _constantDefs   :: [TConstant]
-    , _recursionDepth :: RecursionDepth
+    { _modelInfo        :: !ModelInfo
+    , _constantDefs     :: [TConstant]
+    , _bsRecursionDepth :: RecursionDepth
     }
 
 makeLenses ''BuilderState
+
+instance HasRecursionDepth BuilderState where
+    recursionDepth = bsRecursionDepth
+
+instance HasConstants BuilderState where
+    constants = modelInfo.constants
 
 
 -- | Construct the 'ModelInfo' for a given 'Model'. Since evaluation of
 -- constants requires type checking the constant definitions, the checked
 -- definitions are returned as well.
 getModelInfo ::
-       RecursionDepth -> U.Model -> Result' (ModelInfo, [TConstant])
-getModelInfo depth m = do
-    idents <- fromEither (identifierDefs m)
-    deps   <- fromEither' (sortDefinitions idents)
-    result <- runBuilder (traverse addDependency deps) depth
-    validateComponentTypes (view (_1.componentTypes) result) m
+       (MonadReader r (t (Result Errors)), HasRecursionDepth r, MonadTrans t)
+    => U.Model
+    -> t (Result Errors) (ModelInfo, [TConstant])
+getModelInfo m = do
+    idents <- lift (fromEither (identifierDefs m))
+    deps   <- lift (fromEither' (sortDefinitions idents))
+
+    depth  <- view recursionDepth
+    result <- lift (runBuilder (traverse addDependency deps) depth)
+
+    lift (validateComponentTypes (view (_1.componentTypes) result) m)
+
     return result
 
 
@@ -226,9 +243,8 @@ evalIntegerExpr e = do
 
 evalExpr :: Loc (T.Expr t) -> Builder t
 evalExpr e = do
-    consts <- use (modelInfo.constants)
-    depth  <- use recursionDepth
-    lift (fromEither' (eval consts depth e))
+    env <- get
+    runReaderT (eval e) env
 
 
 typeCheckExpr :: Type t -> Loc U.Expr -> Builder (T.Expr t)

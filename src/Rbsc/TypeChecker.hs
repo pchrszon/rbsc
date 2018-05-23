@@ -8,13 +8,16 @@ module Rbsc.TypeChecker
     ( typeCheck
     ) where
 
+
 import Control.Lens
+import Control.Monad.Reader
+
+
+import Rbsc.Config
 
 import           Rbsc.Data.ModelInfo (ModelInfo)
 import qualified Rbsc.Data.ModelInfo as MI
 import           Rbsc.Data.Type
-
-import Rbsc.Eval
 
 import Rbsc.Report.Region
 import Rbsc.Report.Result
@@ -30,13 +33,16 @@ import Rbsc.TypeChecker.Internal
 import Rbsc.TypeChecker.ModelInfo
 
 
-typeCheck :: RecursionDepth -> U.Model -> Result' (T.Model, ModelInfo)
-typeCheck depth model = do
-    (info, consts') <- getModelInfo depth model
+typeCheck ::
+       (MonadReader r (t (Result Errors)), HasRecursionDepth r, MonadTrans t)
+    => U.Model
+    -> t (Result Errors) (T.Model, ModelInfo)
+typeCheck model = do
+    (info, consts') <- getModelInfo model
     let compTys  = view MI.componentTypes info
         symTable = view MI.symbolTable info
 
-    model' <- runTypeChecker (tcModel model consts') compTys symTable
+    model' <- lift (runTypeChecker (tcModel model consts') compTys symTable)
     return (model', info)
 
 

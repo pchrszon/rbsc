@@ -34,12 +34,12 @@ spec = describe "completeSystem" $ do
         allOf
             (traverse._Right)
             (rolesAreBound (view componentTypes info))
-            (completeSystem info sys)
+            (completeSystem sys info)
 
     prop "fills all compartments" $ \(Model info sys) ->
         allOf (traverse._Right)
               (compartmentsAreFilled (view componentTypes info))
-              (completeSystem info sys)
+              (completeSystem sys info)
 
 
 rolesAreBound :: ComponentTypes -> System -> Bool

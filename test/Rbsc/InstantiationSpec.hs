@@ -8,6 +8,7 @@ module Rbsc.InstantiationSpec (spec) where
 
 
 import Control.Lens
+import Control.Monad.Reader
 
 import Data.Foldable
 import Data.Maybe
@@ -18,6 +19,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
+import Rbsc.Data.Info
 import Rbsc.Data.Component
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
@@ -244,11 +246,12 @@ simpleModel =
 
 
 checkCompartmentUpperBounds' :: Model -> Either [Error] ()
-checkCompartmentUpperBounds' m = do
-    (m', info) <- toEither (typeCheck 10 m)
-    Result sys _ _ <- over _Left (: []) (buildSystem 10 m' info)
-    over _Left (: [])
-        (checkCompartmentUpperBounds (view componentTypes info) sys)
+checkCompartmentUpperBounds' m =
+    toEither . flip runReaderT (Info emptyModelInfo 10) $ do
+        (m', info) <- typeCheck m
+        local (set modelInfo info) $ do
+            (sys, _, _) <- buildSystem m'
+            checkCompartmentUpperBounds sys
 
 
 dummyRegion :: Region
@@ -256,10 +259,11 @@ dummyRegion = Region "" "" (Position 1 1) (Position 1 2)
 
 
 buildSystem' :: Model -> Either [Error] System
-buildSystem' m = do
-    (m', info) <- toEither (typeCheck 10 m)
-    result <- over _Left (: []) (buildSystem 10 m' info)
-    return (_system result)
+buildSystem' m = toEither . flip runReaderT (Info emptyModelInfo 10) $ do
+    (m', info) <- typeCheck m
+    local (set modelInfo info) $ do
+        result <- buildSystem m'
+        return (view _1 result)
 
 
 getComponents :: Model -> Either [Error] (Map Name Component)
@@ -285,8 +289,9 @@ getComponentArrays m = do
 
 
 getConstants :: Model -> Either [Error] Constants
-getConstants m = do
-    (m', info) <- toEither (typeCheck 10 m)
-    Result sys _ arrayInfos <- over _Left (: []) (buildSystem 10 m' info)
-    let (_, info') = updateModelInfo info arrayInfos sys
-    return (view constants info')
+getConstants m = toEither . flip runReaderT (Info emptyModelInfo 10) $ do
+    (m', info) <- typeCheck m
+    local (set modelInfo info) $ do
+        (sys, _, arrayInfos) <- buildSystem m'
+        let (_, info') = updateModelInfo info arrayInfos sys
+        return (view constants info')

@@ -1,15 +1,16 @@
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms   #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE PatternSynonyms       #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 
 -- | Internal functions for the @Instantiation@ module.
 module Rbsc.Instantiation.Internal
     ( ArrayInfo(..)
-    , Result(..)
 
     , updateModelInfo
     , buildSystem
@@ -19,6 +20,8 @@ module Rbsc.Instantiation.Internal
 
 
 import Control.Lens
+import Control.Monad.Except
+import Control.Monad.Reader
 import Control.Monad.State.Strict
 
 import           Data.List       (sortBy)
@@ -82,8 +85,10 @@ pattern LitComponent name tyName <- (componentLiteral -> Just (name, tyName))
 -- transformed into the 'System' instance. All other expressions are added
 -- to the constraints list.
 buildSystem ::
-       RecursionDepth -> Model -> ModelInfo -> Either Error Result
-buildSystem depth model info = do
+       (MonadEval r m, HasComponentTypes r)
+    => Model
+    -> m (System, [Loc (Expr Bool)], [ArrayInfo])
+buildSystem model = do
     -- Partition expressions into instantiations of components and other
     -- constraints.
     Result sys constrs arrayInfos <-
@@ -97,28 +102,25 @@ buildSystem depth model info = do
     -- is fine, since the partially evaluated constraints are only used to
     -- extract the 'boundto' and 'in' relations, but not for evaluating the
     -- constraints.
-    constrs' <- traverse (reduce' (view constants info) depth) (reverse constrs)
+    constrs' <- traverse reduce (reverse constrs) -- re-reverse constraint list returned by insertDefinition
 
     -- Split conjunctions into individual constraints.
     let constrs'' = concatMap clauses constrs'
 
     -- Extract relations 'boundto' and 'in' from the partially evaluated
     -- constraints.
-    let compTys = view componentTypes info
-    (sys', _) <- execStateT
-            (traverse (insertRelation compTys) constrs'')
-            (sys, Map.empty)
+    (sys', _) <- execStateT (traverse insertRelation constrs'') (sys, Map.empty)
 
-    return (Result sys' constrs arrayInfos)
+    return (sys', constrs, arrayInfos)
   where
-    insertDefinition :: Loc (Expr Bool) -> StateT Result (Either Error) ()
+    -- insertDefinition :: Monad m => Loc (Expr Bool) -> StateT Result m ()
     insertDefinition e = case unLoc e of
         HasType (Identifier name _) tyName ->
             system.instances.at name .= Just tyName
 
         HasType (Index (Identifier name _) idx) tyName -> do
             -- upper bound is already checked in TypeChecker.ModelInfo
-            idx' <- lift (eval (view constants info) depth idx)
+            idx' <- eval idx
             arr <- for [0 .. idx' - 1] $ \i -> do
                 let name' = indexedName name i
                 system.instances.at name' .= Just tyName
@@ -128,43 +130,47 @@ buildSystem depth model info = do
         _ -> modifying constraints (e :)
 
     insertRelation ::
-           ComponentTypes
-        -> Loc (Expr Bool)
-        -> StateT (System, Map RoleName Region) (Either Error) ()
-    insertRelation compTys (Loc e _) = case e of
-        BoundTo
-            (Loc (LitComponent roleName roleTyName) rgnRole)
-            (Loc (LitComponent playerName playerTyName) rgnPlayer)
-                | not (isRoleType roleTyName) ->
-                    throw rgnRole NotARole
-                | not (canPlayRole compTys playerTyName roleTyName) ->
-                    throw rgnPlayer (InvalidBinding roleTyName playerTyName)
-                | otherwise ->
-                    use (_2.at roleName) >>= \case
-                        Just first -> throw rgnRole (RoleAlreadyBound first)
-                        Nothing    -> do
-                            _1.boundTo.at roleName .= Just playerName
-                            _2.at roleName .= Just rgnRole
+           ( MonadError Error m
+           , MonadReader r m
+           , HasComponentTypes r
+           )
+        => Loc (Expr Bool) -> StateT (System, Map RoleName Region) m ()
+    insertRelation (Loc e _) = do
+        compTys <- view componentTypes
+        case e of
+            BoundTo
+                (Loc (LitComponent roleName roleTyName) rgnRole)
+                (Loc (LitComponent playerName playerTyName) rgnPlayer)
+                    | not (isRoleType compTys roleTyName) ->
+                        throw rgnRole NotARole
+                    | not (canPlayRole compTys playerTyName roleTyName) ->
+                        throw rgnPlayer (InvalidBinding roleTyName playerTyName)
+                    | otherwise ->
+                        use (_2.at roleName) >>= \case
+                            Just first -> throw rgnRole (RoleAlreadyBound first)
+                            Nothing    -> do
+                                _1.boundTo.at roleName .= Just playerName
+                                _2.at roleName .= Just rgnRole
 
-        Element
-            (Loc (LitComponent roleName roleTyName) rgnRole)
-            (Loc (LitComponent compartmentName compTyName) rgnComp)
-                | not (isRoleType roleTyName) ->
-                    throw rgnRole NotARole
-                | not (isCompartmentType compTyName) ->
-                    throw rgnComp NotACompartment
-                | otherwise ->
-                    _1.containedIn.at roleName .= Just compartmentName
+            Element
+                (Loc (LitComponent roleName roleTyName) rgnRole)
+                (Loc (LitComponent compartmentName compTyName) rgnComp)
+                    | not (isRoleType compTys roleTyName) ->
+                        throw rgnRole NotARole
+                    | not (isCompartmentType compTys compTyName) ->
+                        throw rgnComp NotACompartment
+                    | otherwise ->
+                        _1.containedIn.at roleName .= Just compartmentName
 
-        _ -> return ()
+            _ -> return ()
 
     initState = Result emptySystem [] []
 
     emptySystem = System Map.empty Map.empty Map.empty
 
-    isRoleType tyName = has (componentTypes.at tyName._Just._RoleType) info
-    isCompartmentType tyName =
-        has (componentTypes.at tyName._Just._CompartmentType) info
+    isRoleType compTys tyName = has (at tyName._Just._RoleType) compTys
+    isCompartmentType compTys tyName =
+        has (at tyName._Just._CompartmentType) compTys
 
     canPlayRole compTys playerTyName roleTyName =
         case Map.lookup roleTyName compTys of
@@ -230,27 +236,10 @@ componentForName sys tyName name =
     in Component name tyName mBoundTo mContainedIn
 
 
--- | Checks whether the given list of constraints is satisfied by the model
--- with the given 'ModelInfo'.
-checkConstraints ::
-       RecursionDepth -> [Loc (Expr Bool)] -> ModelInfo -> Either Error Bool
-checkConstraints depth cs info =
-    evalConstraints depth (view constants info) cs
-
-
-evalConstraints ::
-       RecursionDepth -> Constants -> [Loc (Expr Bool)] -> Either Error Bool
-evalConstraints depth consts cs = and <$> traverse (eval consts depth) cs
-
-
-reduce' ::
-       Constants
-    -> RecursionDepth
-    -> Loc (Expr t)
-    -> Either Error (Loc (Expr t))
-reduce' consts depth e = do
-    e' <- reduce consts depth e
-    return (e' `withLocOf` e)
+-- | Checks whether the given list of constraints is satisfied by the
+-- system instance.
+checkConstraints :: MonadEval r m => [Loc (Expr Bool)] -> m Bool
+checkConstraints cs = and <$> traverse eval cs
 
 
 clauses :: Loc (Expr Bool) -> [Loc (Expr Bool)]
@@ -262,8 +251,12 @@ clauses e@(Loc e' rgn) = case e' of
 
 -- | Check if the given 'System' violates the role cardinalities given by
 -- the compartment type definitions. If so, an error is thrown.
-checkCompartmentUpperBounds :: ComponentTypes -> System -> Either Error ()
-checkCompartmentUpperBounds compTys sys =
+checkCompartmentUpperBounds ::
+       (MonadError Error m, MonadReader r m, HasComponentTypes r)
+    => System
+    -> m ()
+checkCompartmentUpperBounds sys = do
+    compTys <- view componentTypes
     for_ (view (instances.to Map.assocs) sys) $ \(name, tyName) ->
         case Map.lookup tyName compTys of
             Just (CompartmentType roleRefLists) ->
@@ -271,7 +264,7 @@ checkCompartmentUpperBounds compTys sys =
             _ -> return ()
 
 
-checkCompartment :: System -> Name -> [[RoleRef]] -> Either Error ()
+checkCompartment :: MonadError Error m => System -> Name -> [[RoleRef]] -> m ()
 checkCompartment sys name roleRefLists
     | any Map.null overfulls = return ()
     | otherwise = case sortedOverfulls of

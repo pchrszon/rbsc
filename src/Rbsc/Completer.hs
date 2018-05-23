@@ -34,6 +34,7 @@ import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
 import Rbsc.Data.System
+import Rbsc.Data.Type
 
 import Rbsc.Util.NameGen
 
@@ -84,12 +85,18 @@ liftList = lift . lift . lift
 --
 -- Some instantiations may lead to a cycle (e.g., a role played by
 -- a compartment is contained within the compartment).
-completeSystem :: ModelInfo -> System -> [Either Cycle System]
-completeSystem info sys = runCompleter completeAll (view symbolTable info) sys
+completeSystem ::
+       (MonadReader r m, HasSymbolTable r, HasComponentTypes r)
+    => System
+    -> m [Either Cycle System]
+completeSystem sys = do
+    types    <- view componentTypes
+    symTable <- view symbolTable
+    return (runCompleter (completeAll types) symTable sys)
   where
-    completeAll =
+    completeAll types =
         ifor_ (view instances sys) $ \name tyName -> do
-            completeInstance (view componentTypes info) name tyName
+            completeInstance types name tyName
             -- discard all system instances containing cycles
             liftList . guard . isNothing . getCycle =<< use system
 

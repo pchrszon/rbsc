@@ -66,12 +66,17 @@ instance Semigroup e => Monad (Result e) where
             let Result ws' r' = k x
             in Result (ws <> ws') r'
 
-instance Semigroup e => MonadError e (Result e) where
-    throwError = Result mempty . Left
+instance MonadError Error (Result Errors) where
+    throwError = Result mempty . Left . Bag.singleton
     catchError (Result ws (Right x)) _ = Result ws (Right x)
-    catchError (Result ws (Left es)) h =
-        let Result ws' r' = h es
-        in Result (ws <> ws') r'
+    catchError (Result ws (Left es)) h = case toList es of
+        []  -> error "Result.catchError: empty list"
+        [e] ->
+            let Result ws' r' = h e
+            in Result (ws <> ws') r'
+        (e:es') ->
+            let Result ws' _ = h e
+            in Result (ws <> ws') (Left (Bag.fromList es'))
 
 
 -- | The 'Result' type where the error type is specialized to 'Errors'.
@@ -83,13 +88,13 @@ type Errors = Bag Error
 
 
 -- | Throw a single 'Error'.
-throwOne :: MonadError Errors m => Region -> ErrorDesc -> m a
-throwOne rgn = throwError . Bag.singleton . Error rgn
+throwOne :: MonadError Error m => Region -> ErrorDesc -> m a
+throwOne rgn = throwError . Error rgn
 
 
 -- | Throw many 'Error's.
-throwMany :: MonadError Errors m => [Error] -> m a
-throwMany = throwError . Bag.fromList
+throwMany :: [Error] -> Result Errors a
+throwMany = Result mempty . Left . Bag.fromList
 
 
 -- | Emit a 'Warning'.

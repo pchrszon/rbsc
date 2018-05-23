@@ -18,6 +18,7 @@ module Rbsc.Syntax.Expr.Typed
     , SomeExpr(..)
 
     , Constants
+    , HasConstants(..)
 
     , instantiate
     , instantiateExprs
@@ -30,6 +31,7 @@ module Rbsc.Syntax.Expr.Typed
     ) where
 
 
+import Control.Lens           (Lens')
 import Control.Monad.Identity
 
 import Data.List.NonEmpty (NonEmpty)
@@ -129,6 +131,9 @@ instance HasExprs SomeExpr where
 
 -- | The table of constants.
 type Constants = Map Name SomeExpr
+
+class HasConstants a where
+    constants :: Lens' a Constants
 
 
 -- | Instantiate all variables bound by the outermost binder.
