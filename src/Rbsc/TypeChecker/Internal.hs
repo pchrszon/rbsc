@@ -55,6 +55,7 @@ import           Data.Text.Prettyprint.Doc (pretty)
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
+import Rbsc.Data.Some
 import Rbsc.Data.Type
 
 import Rbsc.Report.Error
@@ -73,11 +74,11 @@ type TypeChecker a = ReaderT TcInfo Result a
 
 -- | The information provided to the type checker.
 data TcInfo = TcInfo
-    { _tciComponentTypes :: !ComponentTypes    -- ^ 'ComponentType' defined in the model
-    , _tciSymbolTable    :: !SymbolTable       -- ^ the 'SymbolTable'
-    , _boundVars         :: [(Name, SomeType)] -- ^ list of variables bound by a quantifier or lambda
-    , _scope             :: !Scope             -- ^ the current scope
-    , _inAction          :: !Bool              -- ^ indicates whether the expression should return an action
+    { _tciComponentTypes :: !ComponentTypes     -- ^ 'ComponentType' defined in the model
+    , _tciSymbolTable    :: !SymbolTable        -- ^ the 'SymbolTable'
+    , _boundVars         :: [(Name, Some Type)] -- ^ list of variables bound by a quantifier or lambda
+    , _scope             :: !Scope              -- ^ the current scope
+    , _inAction          :: !Bool               -- ^ indicates whether the expression should return an action
     }
 
 makeLenses ''TcInfo
@@ -99,7 +100,7 @@ runTypeChecker m types symTable =
 -- the local scope is checked, then the global scope.  If the identifier is
 -- undefined and the identifier does not appear within an action expression, an
 -- error is thrown.
-getIdentifierType :: Name -> Region -> TypeChecker SomeType
+getIdentifierType :: Name -> Region -> TypeChecker (Some Type)
 getIdentifierType name rgn = do
     sc <- view scope
 
@@ -108,7 +109,7 @@ getIdentifierType name rgn = do
 
     -- If we are inside action brackets, all undefined identifiers are
     -- actions.
-    varTyAction <- toMaybe (SomeType TyAction) <$> view inAction
+    varTyAction <- toMaybe (Some TyAction) <$> view inAction
 
     case varTyLocal <|> varTyGlobal <|> varTyAction of
         Just ty -> return ty
@@ -116,7 +117,7 @@ getIdentifierType name rgn = do
 
 
 -- | Looks up the type and the de-Bruijn index of a given identifier.
-lookupBoundVar :: Name -> TypeChecker (Maybe (Int, SomeType))
+lookupBoundVar :: Name -> TypeChecker (Maybe (Int, Some Type))
 lookupBoundVar name = do
     vars <- view boundVars
     let indexedVars = zip vars [0..]
@@ -164,7 +165,7 @@ expect :: MonadError Error m => Type s -> Region -> Type t -> m (s :~: t)
 expect expected rgn actual =
     case typeEq expected actual of
         Just Refl -> return Refl
-        Nothing   -> throwOne rgn (typeError [SomeType expected] actual)
+        Nothing   -> throwOne rgn (typeError [Some expected] actual)
 
 
 -- | Assume that values of the given type can be checked for equality. If
@@ -197,11 +198,11 @@ withType e ty = return (SomeExpr e ty)
 
 
 -- | @typeError expected actual region@ constructs a 'Type.Error'.
-typeError :: [SomeType] -> Type t -> ErrorDesc
+typeError :: [Some Type] -> Type t -> ErrorDesc
 typeError expected actual =
     TypeError (fmap renderSomeType expected) (renderType actual)
   where
-    renderSomeType (SomeType ty) = renderType ty
+    renderSomeType (Some ty) = renderType ty
 
 
 -- | Create a humen-readable textual representation of a 'Type'.

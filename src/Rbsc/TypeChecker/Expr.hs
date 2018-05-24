@@ -31,6 +31,7 @@ import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Function
 import Rbsc.Data.Scope
+import Rbsc.Data.Some
 import Rbsc.Data.Type
 
 import Rbsc.Report.Error
@@ -49,7 +50,7 @@ import Rbsc.Util (toMaybe)
 
 -- | Type check an action.
 tcAction :: Loc U.Expr -> TypeChecker SomeExpr
-tcAction e = local (inAction .~ True) $ do
+tcAction e = local (set inAction True) $ do
     e' <- e `hasType` TyAction
     e' `withType` TyAction
 
@@ -81,10 +82,10 @@ tcExpr (Loc e rgn) = case e of
 
     U.Identifier name ->
         lookupBoundVar name >>= \case
-            Just (i, SomeType ty) ->
+            Just (i, Some ty) ->
                 T.Bound i ty `withType` ty
             Nothing -> do
-                SomeType ty <- getIdentifierType name rgn
+                Some ty <- getIdentifierType name rgn
                 T.Identifier name ty `withType` ty
 
     U.Not inner -> do
@@ -136,7 +137,7 @@ tcExpr (Loc e rgn) = case e of
         case ty of
             TyComponent tySet -> do
                 memberTys <- getLocalVarTypes name tySet
-                SomeType memberTy <- getMemberType rgn name memberTys
+                Some memberTy <- getMemberType rgn name memberTys
                 T.Member inner' name memberTy `withType` memberTy
 
 
@@ -208,7 +209,7 @@ tcExpr (Loc e rgn) = case e of
 
     U.Quantified q var qdTy body -> do
         (qdTy', varTy) <- tcQuantifiedType qdTy
-        SomeQuantifier q' <- return (typedQuantifier q)
+        Some q' <- return (typedQuantifier q)
         let qTy = quantifierType q'
         body' <- local (over boundVars ((var, varTy) :)) $
             body `hasType` qTy
@@ -219,15 +220,15 @@ tcExpr (Loc e rgn) = case e of
 -- definition. The parameter list @params@ is transformed into a sequence
 -- of lambda abstractions.
 tcFunctionDef ::
-       [(Name, SomeType)] -> SomeType -> Loc U.Expr -> TypeChecker SomeExpr
-tcFunctionDef params (SomeType tyRes) body =
+       [(Name, Some Type)] -> Some Type -> Loc U.Expr -> TypeChecker SomeExpr
+tcFunctionDef params (Some tyRes) body =
     -- params must be reversed because the first parameter corresponds
     -- to the outermost lambda and thus has the highest De-Bruijn index.
     local (over boundVars (reverse params ++)) $ do
         body' <- body `hasType` tyRes
         return (foldr mkLambda (SomeExpr body' tyRes) params)
   where
-    mkLambda (_, SomeType ty) (SomeExpr e tyRes') =
+    mkLambda (_, Some ty) (SomeExpr e tyRes') =
         SomeExpr (T.Lambda ty (T.Scoped e)) (ty --> tyRes')
 
 
@@ -292,12 +293,12 @@ tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
 -- for each type in @tySet@. If a type does not have a member of the given
 -- @name@, then @Nothing@ is returned for that type.
 getLocalVarTypes ::
-       Name -> Set TypeName -> TypeChecker [(TypeName, Maybe SomeType)]
+       Name -> Set TypeName -> TypeChecker [(TypeName, Maybe (Some Type))]
 getLocalVarTypes name tySet = for (Set.toList tySet) $ \tyName -> do
     mTy  <- view (symbolTable.at (ScopedName (Local tyName) name))
 
     -- If we are inside action brackets, all undefined members are actions.
-    mAct <- toMaybe (SomeType TyAction) <$> view inAction
+    mAct <- toMaybe (Some TyAction) <$> view inAction
 
     return (tyName, mTy <|> mAct)
 
@@ -305,13 +306,16 @@ getLocalVarTypes name tySet = for (Set.toList tySet) $ \tyName -> do
 -- | @getMemberType@ checks whether all members are defined and their types
 -- agree. If so, the single common member type is returned.
 getMemberType ::
-       Region -> Name -> [(TypeName, Maybe SomeType)] -> TypeChecker SomeType
+       Region
+    -> Name
+    -> [(TypeName, Maybe (Some Type))]
+    -> TypeChecker (Some Type)
 getMemberType rgn name memberTys
     | not (null undefineds) = throwOne rgn (UndefinedMember undefineds name)
     | otherwise = case nubBy ((==) `on` snd) defineds of
         [] -> error "getMemberType: empty list"
         [(_, ty)] -> return ty
-        ((firstTyName, SomeType firstTy):(secondTyName, SomeType secondTy):_) ->
+        ((firstTyName, Some firstTy):(secondTyName, Some secondTy):_) ->
             throwOne
                 rgn
                 (ConflictingMemberTypes
@@ -329,28 +333,24 @@ getMemberType rgn name memberTys
 
 tcQuantifiedType ::
        QuantifiedType ComponentTypeSet (Loc U.Expr)
-    -> TypeChecker (T.TQuantifiedType, SomeType)
+    -> TypeChecker (T.TQuantifiedType, Some Type)
 tcQuantifiedType (QdTypeComponent tySet) = do
     compTys <- view componentTypes
     tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
-    return (QdTypeComponent tySet', SomeType (TyComponent tySet'))
+    return (QdTypeComponent tySet', Some (TyComponent tySet'))
 tcQuantifiedType (QdTypeInt (lower, upper)) = do
     lower' <- lower `hasType` TyInt
     upper' <- upper `hasType` TyInt
     let qdTy = QdTypeInt (lower' `withLocOf` lower, upper' `withLocOf` upper)
-    return (qdTy, SomeType TyInt)
+    return (qdTy, Some TyInt)
 
 
-data SomeQuantifier where
-    SomeQuantifier :: T.Quantifier t -> SomeQuantifier
-
-
-typedQuantifier :: U.Quantifier -> SomeQuantifier
+typedQuantifier :: U.Quantifier -> Some T.Quantifier
 typedQuantifier = \case
-    U.Forall  -> SomeQuantifier T.Forall
-    U.Exists  -> SomeQuantifier T.Exists
-    U.Sum     -> SomeQuantifier T.Sum
-    U.Product -> SomeQuantifier T.Product
+    U.Forall  -> Some T.Forall
+    U.Exists  -> Some T.Exists
+    U.Sum     -> Some T.Sum
+    U.Product -> Some T.Product
 
 
 quantifierType :: T.Quantifier t -> Type t
@@ -410,7 +410,7 @@ cast _ e = e
 checkComponentType :: Type t -> Region -> Type t -> TypeChecker ()
 checkComponentType expected@(TyComponent tySetExp) rgn actual@(TyComponent tySetAct)
     | tySetAct `Set.isSubsetOf` tySetExp = return ()
-    | otherwise = throwOne rgn (typeError [SomeType expected] actual)
+    | otherwise = throwOne rgn (typeError [Some expected] actual)
 checkComponentType _ _ _ = return ()
 
 

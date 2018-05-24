@@ -17,6 +17,7 @@ import qualified Data.Map.Strict as Map
 
 
 import Rbsc.Data.Scope
+import Rbsc.Data.Some
 import Rbsc.Data.Type
 
 import Rbsc.Report.Region
@@ -60,19 +61,22 @@ tcUpdate Update {..} = Update
 tcAssignment :: UAssignment -> TypeChecker TAssignment
 tcAssignment (Assignment (Loc name rgn) idxs e) = do
     varTy <- getIdentifierType name rgn
-    (idxs', SomeType ty) <- tcIndices rgn idxs varTy
+    (idxs', Some ty) <- tcIndices rgn idxs varTy
     e' <- someExpr e ty
     return (Assignment (Loc name rgn) idxs' e')
 
 
 tcIndices ::
-       Region -> [U.LExpr] -> SomeType -> TypeChecker ([T.LSomeExpr], SomeType)
+       Region
+    -> [U.LExpr]
+    -> Some Type
+    -> TypeChecker ([T.LSomeExpr], Some Type)
 tcIndices _ [] ty = return ([], ty)
-tcIndices rgn (i:is) (SomeType (TyArray _ elemTy)) = do
+tcIndices rgn (i:is) (Some (TyArray _ elemTy)) = do
     i' <- someExpr i TyInt
-    (is', ty') <- tcIndices rgn is (SomeType elemTy)
+    (is', ty') <- tcIndices rgn is (Some elemTy)
     return (i' : is', ty')
-tcIndices rgn (_:_) (SomeType ty) = throwOne rgn (NotAnArray (renderType ty))
+tcIndices rgn (_:_) (Some ty) = throwOne rgn (NotAnArray (renderType ty))
 
 
 tcElemMultis ::
@@ -100,7 +104,7 @@ tcVarDecl :: UVarDecl -> TypeChecker TInit
 tcVarDecl (VarDecl (Loc name _) _ mInit) = do
     sc <- view scope
     view (symbolTable.at (ScopedName sc name)) >>= \case
-        Just (SomeType ty) -> case mInit of
+        Just (Some ty) -> case mInit of
             Just e -> do
                 e' <- e `hasType` ty
                 return (name, Just (SomeExpr e' ty `withLocOf` e))

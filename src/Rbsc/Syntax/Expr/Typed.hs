@@ -23,16 +23,17 @@ module Rbsc.Syntax.Expr.Typed
     , instantiate
     , instantiateExprs
 
-    , transform
-    , transformM
+    , transformExpr
+    , transformExprM
     , transformExprs
 
-    , descend
+    , universeExpr
+    , plateExpr
     ) where
 
 
-import Control.Lens           (Lens')
-import Control.Monad.Identity
+import Control.Applicative
+import Control.Lens
 
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict    (Map)
@@ -43,6 +44,7 @@ import Rbsc.Data.Action
 import Rbsc.Data.Array
 import Rbsc.Data.Component
 import Rbsc.Data.Function
+import Rbsc.Data.Some
 import Rbsc.Data.Type
 
 import Rbsc.Report.Region
@@ -129,6 +131,9 @@ instance HasExprs SomeExpr where
     exprs f (SomeExpr e ty) = SomeExpr <$> f e <*> pure ty
 
 
+deriving instance Show (Some Expr)
+
+
 -- | The table of constants.
 type Constants = Map Name SomeExpr
 
@@ -185,31 +190,37 @@ instantiateExprs s = transformExprs (\e -> instantiate (Scoped e) s)
 
 
 -- | Transform every element in an expression tree, in a bottom-up manner.
-transform :: (forall a. Expr a -> Expr a) -> Expr t -> Expr t
-transform f = runIdentity . transformM (Identity . f)
+transformExpr :: (forall a. Expr a -> Expr a) -> Expr t -> Expr t
+transformExpr f = runIdentity . transformExprM (Identity . f)
 
 
 -- | Transform every element in an expression tree, in a bottom-up manner
 -- and monadically.
-transformM ::
+transformExprM ::
        forall m.
        forall t. Monad m =>
                      (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
-transformM f = go
+transformExprM f = go
   where
     go :: Expr t -> m (Expr t)
-    go e = descend go e >>= f
+    go e = plateExpr go e >>= f
 
 
 -- | Transform every expression in a syntax tree node.
 transformExprs :: HasExprs a => (forall t. Expr t -> Expr t) -> a -> a
-transformExprs f = runIdentity . exprs (Identity . transform f)
+transformExprs f = runIdentity . exprs (Identity . transformExpr f)
 
 
--- | Traverse the children of an 'Expr'.
-descend ::
+-- | Retrieve all of the transitive descendents of an 'Expr', including
+-- itself.
+universeExpr :: Expr t -> [Some Expr]
+universeExpr e = Some e : getConst (plateExpr (Const . universeExpr) e)
+
+
+-- | Traverse the immediate children of an 'Expr'.
+plateExpr ::
        Applicative m => (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
-descend f = \case
+plateExpr f = \case
     Literal x          -> pure (Literal x)
     LitArray es        -> LitArray <$> traverse f es
     LitFunction g      -> pure (LitFunction g)

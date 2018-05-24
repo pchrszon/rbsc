@@ -25,6 +25,7 @@ import Rbsc.Config
 import Rbsc.Data.ComponentType
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Scope
+import Rbsc.Data.Some
 import Rbsc.Data.Type
 
 import Rbsc.Eval
@@ -99,7 +100,7 @@ addConstant (U.Constant (Loc name rgn) msTy e) = do
         Just sTy -> do
             -- if an explicit type annotation is given, check if type of
             -- the definition matches
-            (sTy', SomeType ty) <- fromSyntaxType sTy
+            (sTy', Some ty) <- fromSyntaxType sTy
             e' <- typeCheckExpr ty e
             return (Just sTy', SomeExpr e' ty)
         Nothing -> do
@@ -109,7 +110,7 @@ addConstant (U.Constant (Loc name rgn) msTy e) = do
     Dict <- return (dictShow ty)
     v <- evalExpr (e' `withLocOf` e)
 
-    insertSymbol Global name (SomeType ty)
+    insertSymbol Global name (Some ty)
     insertConstant name (SomeExpr (T.Literal v) ty)
 
     let c' = T.Constant (Loc name rgn) msTy' (SomeExpr e' ty `withLocOf` e)
@@ -122,7 +123,7 @@ addFunctionSignature (U.Function (Loc name _) params sTy _) = do
     tyResult <- snd <$> fromSyntaxType sTy
     insertSymbol Global name (foldr mkTyFunc tyResult paramTys)
   where
-    mkTyFunc (SomeType a) (SomeType b) = SomeType (a --> b)
+    mkTyFunc (Some a) (Some b) = Some (a --> b)
 
 
 addFunction :: UFunction -> Builder ()
@@ -181,46 +182,46 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
         if len' > 0
             then
                 let tyArray = TyArray (0, len' - 1) tyComponent
-                in insertSymbol Global name (SomeType tyArray)
+                in insertSymbol Global name (Some tyArray)
             else throwOne (getLoc len) (InvalidUpperBound len')
     -- add single component
-    Nothing -> insertSymbol Global name (SomeType tyComponent)
+    Nothing -> insertSymbol Global name (Some tyComponent)
   where
     tyComponent = TyComponent (Set.singleton tyName)
 
 
-fromSyntaxType :: UType -> Builder (TType, SomeType)
+fromSyntaxType :: UType -> Builder (TType, Some Type)
 fromSyntaxType = \case
-    U.TyBool   -> return (T.TyBool  , SomeType TyBool)
-    U.TyInt    -> return (T.TyInt   , SomeType TyInt)
-    U.TyDouble -> return (T.TyDouble, SomeType TyDouble)
+    U.TyBool   -> return (T.TyBool  , Some TyBool)
+    U.TyInt    -> return (T.TyInt   , Some TyInt)
+    U.TyDouble -> return (T.TyDouble, Some TyDouble)
     U.TyComponent tySet -> do
         compTys <- use (modelInfo.componentTypes)
         tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
-        return (T.TyComponent tySet, SomeType (TyComponent tySet'))
+        return (T.TyComponent tySet, Some (TyComponent tySet'))
     U.TyArray (lower, upper) sTy -> do
         (lowerVal, lower') <- evalIntegerExpr lower
         (upperVal, upper') <- evalIntegerExpr upper
-        (sTy', SomeType ty) <- fromSyntaxType sTy
+        (sTy', Some ty) <- fromSyntaxType sTy
         return
             ( T.TyArray (lower', upper') sTy'
-            , SomeType (TyArray (lowerVal, upperVal) ty)
+            , Some (TyArray (lowerVal, upperVal) ty)
             )
     U.TyFunc sTyL sTyR -> do
-        (sTyL', SomeType tyL) <- fromSyntaxType sTyL
-        (sTyR', SomeType tyR) <- fromSyntaxType sTyR
-        return (T.TyFunc sTyL' sTyR', SomeType (tyL --> tyR))
+        (sTyL', Some tyL) <- fromSyntaxType sTyL
+        (sTyR', Some tyR) <- fromSyntaxType sTyR
+        return (T.TyFunc sTyL' sTyR', Some (tyL --> tyR))
 
 
-fromSyntaxVarType :: UVarType -> Builder SomeType
+fromSyntaxVarType :: UVarType -> Builder (Some Type)
 fromSyntaxVarType = \case
-    U.VarTyBool  -> return (SomeType TyBool)
-    U.VarTyInt _ -> return (SomeType TyInt)
+    U.VarTyBool  -> return (Some TyBool)
+    U.VarTyInt _ -> return (Some TyInt)
     U.VarTyArray (lower, upper) vTy -> do
         (lowerVal, _) <- evalIntegerExpr lower
         (upperVal, _) <- evalIntegerExpr upper
-        SomeType ty <- fromSyntaxVarType vTy
-        return (SomeType (TyArray (lowerVal, upperVal) ty))
+        Some ty <- fromSyntaxVarType vTy
+        return (Some (TyArray (lowerVal, upperVal) ty))
 
 
 type Builder a = StateT BuilderState Result a
@@ -258,7 +259,7 @@ runTypeChecker m = do
     lift (TC.runTypeChecker m compTys symTable)
 
 
-insertSymbol :: Scope -> Name -> SomeType -> Builder ()
+insertSymbol :: Scope -> Name -> Some Type -> Builder ()
 insertSymbol sc name ty =
     modelInfo.symbolTable.at (ScopedName sc name) .= Just ty
 

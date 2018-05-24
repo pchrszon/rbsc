@@ -1,9 +1,10 @@
-{-# LANGUAGE ConstraintKinds      #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE ConstraintKinds    #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE LambdaCase         #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeOperators      #-}
 
 
 -- | The type system of the modeling language and its embedding into the
@@ -13,8 +14,6 @@ module Rbsc.Data.Type
       Type(..)
     , (-->)
     , arrayLength
-
-    , SomeType(..)
 
       -- * Symbol tables
     , SymbolTable
@@ -57,6 +56,7 @@ import Rbsc.Data.Component
 import Rbsc.Data.Function
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
+import Rbsc.Data.Some
 
 
 -- | Value-level representation of types.
@@ -98,26 +98,21 @@ arrayLength :: (Int, Int) -> Int
 arrayLength (idxStart, idxEnd) = idxEnd - idxStart + 1
 
 
--- | Existentially quantified 'Type'.
-data SomeType where
-    SomeType :: Type t -> SomeType
+deriving instance Show (Some Type)
 
-instance Eq SomeType where
-    SomeType s == SomeType t =
+instance Eq (Some Type) where
+    Some s == Some t =
         case typeEq s t of
             Just Refl -> True
             Nothing   -> False
 
-deriving instance Show SomeType
-
-instance Pretty SomeType where
-    pretty (SomeType ty) = pretty ty
-
+instance Pretty (Some Type) where
+    pretty (Some ty) = pretty ty
 
 
 -- | The symbol table holds the type of each identifier in the model
 -- source.
-type SymbolTable = Map ScopedName SomeType
+type SymbolTable = Map ScopedName (Some Type)
 
 
 class HasSymbolTable a where
@@ -182,8 +177,8 @@ checkNum = \case
 
 
 -- | List of number types.
-numTypes :: [SomeType]
-numTypes = [SomeType TyInt, SomeType TyDouble]
+numTypes :: [Some Type]
+numTypes = [Some TyInt, Some TyDouble]
 
 
 -- | Check if a given 'Type' @t@ is an instance of 'Ord'.
@@ -198,5 +193,5 @@ checkOrd = \case
 
 
 -- | List of primitive types that can be compared.
-ordTypes :: [SomeType]
-ordTypes = [SomeType TyInt, SomeType TyDouble]
+ordTypes :: [Some Type]
+ordTypes = [Some TyInt, Some TyDouble]

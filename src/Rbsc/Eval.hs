@@ -164,7 +164,7 @@ reduceInternal cs depth (Loc e rgn) =
                 _ -> return (Quantified q
                         (QdTypeInt (Loc lower' rgnL, Loc upper' rgnU)) sc)
 
-        _ -> descend go e' >>= toLiteral
+        _ -> plateExpr go e' >>= toLiteral
 
 
 -- | Reduces an expression to a literal if possible, otherwise the original
