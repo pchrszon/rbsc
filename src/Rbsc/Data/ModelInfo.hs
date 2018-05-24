@@ -31,6 +31,7 @@ import Rbsc.Syntax.Expr.Typed
 data ModelInfo = ModelInfo
     { _miComponentTypes :: !ComponentTypes
     , _miSymbolTable    :: !SymbolTable
+    , _miRangeTable     :: !RangeTable
     , _miConstants      :: !Constants
     } deriving (Show)
 
@@ -42,10 +43,13 @@ instance HasComponentTypes ModelInfo where
 instance HasSymbolTable ModelInfo where
     symbolTable = miSymbolTable
 
+instance HasRangeTable ModelInfo where
+    rangeTable = miRangeTable
+
 instance HasConstants ModelInfo where
     constants = miConstants
 
 
 -- | Empty @ModelInfo@.
 emptyModelInfo :: ModelInfo
-emptyModelInfo = ModelInfo mempty mempty mempty
+emptyModelInfo = ModelInfo mempty mempty mempty mempty

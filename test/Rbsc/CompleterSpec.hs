@@ -86,7 +86,7 @@ instance Arbitrary Model where
                     , _containedIn = Map.empty
                     }
 
-        return (Model (ModelInfo types Map.empty Map.empty) sys)
+        return (Model (emptyModelInfo & componentTypes .~ types) sys)
 
 
 genInstances :: ComponentTypes -> Gen (Map Name TypeName)

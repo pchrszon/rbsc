@@ -15,9 +15,8 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 
 import           Data.Foldable
-import qualified Data.Map.Strict as Map
 import           Data.Semigroup
-import qualified Data.Set        as Set
+import qualified Data.Set       as Set
 
 
 import Rbsc.Config
@@ -141,8 +140,9 @@ addFunction (U.Function (Loc name _) params sTy body) = do
 
 addVariable :: Scope -> UVarDecl -> Builder ()
 addVariable sc (U.VarDecl (Loc name _) vTy _) = do
-    ty <- fromSyntaxVarType vTy
+    (ty, mRange) <- fromSyntaxVarType vTy
     insertSymbol sc name ty
+    insertRange sc name mRange
 
 
 addComponentType :: ComponentTypeDef -> Builder ()
@@ -213,15 +213,18 @@ fromSyntaxType = \case
         return (T.TyFunc sTyL' sTyR', Some (tyL --> tyR))
 
 
-fromSyntaxVarType :: UVarType -> Builder (Some Type)
+fromSyntaxVarType :: UVarType -> Builder (Some Type, Maybe (Int, Int))
 fromSyntaxVarType = \case
-    U.VarTyBool  -> return (Some TyBool)
-    U.VarTyInt _ -> return (Some TyInt)
+    U.VarTyBool -> return (Some TyBool, Nothing)
+    U.VarTyInt (lower, upper) -> do
+        (lowerVal, _) <- evalIntegerExpr lower
+        (upperVal, _) <- evalIntegerExpr upper
+        return (Some TyInt, Just (lowerVal, upperVal))
     U.VarTyArray (lower, upper) vTy -> do
         (lowerVal, _) <- evalIntegerExpr lower
         (upperVal, _) <- evalIntegerExpr upper
-        Some ty <- fromSyntaxVarType vTy
-        return (Some (TyArray (lowerVal, upperVal) ty))
+        (Some ty, mRange) <- fromSyntaxVarType vTy
+        return (Some (TyArray (lowerVal, upperVal) ty), mRange)
 
 
 type Builder a = StateT BuilderState Result a
@@ -232,7 +235,7 @@ runBuilder m depth = do
     BuilderState mi defs _ <- execStateT m initial
     return (mi, defs)
   where
-    initial = BuilderState (ModelInfo Map.empty Map.empty Map.empty) [] depth
+    initial = BuilderState emptyModelInfo [] depth
 
 
 evalIntegerExpr :: Num a => Loc U.Expr -> Builder (a, Loc SomeExpr)
@@ -262,6 +265,11 @@ runTypeChecker m = do
 insertSymbol :: Scope -> Name -> Some Type -> Builder ()
 insertSymbol sc name ty =
     modelInfo.symbolTable.at (ScopedName sc name) .= Just ty
+
+
+insertRange :: Scope -> Name -> Maybe (Int, Int) -> Builder ()
+insertRange sc name mRange =
+    modelInfo.rangeTable.at (ScopedName sc name) .= mRange
 
 
 insertConstant :: Name -> SomeExpr -> Builder ()

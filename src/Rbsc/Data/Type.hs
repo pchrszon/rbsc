@@ -15,9 +15,13 @@ module Rbsc.Data.Type
     , (-->)
     , arrayLength
 
-      -- * Symbol tables
+      -- * Symbol table
     , SymbolTable
     , HasSymbolTable(..)
+
+      -- * Range table
+    , RangeTable
+    , HasRangeTable(..)
 
       -- * Type equality
     , (:~:)(..)
@@ -117,6 +121,18 @@ type SymbolTable = Map ScopedName (Some Type)
 
 class HasSymbolTable a where
     symbolTable :: Lens' a SymbolTable
+
+
+-- | The range table holds the range of each integer variable in the model.
+-- If a variable has an array type, where the base type is integer, then
+-- this variable is also present in the range table. (It is sufficient to
+-- store the range for the array variable, since all elements of the array
+-- have the same range.)
+type RangeTable = Map ScopedName (Int, Int)
+
+
+class HasRangeTable a where
+    rangeTable :: Lens' a RangeTable
 
 
 -- | Check the equality of 'Type's.
