@@ -35,5 +35,8 @@ instance HasComponentTypes Info where
 instance HasSymbolTable Info where
     symbolTable = modelInfo.symbolTable
 
+instance HasRangeTable Info where
+    rangeTable = modelInfo.rangeTable
+
 instance HasConstants Info where
     constants = modelInfo.constants

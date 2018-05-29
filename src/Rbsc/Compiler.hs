@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
+
+
 module Rbsc.Compiler where
 
 
@@ -33,6 +36,7 @@ import Rbsc.Syntax.Untyped
 import qualified Rbsc.Syntax.Typed as T
 
 import Rbsc.Translator.Instantiation
+import Rbsc.Translator.Reduction
 
 import Rbsc.TypeChecker
 
@@ -74,8 +78,11 @@ generateSystems parseResult = flip runReaderT (10 :: RecursionDepth) $ do
 instantiateComponents ::
        T.Model -> (System, ModelInfo) -> Result [T.TModuleBody Elem]
 instantiateComponents m (sys, info) = flip runReaderT (Info info 10) .
-    fmap concat . traverse (instantiateComponent m) $
-    toComponents sys
+    fmap concat . traverse instantiate $ toComponents sys
+  where
+    instantiate comp = do
+        bodies <- instantiateComponent m comp
+        traverse (removeVarIndicesInBody comp) bodies
 
 
 printSystem :: System -> IO ()

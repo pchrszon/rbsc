@@ -145,7 +145,7 @@ instance HasExprs expr => HasExprs (Assignment expr) where
 
 
 -- | An @Elem ty expr a@ is a single element of type @a@.
-newtype Elem ty expr a = Elem a deriving (Show)
+newtype Elem ty expr a = Elem { getElem :: a } deriving (Show)
 
 instance HasExprs a => HasExprs (Elem ty expr a) where
     exprs f (Elem x) = Elem <$> exprs f x

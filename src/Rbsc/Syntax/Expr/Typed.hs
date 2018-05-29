@@ -28,6 +28,8 @@ module Rbsc.Syntax.Expr.Typed
     , transformExprs
 
     , universeExpr
+    , universeExprs
+
     , plateExpr
     ) where
 
@@ -38,6 +40,7 @@ import Control.Lens
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict    (Map)
 import Data.Set           (Set)
+import Data.Monoid
 
 
 import Rbsc.Data.Action
@@ -211,10 +214,16 @@ transformExprs :: HasExprs a => (forall t. Expr t -> Expr t) -> a -> a
 transformExprs f = runIdentity . exprs (Identity . transformExpr f)
 
 
--- | Retrieve all of the transitive descendents of an 'Expr', including
+-- | Retrieve all of the transitive descendants of an 'Expr', including
 -- itself.
 universeExpr :: Expr t -> [Some Expr]
 universeExpr e = Some e : getConst (plateExpr (Const . universeExpr) e)
+
+
+-- | Retrieve all 'Expr's and their transitive descendants.
+universeExprs :: HasExprs a => a -> [Some Expr]
+universeExprs = concat .
+    flip appEndo [] . getConst . exprs (Const . Endo . (:) . universeExpr)
 
 
 -- | Traverse the immediate children of an 'Expr'.
