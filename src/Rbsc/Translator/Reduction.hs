@@ -26,6 +26,8 @@ import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
 
+import Rbsc.Eval
+
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Expr.Typed
@@ -61,13 +63,17 @@ data Range
 
 
 removeVarIndicesInBody ::
-       (MonadReader r m, HasConstants r, HasSymbolTable r, HasRangeTable r)
+       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
     => Component
     -> TModuleBody Elem
     -> m (TModuleBody Elem)
 removeVarIndicesInBody comp (ModuleBody vars cmds) = do
     cmds' <- concat <$> traverse removeIndices cmds
-    return (ModuleBody vars cmds')
+    cmds'' <- traverse (exprs reduce) cmds'
+
+    vars' <- (traverse._2._Just) (exprs reduce) vars
+
+    return (ModuleBody vars' cmds'')
   where
     removeIndices (Elem cmd) = fmap Elem <$> removeVariableIndices comp cmd
 
