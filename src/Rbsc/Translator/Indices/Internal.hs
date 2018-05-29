@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -6,18 +5,30 @@
 {-# LANGUAGE ViewPatterns          #-}
 
 
--- | Reduction of expressions in modules. This includes removal of function
--- calls, quantification and array accesses.
-module Rbsc.Translator.Reduction where
+-- | Internal functions for the Indices module.
+module Rbsc.Translator.Indices.Internal
+    ( Variable(..)
+    , VariableScope(..)
+    , TypedVariable(..)
+    , Range(..)
+
+    , valueGuard
+    , variableValues
+    , substituteVariable
+    , getIndexRanges
+    , indexExprs
+    , getVariableRanges
+    , variables
+    ) where
 
 
 import Control.Lens
 import Control.Monad.Reader
 
-import Data.Foldable
-import Data.Maybe
-import Data.Set (Set)
-import qualified Data.Set as Set
+import           Data.Foldable
+import           Data.Maybe
+import           Data.Set      (Set)
+import qualified Data.Set      as Set
 
 
 import Rbsc.Data.Component
@@ -26,26 +37,27 @@ import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
 
-import Rbsc.Eval
-
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Expr.Typed
 import Rbsc.Syntax.Typed      hiding (Type (..))
 
 
+-- | A @Variable@ has a 'Name' and can be either global or local.
 data Variable = Variable
-    { varName  :: !Name
-    , varScope :: VariableScope
+    { _varName  :: !Name
+    , _varScope :: VariableScope
     } deriving (Eq, Show)
 
 
+-- | The scope of a variable.
 data VariableScope
     = GlobalVar
     | LocalVar !TypeName !Name
     deriving (Eq, Show)
 
 
+-- | A variable with its 'Type'.
 data TypedVariable = TypedVariable Variable (Some Type) deriving (Show)
 
 instance Eq TypedVariable where
@@ -56,46 +68,15 @@ instance Ord TypedVariable where
         compare l r
 
 
+-- | The possible values a variable can have.
 data Range
     = BoolRange
     | IntRange (Int, Int)
     deriving (Eq, Show)
 
 
-removeVarIndicesInBody ::
-       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
-    => Component
-    -> TModuleBody Elem
-    -> m (TModuleBody Elem)
-removeVarIndicesInBody comp (ModuleBody vars cmds) = do
-    cmds' <- concat <$> traverse removeIndices cmds
-    cmds'' <- traverse (exprs reduce) cmds'
-
-    vars' <- (traverse._2._Just) (exprs reduce) vars
-
-    return (ModuleBody vars' cmds'')
-  where
-    removeIndices (Elem cmd) = fmap Elem <$> removeVariableIndices comp cmd
-
-
-removeVariableIndices ::
-       (MonadReader r m, HasConstants r, HasSymbolTable r, HasRangeTable r)
-    => Component
-    -> TCommand Elem
-    -> m [TCommand Elem]
-removeVariableIndices comp cmd = do
-    ranges <- getIndexRanges comp cmd
-    return (fmap remove (variableValues ranges))
-  where
-    remove vals =
-        let cmd' = substituteVariables vals cmd
-            g = (case cmdGuard cmd' of
-                    Loc (SomeExpr e TyBool) _ -> e
-                    _ -> error "removeVariableIndices: type error") :: Expr Bool
-            g' = LogicOp And (valueGuard vals) g
-        in cmd' { cmdGuard = SomeExpr g' TyBool `withLocOf` cmdGuard cmd }
-
-
+-- | Construct a guard expression stating that each variable has the given
+-- value.
 valueGuard :: [(Variable, SomeExpr)] -> Expr Bool
 valueGuard = \case
     []   -> Literal True
@@ -112,6 +93,8 @@ valueGuard = \case
             Nothing   -> error "variableGuard: type error"
 
 
+-- | Get a list of all possible combinations of assigning values to the
+-- given list of variables.
 variableValues :: [(Variable, Range)] -> [[(Variable, SomeExpr)]]
 variableValues = (traverse._2) getValue
   where
@@ -124,10 +107,7 @@ variableValues = (traverse._2) getValue
             return (SomeExpr (Literal val) TyInt)
 
 
-substituteVariables :: HasExprs a => [(Variable, SomeExpr)] -> a -> a
-substituteVariables vals x = foldr substituteVariable x vals
-
-
+-- | Substitute a 'Variable' with the given expression everywhere.
 substituteVariable :: HasExprs a => (Variable, SomeExpr) -> a -> a
 substituteVariable (Variable name sc, SomeExpr e ty) =
     transformExprs substitute
@@ -147,6 +127,7 @@ substituteVariable (Variable name sc, SomeExpr e ty) =
         _ -> e'
 
 
+-- | Get the 'Range's of all variables appearing inside an 'Index' operator.
 getIndexRanges ::
        (MonadReader r m, HasSymbolTable r, HasConstants r, HasRangeTable r)
     => Component
@@ -175,6 +156,7 @@ indexExprs cmd =
     fromLSomeExpr (Loc (SomeExpr e _) _) = Some e
 
 
+-- | Get the 'Range' for each variable in the given list.
 getVariableRanges ::
        (MonadReader r m, HasRangeTable r)
     => [TypedVariable]
@@ -200,6 +182,7 @@ getVariableRanges = fmap catMaybes . traverse getRange
         LocalVar tyName _ -> ScopedName (Local tyName) name
 
 
+-- | Get the set of 'TypedVariable's contained in an 'Expr'.
 variables ::
        (MonadReader r m, HasSymbolTable r, HasConstants r)
     => Component

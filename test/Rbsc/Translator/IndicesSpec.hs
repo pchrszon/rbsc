@@ -3,7 +3,7 @@
 {-# LANGUAGE QuasiQuotes       #-}
 
 
-module Rbsc.Translator.ReductionSpec (spec) where
+module Rbsc.Translator.IndicesSpec (spec) where
 
 
 import Control.Monad.Reader
@@ -27,8 +27,8 @@ import Rbsc.Report.Result
 import qualified Rbsc.Syntax.Typed   as T
 import qualified Rbsc.Syntax.Untyped as U
 
+import Rbsc.Translator.Indices.Internal
 import Rbsc.Translator.Instantiation
-import Rbsc.Translator.Reduction
 
 import Rbsc.TypeChecker
 
@@ -39,8 +39,8 @@ spec = describe "getIndexRanges" $
         getIndexRanges' testComponent testCommand
         `shouldBe`
         Right
-            [ (Variable "x" GlobalVar, IntRange (0, 1))
-            , (Variable "b" (LocalVar "N" "n"), BoolRange)
+            [ (Variable "b" (LocalVar "N" "n"), BoolRange)
+            , (Variable "x" GlobalVar, IntRange (0, 1))
             , (Variable "y" (LocalVar "N" "n"), IntRange (0, 1))
             ]
 

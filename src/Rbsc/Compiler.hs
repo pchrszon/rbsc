@@ -35,8 +35,8 @@ import Rbsc.Report.Warning as Warning
 import Rbsc.Syntax.Untyped
 import qualified Rbsc.Syntax.Typed as T
 
+import Rbsc.Translator.Indices
 import Rbsc.Translator.Instantiation
-import Rbsc.Translator.Reduction
 
 import Rbsc.TypeChecker
 
@@ -82,7 +82,7 @@ instantiateComponents m (sys, info) = flip runReaderT (Info info 10) .
   where
     instantiate comp = do
         bodies <- instantiateComponent m comp
-        traverse (removeVarIndicesInBody comp) bodies
+        traverse (removeVariableIndices comp) bodies
 
 
 printSystem :: System -> IO ()
