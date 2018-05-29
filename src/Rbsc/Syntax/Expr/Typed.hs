@@ -59,11 +59,17 @@ import Rbsc.Syntax.Quantification
 -- | Any syntax tree node @n@ that 'HasExprs' provides a traversal of all
 -- 'Expr's contained in that node and its subtree.
 class HasExprs a where
-    exprs :: Applicative f => (forall t. Expr t -> f (Expr t)) -> a -> f a
+    exprs ::
+           Applicative f
+        => (forall t. Loc (Expr t) -> f (Loc (Expr t)))
+        -> a
+        -> f a
 
 
-instance HasExprs a => HasExprs (Loc a) where
-    exprs f (Loc e rgn) = Loc <$> exprs f e <*> pure rgn
+instance HasExprs (Loc SomeExpr) where
+    exprs f (Loc (SomeExpr e ty) rgn) = fromLocExpr <$> f (Loc e rgn)
+      where
+        fromLocExpr (Loc e' rgn') = Loc (SomeExpr e' ty) rgn'
 
 
 -- | Typed abstract syntax of expressions.
@@ -96,9 +102,6 @@ data Expr t where
 
 deriving instance Show (Expr t)
 
-instance HasExprs (Expr t) where
-    exprs f = f
-
 
 data Quantifier t where
     Forall  :: Quantifier Bool
@@ -115,7 +118,7 @@ instance HasExprs (QuantifiedType ty (Loc (Expr Integer))) where
     exprs f = \case
         QdTypeComponent c -> pure (QdTypeComponent c)
         QdTypeInt (lower, upper) ->
-            QdTypeInt <$> ((,) <$> traverse f lower <*> traverse f upper)
+            QdTypeInt <$> ((,) <$> f lower <*> f upper)
 
 
 -- | A scoped expression contains a bound variable.
@@ -129,10 +132,6 @@ data SomeExpr where
     SomeExpr :: Expr t -> Type t -> SomeExpr
 
 deriving instance Show SomeExpr
-
-instance HasExprs SomeExpr where
-    exprs f (SomeExpr e ty) = SomeExpr <$> f e <*> pure ty
-
 
 deriving instance Show (Some Expr)
 
@@ -210,8 +209,9 @@ transformExprM f = go
 
 
 -- | Transform every expression in a syntax tree node.
-transformExprs :: HasExprs a => (forall t. Expr t -> Expr t) -> a -> a
-transformExprs f = runIdentity . exprs (Identity . transformExpr f)
+transformExprs ::
+       HasExprs a => (forall t. Expr t -> Expr t) -> a -> a
+transformExprs f = runIdentity . exprs (Identity . fmap (transformExpr f))
 
 
 -- | Retrieve all of the transitive descendants of an 'Expr', including
@@ -222,8 +222,8 @@ universeExpr e = Some e : getConst (plateExpr (Const . universeExpr) e)
 
 -- | Retrieve all 'Expr's and their transitive descendants.
 universeExprs :: HasExprs a => a -> [Some Expr]
-universeExprs = concat .
-    flip appEndo [] . getConst . exprs (Const . Endo . (:) . universeExpr)
+universeExprs = concat . flip appEndo [] .
+    getConst . exprs (Const . Endo . (:) . universeExpr . unLoc)
 
 
 -- | Traverse the immediate children of an 'Expr'.
