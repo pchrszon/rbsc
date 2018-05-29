@@ -16,6 +16,8 @@ import Control.Monad.Reader
 
 import Data.Foldable
 import Data.Maybe
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 
 import Rbsc.Data.Component
@@ -40,6 +42,16 @@ data VariableScope
     = GlobalVar
     | LocalVar !TypeName !Name
     deriving (Eq, Show)
+
+
+data TypedVariable = TypedVariable Variable (Some Type) deriving (Show)
+
+instance Eq TypedVariable where
+    TypedVariable (Variable l _) _ == TypedVariable (Variable r _) _ = l == r
+
+instance Ord TypedVariable where
+    compare (TypedVariable (Variable l _) _) (TypedVariable (Variable r _) _) =
+        compare l r
 
 
 data Range
@@ -135,8 +147,8 @@ getIndexRanges ::
     -> TCommand Elem
     -> m [(Variable, Range)]
 getIndexRanges comp cmd = do
-    vars <- concat <$> traverse (variables comp) (indexExprs cmd)
-    getVariableRanges vars
+    vars <- Set.unions <$> traverse (variables comp) (indexExprs cmd)
+    getVariableRanges (toList vars)
 
 
 -- | Retrieve all 'Expr's that appear as an index inside an 'Index' operator.
@@ -159,15 +171,15 @@ indexExprs cmd =
 
 getVariableRanges ::
        (MonadReader r m, HasRangeTable r)
-    => [(Variable, Some Type)]
+    => [TypedVariable]
     -> m [(Variable, Range)]
 getVariableRanges = fmap catMaybes . traverse getRange
   where
     getRange ::
            (MonadReader r m, HasRangeTable r)
-        => (Variable, Some Type)
+        => TypedVariable
         -> m (Maybe (Variable, Range))
-    getRange (var, Some ty) = case ty of
+    getRange (TypedVariable var (Some ty)) = case ty of
         TyBool -> return (Just (var, BoolRange))
         TyInt  -> do
             mr <- view (rangeTable.at (scopedName var))
@@ -186,8 +198,9 @@ variables ::
        (MonadReader r m, HasSymbolTable r, HasConstants r)
     => Component
     -> Some Expr
-    -> m [(Variable, Some Type)]
-variables comp (Some e) = fmap catMaybes (traverse variable (universeExpr e))
+    -> m (Set TypedVariable)
+variables comp (Some e) =
+    fmap (Set.fromList . catMaybes) (traverse variable (universeExpr e))
   where
     variable (Some e') = do
         symTable <- view symbolTable
@@ -195,13 +208,17 @@ variables comp (Some e) = fmap catMaybes (traverse variable (universeExpr e))
         return $ case e' of
             Identifier name ty
                 | has (at (ScopedName (Local tyName) name)._Just) symTable ->
-                    Just (Variable name (LocalVar tyName (view compName comp)), Some ty)
+                    Just (TypedVariable
+                        (Variable name (LocalVar tyName (view compName comp)))
+                        (Some ty))
                 | has (at (ScopedName Global name)._Just) symTable &&
                   has (at name._Nothing) consts ->
-                    Just (Variable name GlobalVar, Some ty)
+                    Just (TypedVariable (Variable name GlobalVar) (Some ty))
             Member (Identifier cName (TyComponent (toList -> [tyName']))) name ty
                 | has (at (ScopedName (Local tyName') name)._Just) symTable ->
-                    Just (Variable name (LocalVar tyName' cName), Some ty)
+                    Just (TypedVariable
+                        (Variable name (LocalVar tyName' cName))
+                        (Some ty))
             _ -> Nothing
 
     tyName = view compTypeName comp
