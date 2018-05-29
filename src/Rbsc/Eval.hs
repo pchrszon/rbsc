@@ -122,7 +122,7 @@ reduceInternal cs depth (Loc e rgn) =
                         toLiteral (LogicOp lOp l' r')
                 _ -> do
                     r' <- go r
-                    return (LogicOp lOp l' r')
+                    toLiteral (LogicOp lOp l' r')
 
         Apply f arg -> do
             f' <- go f
@@ -210,6 +210,26 @@ toLiteral e = case e of
 
     RelOp rOp (Literal l) (Literal r) ->
         return (Literal (relOp rOp l r))
+
+    LogicOp And (Literal True) r ->
+        return r
+
+    LogicOp And l (Literal True) ->
+        return l
+
+    -- the case "false and _" is already handled in "reduceInternal"
+    LogicOp And _ (Literal False) ->
+        return (Literal False)
+
+    LogicOp Or (Literal False) r ->
+        return r
+
+    LogicOp Or l (Literal False) ->
+        return l
+
+    -- the case "true or _" is already handled in "reduceInternal"
+    LogicOp Or _ (Literal True) ->
+        return (Literal True)
 
     LogicOp lOp (Literal l) (Literal r) ->
         return (Literal (logicOp lOp l r))
