@@ -3,7 +3,7 @@
 
 
 -- | Abstract syntax of untyped expressions.
-module Rbsc.Syntax.Expr.Untyped
+module Rbsc.Syntax.Untyped.Expr
     ( Expr(..)
     , Quantifier(..)
     , LExpr

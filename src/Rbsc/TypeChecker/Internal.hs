@@ -62,8 +62,8 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Expr.Typed (SomeExpr (..))
-import qualified Rbsc.Syntax.Expr.Typed as T
+import           Rbsc.Syntax.Typed.Expr (SomeExpr (..))
+import qualified Rbsc.Syntax.Typed.Expr as T
 
 import Rbsc.Util (toMaybe)
 

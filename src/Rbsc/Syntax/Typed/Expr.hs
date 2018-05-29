@@ -7,7 +7,7 @@
 
 
 -- | Typed expressions.
-module Rbsc.Syntax.Expr.Typed
+module Rbsc.Syntax.Typed.Expr
     ( HasExprs(..)
 
     , Expr(..)

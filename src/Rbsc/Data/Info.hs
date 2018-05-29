@@ -16,7 +16,7 @@ import Rbsc.Data.ComponentType
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
 
-import Rbsc.Syntax.Expr.Typed
+import Rbsc.Syntax.Typed.Expr
 
 
 data Info = Info

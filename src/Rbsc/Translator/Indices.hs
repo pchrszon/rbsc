@@ -25,8 +25,7 @@ import Rbsc.Eval
 
 import Rbsc.Report.Region
 
-import Rbsc.Syntax.Expr.Typed
-import Rbsc.Syntax.Typed      hiding (Type (..))
+import Rbsc.Syntax.Typed hiding (Type (..))
 
 import Rbsc.Translator.Indices.Internal
 

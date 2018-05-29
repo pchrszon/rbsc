@@ -29,7 +29,7 @@ import Rbsc.Data.Name
 
 import Rbsc.Report.Region
 
-import Rbsc.Syntax.Expr.Typed
+import Rbsc.Syntax.Typed.Expr
 
 
 -- | An implementation of a component.

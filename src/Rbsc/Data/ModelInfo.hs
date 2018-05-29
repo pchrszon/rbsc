@@ -23,7 +23,7 @@ import Control.Lens
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Type
 
-import Rbsc.Syntax.Expr.Typed
+import Rbsc.Syntax.Typed.Expr
 
 
 -- | The @ModelInfo@ holds the types of identifiers, the user-defined types

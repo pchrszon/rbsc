@@ -39,8 +39,7 @@ import Rbsc.Data.Type
 
 import Rbsc.Report.Region
 
-import Rbsc.Syntax.Expr.Typed
-import Rbsc.Syntax.Typed      hiding (Type (..))
+import Rbsc.Syntax.Typed hiding (Type (..))
 
 
 -- | A @Variable@ has a 'Name' and can be either global or local.

@@ -27,9 +27,9 @@ import Rbsc.Data.Function      (FunctionName (..))
 
 import Rbsc.Parser.Lexer
 
-import           Rbsc.Syntax.Expr.Untyped
 import qualified Rbsc.Syntax.Operators      as Ops
 import           Rbsc.Syntax.Quantification
+import           Rbsc.Syntax.Untyped.Expr
 
 
 -- | Parser for ranges.

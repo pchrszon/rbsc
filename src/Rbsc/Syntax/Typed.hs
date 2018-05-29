@@ -49,12 +49,12 @@ import Rbsc.Report.Region (Loc)
 
 import Rbsc.Syntax.ComponentType  as Syntax
 import Rbsc.Syntax.Constant       as Syntax
-import Rbsc.Syntax.Expr.Typed     as Syntax
 import Rbsc.Syntax.Function       as Syntax
 import Rbsc.Syntax.Impl           as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
 import Rbsc.Syntax.Type           as Syntax
+import Rbsc.Syntax.Typed.Expr     as Syntax
 import Rbsc.Syntax.VarDecl        as Syntax
 import Rbsc.Syntax.VarType        as Syntax
 

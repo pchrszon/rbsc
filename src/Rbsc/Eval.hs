@@ -43,10 +43,10 @@ import           Rbsc.Data.Type
 import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 
-import Rbsc.Syntax.Expr.Typed     (Constants, HasConstants (..))
-import Rbsc.Syntax.Expr.Typed     as T
 import Rbsc.Syntax.Operators
 import Rbsc.Syntax.Quantification
+import Rbsc.Syntax.Typed.Expr     (Constants, HasConstants (..))
+import Rbsc.Syntax.Typed.Expr     as T
 
 
 type MonadEval r m

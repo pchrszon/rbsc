@@ -29,8 +29,8 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result (toEither)
 
-import qualified Rbsc.Syntax.Expr.Untyped as U
 import           Rbsc.Syntax.Untyped      (Model)
+import qualified Rbsc.Syntax.Untyped.Expr as U
 
 import Rbsc.TypeChecker
 import Rbsc.TypeChecker.Expr

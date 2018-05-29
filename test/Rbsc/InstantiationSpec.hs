@@ -19,8 +19,8 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
-import Rbsc.Data.Info
 import Rbsc.Data.Component
+import Rbsc.Data.Info
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
 import Rbsc.Data.System
@@ -34,7 +34,7 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import Rbsc.Syntax.Expr.Typed (Expr (..), SomeExpr (..))
+import Rbsc.Syntax.Typed.Expr (Expr (..), SomeExpr (..))
 import Rbsc.Syntax.Untyped    (Model)
 
 import Rbsc.TypeChecker
