@@ -49,6 +49,7 @@ reservedWords =
     , "mod"
     , "log"
     , "count"
+    , "override"
     ]
 
 

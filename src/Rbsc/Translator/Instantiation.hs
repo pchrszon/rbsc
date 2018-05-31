@@ -56,7 +56,7 @@ unrollCommand :: MonadEval r m => TCommand ElemMulti -> m (TCommand Elem)
 unrollCommand Command{..} = do
     upds <- unrollElemMultis cmdUpdates
     upds' <- for upds $ \(Elem upd) -> Elem <$> unrollUpdate upd
-    return (Command cmdAction cmdGuard upds')
+    return (Command cmdAction cmdActionKind cmdGuard upds')
 
 
 unrollUpdate :: MonadEval r m => TUpdate ElemMulti -> m (TUpdate Elem)

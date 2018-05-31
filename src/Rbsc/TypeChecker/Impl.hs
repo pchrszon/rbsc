@@ -16,6 +16,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
+import Rbsc.Data.ComponentType
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
@@ -46,10 +47,21 @@ tcModuleBody ModuleBody{..} = ModuleBody
 
 
 tcCommand :: UCommand -> TypeChecker (TCommand ElemMulti)
-tcCommand Command{..} = Command
-    <$> traverse (\act -> (`withLocOf` act) <$> tcAction act) cmdAction
-    <*> someExpr cmdGuard TyBool
-    <*> tcElemMultis tcUpdate cmdUpdates
+tcCommand Command{..} = do
+    checkActionKind
+    Command
+        <$> traverse (\act -> (`withLocOf` act) <$> tcAction act) cmdAction
+        <*> pure cmdActionKind
+        <*> someExpr cmdGuard TyBool
+        <*> tcElemMultis tcUpdate cmdUpdates
+  where
+    checkActionKind = case cmdActionKind of
+        OverrideAction rgn -> view scope >>= \case
+            Local tyName -> view (componentTypes.at tyName) >>= \case
+                Just (RoleType _) -> return ()
+                _ -> throwOne rgn InvalidOverrideAction
+            Global -> throwOne rgn InvalidOverrideAction
+        NormalAction -> return ()
 
 
 tcUpdate :: UUpdate -> TypeChecker (TUpdate ElemMulti)

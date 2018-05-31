@@ -56,6 +56,7 @@ data ErrorDesc
     | InvalidLowerBound !Int
     | InvalidCardinalities !Int !Int
     | TooManyRoles !Name [(TypeName, Int)]
+    | InvalidOverrideAction
 
     | DivisionByZero
     | NotConstant
@@ -225,6 +226,12 @@ toReport (Error rgn desc) = case desc of
                 pack (show amount) <>
                 " more role" <> (if amount > 1 then "s" else "") <>
                 " of type " <> tyName <> " than allowed") amounts)
+
+    InvalidOverrideAction ->
+        errorReport "invalid override action"
+            [ errorPart rgn $ Just
+                "override actions can only be used in role implementations"
+            ]
 
 
     DivisionByZero ->

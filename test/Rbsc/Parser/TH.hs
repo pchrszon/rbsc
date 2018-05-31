@@ -115,6 +115,7 @@ deriving instance (Data expr, Data ty, Data vars) => Data (ModuleBody ElemMulti 
 deriving instance (Data expr, Data ty) => Data (Command ElemMulti ty expr)
 deriving instance (Data expr, Data ty) => Data (Update ElemMulti ty expr)
 deriving instance Data expr => Data (Assignment expr)
+deriving instance Data ActionKind
 
 deriving instance (Data ty, Data expr, Data a) => Data (Elem ty expr a)
 deriving instance (Data ty, Data expr, Data a) => Data (ElemMulti ty expr a)

@@ -47,10 +47,11 @@ moduleBody = ModuleBody <$> many (varDecl <* semi) <*> elemMultis command many
 
 
 command :: Parser UCommand
-command = label "command" $ Command
-    <$> brackets (optional expr)
-    <*> expr
-    <*> (operator "->" *> updates)
+command = label "command" $ do
+    (actKind, act) <- brackets $
+        (,) <$> option NormalAction (OverrideAction <$> reserved "override")
+            <*> optional expr
+    Command act actKind <$> expr <*> (operator "->" *> updates)
 
 
 updates :: Parser [UElemMulti UUpdate]

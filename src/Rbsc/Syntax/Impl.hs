@@ -13,6 +13,7 @@ module Rbsc.Syntax.Impl
     , ModuleBody(..)
 
     , Command(..)
+    , ActionKind(..)
     , Update(..)
     , Assignment(..)
 
@@ -93,9 +94,10 @@ deriving instance
 
 -- | A guarded command.
 data Command elem ty expr = Command
-    { cmdAction  :: Maybe expr
-    , cmdGuard   :: expr
-    , cmdUpdates :: [elem ty expr (Update elem ty expr)]
+    { cmdAction     :: Maybe expr
+    , cmdActionKind :: !ActionKind
+    , cmdGuard      :: expr
+    , cmdUpdates    :: [elem ty expr (Update elem ty expr)]
     }
 
 deriving instance (Show ty, Show expr) => Show (Command ElemMulti ty expr)
@@ -105,14 +107,23 @@ instance (HasExprs ty, HasExprs expr) =>
          HasExprs (Command ElemMulti ty expr) where
     exprs f Command {..} = Command
         <$> traverse (exprs f) cmdAction
+        <*> pure cmdActionKind
         <*> exprs f cmdGuard
         <*> traverse (exprs f) cmdUpdates
 
 instance HasExprs expr => HasExprs (Command Elem ty expr) where
     exprs f Command {..} = Command
         <$> traverse (exprs f) cmdAction
+        <*> pure cmdActionKind
         <*> exprs f cmdGuard
         <*> traverse (exprs f) cmdUpdates
+
+
+-- | An action can be either normal or overriding.
+data ActionKind
+    = NormalAction
+    | OverrideAction !Region
+    deriving (Show)
 
 
 -- | A stochastic update.
