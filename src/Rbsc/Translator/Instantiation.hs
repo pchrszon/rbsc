@@ -7,18 +7,22 @@
 
 -- | Instantiation of component implementations.
 module Rbsc.Translator.Instantiation
-    ( instantiateComponent
+    ( instantiateComponents
+    , instantiateComponent
     ) where
 
 
 import Control.Lens
+import Control.Monad
 
+import           Data.Map.Strict  (Map)
 import qualified Data.Map.Strict  as Map
 import           Data.Maybe
 import           Data.Traversable
 
 
 import Rbsc.Data.Component
+import Rbsc.Data.System
 import Rbsc.Data.Type
 
 import Rbsc.Eval
@@ -26,6 +30,31 @@ import Rbsc.Eval
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Typed hiding (Type (..))
+
+import Rbsc.Translator.Indices
+
+
+-- | Instantiate the 'ModuleBody's for all 'Component's in the given
+-- 'System'.
+instantiateComponents ::
+       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
+    => Model
+    -> System
+    -> m (Map Name [TModuleBody Elem])
+instantiateComponents m = fmap Map.fromList . traverse inst . toComponents
+  where
+    inst comp = do
+        bodies <-
+            traverse (reduceModuleBody <=< removeVariableIndices comp) =<<
+            instantiateComponent m comp
+        return (view compName comp, bodies)
+
+
+reduceModuleBody :: MonadEval r m => TModuleBody Elem -> m (TModuleBody Elem)
+reduceModuleBody ModuleBody {..} = do
+    vars <- (traverse._2._Just) (exprs reduce) bodyVars
+    cmds <- traverse (exprs reduce) bodyCommands
+    return (ModuleBody vars cmds)
 
 
 -- | Instantiate all 'ModuleBody's for the given 'Component'.

@@ -10,6 +10,7 @@ import Control.Monad.Reader
 import Data.Foldable
 
 import Data.List (intersperse)
+import Data.Map.Strict (Map)
 import qualified Data.Text.IO                              as Text
 import           Data.Text.Prettyprint.Doc                 (pretty)
 import           Data.Text.Prettyprint.Doc.Render.Terminal
@@ -35,7 +36,6 @@ import Rbsc.Report.Warning as Warning
 import Rbsc.Syntax.Untyped
 import qualified Rbsc.Syntax.Typed as T
 
-import Rbsc.Translator.Indices
 import Rbsc.Translator.Instantiation
 
 import Rbsc.TypeChecker
@@ -43,14 +43,14 @@ import Rbsc.TypeChecker
 import Rbsc.Visualization.System
 
 
-compile :: FilePath -> IO [[T.TModuleBody Elem]]
+compile :: FilePath -> IO [Map Name [T.TModuleBody Elem]]
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
 
     let (result, warnings) = toEither' $ do
             (model, sysInfos) <- generateSystems parseResult
-            bodiess <- traverse (instantiateComponents model) sysInfos
+            bodiess <- traverse (instantiateComponents' model) sysInfos
             return (bodiess, sysInfos)
 
     case result of
@@ -75,14 +75,10 @@ generateSystems parseResult = flip runReaderT (10 :: RecursionDepth) $ do
     return (model', is)
 
 
-instantiateComponents ::
-       T.Model -> (System, ModelInfo) -> Result [T.TModuleBody Elem]
-instantiateComponents m (sys, info) = flip runReaderT (Info info 10) .
-    fmap concat . traverse instantiate $ toComponents sys
-  where
-    instantiate comp = do
-        bodies <- instantiateComponent m comp
-        traverse (removeVariableIndices comp) bodies
+instantiateComponents' ::
+       T.Model -> (System, ModelInfo) -> Result (Map Name [T.TModuleBody Elem])
+instantiateComponents' m (sys, info) =
+    runReaderT (instantiateComponents m sys) (Info info 10)
 
 
 printSystem :: System -> IO ()
