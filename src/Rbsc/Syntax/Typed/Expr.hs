@@ -36,6 +36,7 @@ module Rbsc.Syntax.Typed.Expr
 
 import Control.Applicative
 import Control.Lens
+import Control.Monad.Reader
 
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict    (Map)
@@ -144,46 +145,30 @@ class HasConstants a where
 
 
 -- | Instantiate all variables bound by the outermost binder.
-instantiate :: forall t. Scoped t -> SomeExpr -> Expr t
-instantiate (Scoped body) (SomeExpr s ty) = go 0 body
+instantiate :: Scoped t -> SomeExpr -> Expr t
+instantiate (Scoped body) (SomeExpr s ty) = runReader (go body) 0
   where
-    go :: Int -> Expr a -> Expr a
-    go i = \case
-        Literal x           -> Literal x
-        LitArray es         -> LitArray (fmap (go i) es)
-        LitFunction f       -> LitFunction f
-        Self                -> Self
-        Identifier name ty' -> Identifier name ty'
-        Cast e              -> Cast (go i e)
-        ActionArray e       -> ActionArray (go i e)
-        Not e               -> Not (go i e)
-        Negate e            -> Negate (go i e)
-        ArithOp aOp l r     -> ArithOp aOp (go i l) (go i r)
-        Divide rgn l r      -> Divide rgn (go i l) (go i r)
-        EqOp eOp l r        -> EqOp eOp (go i l) (go i r)
-        RelOp rOp l r       -> RelOp rOp (go i l) (go i r)
-        LogicOp lOp l r     -> LogicOp lOp (go i l) (go i r)
-        Member e name ty'   -> Member (go i e) name ty'
-        Index e idx         -> Index (go i e) (fmap (go i) idx)
-        Apply f e           -> Apply (go i f) (go i e)
-        IfThenElse c t e    -> IfThenElse (go i c) (go i t) (go i e)
-        HasType e tyName    -> HasType (go i e) tyName
-        BoundTo l r         -> BoundTo (fmap (go i) l) (fmap (go i) r)
-        Element l r         -> Element (fmap (go i) l) (fmap (go i) r)
-        Bound i' ty'
-            | i == i' -> case typeEq ty ty' of
-                Just Refl -> s
-                Nothing   -> error "instantiate: type error"
-            | otherwise -> Bound i' ty'
-        Count tySet e -> Count tySet (go i e)
-        Lambda ty' (Scoped body') -> Lambda ty' (Scoped (go (succ i) body'))
-        Quantified q qdTy (Scoped body') ->
-            Quantified q (goQdType i qdTy) (Scoped (go (succ i) body'))
+    go :: Expr a -> Reader Int (Expr a)
+    go = \case
+        Bound i' ty' -> do
+            i <- ask
+            if i == i'
+                then case typeEq ty ty' of
+                    Just Refl -> return s
+                    Nothing   -> error "instantiate: type error"
+                else
+                    return (Bound i' ty')
+        Lambda ty' (Scoped body') ->
+            Lambda ty' . Scoped <$> local succ (go body')
+        Quantified q qdTy (Scoped body') -> Quantified q
+            <$> goQdType qdTy
+            <*> (Scoped <$> local succ (go body'))
+        e -> plateExpr go e
 
-    goQdType i = \case
-        QdTypeComponent tySet -> QdTypeComponent tySet
+    goQdType = \case
+        QdTypeComponent tySet -> return (QdTypeComponent tySet)
         QdTypeInt (lower, upper) ->
-            QdTypeInt (fmap (go i) lower, fmap (go i) upper)
+            QdTypeInt <$> ((,) <$> traverse go lower <*> traverse go upper)
 
 
 -- | Instantiate the outermost binder in all expressions in a syntax tree.
