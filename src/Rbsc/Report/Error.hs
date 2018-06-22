@@ -61,7 +61,6 @@ data ErrorDesc
     | TooManyRoles !Name [(TypeName, Int)]
     | InvalidOverrideAction
     | IncompatibleRoles !Name !Region !Name !Name !Text
-    | CyclicBinding [Name]
 
     -- evaluation errors
     | DivisionByZero
@@ -246,10 +245,6 @@ toReport (Error rgn desc) = case desc of
             [ errorPart rgn . Just $ "the overriding action " <> act <> " ..."
             , errorPart secondRgn (Just "... is also used here")
             ]
-
-    CyclicBinding cores ->
-        flip errorReport [] $
-            "cyclic binding among components " <> list "and" cores
 
 
     DivisionByZero ->

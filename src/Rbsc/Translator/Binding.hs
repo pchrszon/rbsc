@@ -2,7 +2,6 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
 
 
 -- | This module provides functionality to generate role bindings and
@@ -14,12 +13,10 @@ module Rbsc.Translator.Binding
 
 
 import Control.Lens
-import Control.Monad.Except
 
 import           Data.Foldable
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe
 import           Data.Set        (Set)
 import qualified Data.Set        as Set
 import Data.Traversable
@@ -35,7 +32,7 @@ import Rbsc.Report.Result
 
 import Rbsc.Translator.Alphabet
 
-import Rbsc.Util (renderPretty, topoSort)
+import Rbsc.Util (renderPretty)
 
 
 -- | A mapping from components to the role components that are bound to it.
@@ -59,35 +56,12 @@ data Binding = Binding
 
 
 globalBindings :: System -> Alphabets -> Result [Binding]
-globalBindings sys as = case topoSort (Set.toList cores) dependsOn of
-    Left depCycle ->
-        throwError (Error dummyRegion (CyclicBinding (toList depCycle)))
-    Right orderedCores -> fmap concat . for orderedCores $ \core -> do
+globalBindings sys as =
+    fmap concat . for (toList (coreComponents sys)) $ \core -> do
         checkCompatibilities sys plays as core
         return (localBindings sys plays core)
   where
-    -- a core compartment c depends on another core component c', if
-    -- c contains any roles whose core component is c'
-    dependsOn core =
-        nub (mapMaybe (`Map.lookup` roleCore) (containedRoles core sys))
-
-    -- the set of all components that are not bound to another component
-    cores = coreComponents sys
-
-    -- mapping from core components to their transitively bound roles
-    coreRoles = Map.fromSet (rolesOfCore plays) cores
-
-    -- mapping of each bound role to its core component
-    roleCore = Map.unions (fmap
-             (\(core, roles) -> Map.fromSet (const core) roles)
-             (Map.assocs coreRoles))
-
-    -- inverse of the @boundto@ relation
     plays = buildPlaysRelation sys
-
-    nub = Set.toDescList . Set.fromList
-
-    dummyRegion = Region "" "" (Position 1 1) (Position 1 2)
 
 
 localBindings :: System -> PlaysRelation -> Name -> [Binding]
