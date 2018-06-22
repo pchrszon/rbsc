@@ -45,7 +45,7 @@ import qualified Rbsc.Syntax.Untyped.Expr   as U
 
 import Rbsc.TypeChecker.Internal
 
-import Rbsc.Util (toMaybe)
+import Rbsc.Util (renderPretty, toMaybe)
 
 
 -- | Type check an action.
@@ -151,7 +151,7 @@ tcExpr (Loc e rgn) = case e of
             TyAction ->
                 T.Index (T.ActionArray inner') (idx' `withLocOf` idx) `withType`
                 TyAction
-            _ -> throwOne (getLoc inner) (NotAnArray (renderType ty))
+            _ -> throwOne (getLoc inner) (NotAnArray (renderPretty ty))
 
     U.Call f args -> do
         f' <- tcExpr f
@@ -286,7 +286,7 @@ tcCall (Loc (SomeExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
     Dict <- return (dictShow tyRes)
     tcCall (Loc (SomeExpr (T.Apply f arg') tyRes) rgn) args
 tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
-    throwOne rgn (NotAFunction (renderType ty))
+    throwOne rgn (NotAFunction (renderPretty ty))
 
 
 -- | @getLocalVarTypes name tySet@ returns the type of the member @name@
@@ -316,14 +316,13 @@ getMemberType rgn name memberTys
         [] -> error "getMemberType: empty list"
         [(_, ty)] -> return ty
         ((firstTyName, Some firstTy):(secondTyName, Some secondTy):_) ->
-            throwOne
-                rgn
+            throwOne rgn
                 (ConflictingMemberTypes
                      name
                      firstTyName
-                     (renderType firstTy)
+                     (renderPretty firstTy)
                      secondTyName
-                     (renderType secondTy))
+                     (renderPretty secondTy))
   where
     (defineds, undefineds) = foldr f ([], []) memberTys
     f memberTy (ds, us) = case memberTy of

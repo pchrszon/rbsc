@@ -26,6 +26,7 @@ module Rbsc.Syntax.Impl
 import Data.List.NonEmpty (NonEmpty)
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.Name
 
 import Rbsc.Report.Region
@@ -117,13 +118,6 @@ instance HasExprs expr => HasExprs (Command Elem ty expr) where
         <*> pure cmdActionKind
         <*> exprs f cmdGuard
         <*> traverse (exprs f) cmdUpdates
-
-
--- | An action can be either normal or overriding.
-data ActionKind
-    = NormalAction
-    | OverrideAction !Region
-    deriving (Show)
 
 
 -- | A stochastic update.

@@ -36,7 +36,6 @@ module Rbsc.TypeChecker.Internal
     , isOrdType
     , isNumType
     , typeError
-    , renderType
     ) where
 
 
@@ -48,8 +47,6 @@ import Control.Monad.Reader
 import           Data.List                 (find)
 import qualified Data.Map.Strict           as Map
 import           Data.Text                 (Text)
-import qualified Data.Text                 as Text
-import           Data.Text.Prettyprint.Doc (pretty)
 
 
 import Rbsc.Data.ComponentType
@@ -65,7 +62,7 @@ import Rbsc.Report.Result
 import           Rbsc.Syntax.Typed.Expr (SomeExpr (..))
 import qualified Rbsc.Syntax.Typed.Expr as T
 
-import Rbsc.Util (toMaybe)
+import Rbsc.Util (renderPretty, toMaybe)
 
 
 -- | The @TypeChecker@ monad.
@@ -173,7 +170,7 @@ expect expected rgn actual =
 isEqType :: Type t -> Region -> TypeChecker (Dict (Eq t))
 isEqType ty rgn = case checkEq ty of
     Just Dict -> return Dict
-    Nothing   -> throwOne rgn (NotComparable (renderType ty))
+    Nothing   -> throwOne rgn (NotComparable (renderPretty ty))
 
 
 -- | Assume that values of the given type are comparable. If not, an error
@@ -181,7 +178,7 @@ isEqType ty rgn = case checkEq ty of
 isOrdType :: Type t -> Region -> TypeChecker (Dict (Ord t))
 isOrdType ty rgn = case checkOrd ty of
     Just Dict -> return Dict
-    Nothing   -> throwOne rgn (NotComparable (renderType ty))
+    Nothing   -> throwOne rgn (NotComparable (renderPretty ty))
 
 
 -- | Assume that the given type is a number type. If not, a type error is
@@ -200,11 +197,7 @@ withType e ty = return (SomeExpr e ty)
 -- | @typeError expected actual region@ constructs a 'Type.Error'.
 typeError :: [Some Type] -> Type t -> ErrorDesc
 typeError expected actual =
-    TypeError (fmap renderSomeType expected) (renderType actual)
+    TypeError (fmap renderSomeType expected) (renderPretty actual)
   where
-    renderSomeType (Some ty) = renderType ty
-
-
--- | Create a humen-readable textual representation of a 'Type'.
-renderType :: Type t -> Text
-renderType = Text.pack . show . pretty
+    renderSomeType :: Some Type -> Text
+    renderSomeType (Some ty) = renderPretty ty

@@ -11,6 +11,7 @@ import Data.Foldable
 
 import Data.List (intersperse)
 import Data.Map.Strict (Map)
+import Data.Set (Set)
 import qualified Data.Text.IO                              as Text
 import           Data.Text.Prettyprint.Doc                 (pretty)
 import           Data.Text.Prettyprint.Doc.Render.Terminal
@@ -36,6 +37,8 @@ import Rbsc.Report.Warning as Warning
 import Rbsc.Syntax.Untyped
 import qualified Rbsc.Syntax.Typed as T
 
+import Rbsc.Translator.Alphabet
+import Rbsc.Translator.Binding
 import Rbsc.Translator.Instantiation
 
 import Rbsc.TypeChecker
@@ -43,7 +46,7 @@ import Rbsc.TypeChecker
 import Rbsc.Visualization.System
 
 
-compile :: FilePath -> IO [Map Name [T.TModuleBody Elem]]
+compile :: FilePath -> IO [(Map Name [T.TModuleBody Elem], Map Name (Set RoleName))]
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
@@ -51,7 +54,9 @@ compile path = do
     let (result, warnings) = toEither' $ do
             (model, sysInfos) <- generateSystems parseResult
             bodiess <- traverse (instantiateComponents' model) sysInfos
-            return (bodiess, sysInfos)
+            ass <- traverse alphabets bodiess
+            bindss <- traverse (\(as, (sys, _)) -> generateBindings sys as) (zip ass sysInfos)
+            return (bodiess, bindss, sysInfos)
 
     case result of
         Left errors -> do
@@ -59,12 +64,12 @@ compile path = do
             unless (null errors) (putStrLn "")
             printWarnings warnings
             return []
-        Right (bodiess, results) -> do
+        Right (bodiess, bindss, results) -> do
             printWarnings warnings
             let systems = fmap fst results
             traverse_ printSystem systems
             -- drawSystems systems
-            return bodiess
+            return (zip bodiess bindss)
 
 
 generateSystems :: Result Model -> Result (T.Model, [(System, ModelInfo)])

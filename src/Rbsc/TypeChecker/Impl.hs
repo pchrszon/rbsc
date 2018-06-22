@@ -12,7 +12,7 @@ module Rbsc.TypeChecker.Impl
 import Control.Lens
 import Control.Monad.Reader
 
-import Data.Map.Strict (Map)
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
@@ -31,6 +31,8 @@ import qualified Rbsc.Syntax.Untyped as U
 
 import Rbsc.TypeChecker.Expr
 import Rbsc.TypeChecker.Internal
+
+import Rbsc.Util (renderPretty)
 
 
 tcImpls ::
@@ -88,7 +90,7 @@ tcIndices rgn (i:is) (Some (TyArray _ elemTy)) = do
     i' <- someExpr i TyInt
     (is', ty') <- tcIndices rgn is (Some elemTy)
     return (i' : is', ty')
-tcIndices rgn (_:_) (Some ty) = throwOne rgn (NotAnArray (renderType ty))
+tcIndices rgn (_:_) (Some ty) = throwOne rgn (NotAnArray (renderPretty ty))
 
 
 tcElemMultis ::

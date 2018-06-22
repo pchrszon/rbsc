@@ -3,7 +3,8 @@
 
 -- | Various utility functions.
 module Rbsc.Util
-    ( inverseLookup
+    ( renderPretty
+    , inverseLookup
     , appendIndex
     , toMaybe
     , topoSort
@@ -20,6 +21,13 @@ import           Data.List.NonEmpty (NonEmpty, fromList)
 import           Data.Map           (Map)
 import qualified Data.Map           as Map
 import           Data.Text          (Text, append, pack)
+import Data.Text.Prettyprint.Doc
+import Data.Text.Prettyprint.Doc.Render.Text
+
+
+-- | Render a 'Pretty' value to 'Text'.
+renderPretty :: Pretty a => a -> Text
+renderPretty = renderStrict . layoutPretty defaultLayoutOptions . pretty
 
 
 -- | Lookup all keys that have the same value in the map.

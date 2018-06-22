@@ -30,10 +30,12 @@ data Error = Error
 
 
 data ErrorDesc
+    -- syntax errors
     = ParseError !Text
     | DuplicateModule !Region
     | UndefinedModule
 
+    -- identifier errors
     | UndefinedType
     | DuplicateType !Region
     | NonRoleInCompartment
@@ -41,6 +43,7 @@ data ErrorDesc
     | DuplicateIdentifier !Region
     | CyclicDefinition !Text [Region]
 
+    -- semantic errors
     | TypeError [Text] !Text
     | NotComparable !Text
     | UndefinedMember [TypeName] !Name
@@ -57,7 +60,10 @@ data ErrorDesc
     | InvalidCardinalities !Int !Int
     | TooManyRoles !Name [(TypeName, Int)]
     | InvalidOverrideAction
+    | IncompatibleRoles !Name !Region !Name !Name !Text
+    | CyclicBinding [Name]
 
+    -- evaluation errors
     | DivisionByZero
     | NotConstant
     | InvalidUpperBound !Int
@@ -232,6 +238,18 @@ toReport (Error rgn desc) = case desc of
             [ errorPart rgn $ Just
                 "override actions can only be used in role implementations"
             ]
+
+    IncompatibleRoles first secondRgn second core act ->
+        errorReport
+            ("roles " <> first <> " and " <> second <> " bound to " <>
+                core <> " are incompatible")
+            [ errorPart rgn . Just $ "the overriding action " <> act <> " ..."
+            , errorPart secondRgn (Just "... is also used here")
+            ]
+
+    CyclicBinding cores ->
+        flip errorReport [] $
+            "cyclic binding among components " <> list "and" cores
 
 
     DivisionByZero ->
