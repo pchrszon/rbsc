@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase         #-}
 {-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell    #-}
 
 
 -- | Abstract syntax of component implementations.
@@ -11,6 +12,9 @@ module Rbsc.Syntax.Impl
 
     , Module(..)
     , ModuleBody(..)
+    , NamedModuleBody(..)
+    , bodyName
+    , namedBody
 
     , Command(..)
     , ActionKind(..)
@@ -22,6 +26,8 @@ module Rbsc.Syntax.Impl
     , Loop(..)
     ) where
 
+
+import Control.Lens
 
 import Data.List.NonEmpty (NonEmpty)
 
@@ -92,6 +98,19 @@ deriving instance
          (Show vars, Show ty, Show expr) =>
          Show (ModuleBody Elem vars ty expr)
 
+
+data NamedModuleBody elem vars ty expr = NamedModuleBody
+    { _bodyName  :: !Name
+    , _namedBody :: ModuleBody elem vars ty expr
+    }
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (NamedModuleBody ElemMulti vars ty expr)
+
+deriving instance
+         (Show vars, Show ty, Show expr) =>
+         Show (NamedModuleBody Elem vars ty expr)
 
 -- | A guarded command.
 data Command elem ty expr = Command
@@ -183,3 +202,6 @@ instance (HasExprs ty, HasExprs expr, HasExprs a) =>
          HasExprs (Loop ty expr a) where
     exprs f Loop {..} =
         Loop loopVar <$> exprs f loopType <*> traverse (exprs f) loopBody
+
+
+makeLenses ''NamedModuleBody

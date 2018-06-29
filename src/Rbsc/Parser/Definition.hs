@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TemplateHaskell       #-}
 
 
@@ -70,7 +71,9 @@ toModel defs = do
 
 
 getImplementations ::
-       MonadError [Error] m => [Definition] -> m (Map TypeName [UModuleBody])
+       MonadError [Error] m
+    => [Definition]
+    -> m (Map TypeName [UNamedModuleBody])
 getImplementations defs = do
     mods <- getModules defs
     let impls = toListOf (traverse._DefImplementation) defs
@@ -78,11 +81,11 @@ getImplementations defs = do
   where
     fromImpl mods (Implementation (Loc tyName _) body) =
         fmap (Map.singleton tyName) $ case body of
-            ImplSingle b -> return [b]
+            ImplSingle b -> return [NamedModuleBody "impl" b]
             ImplModules ms ->
                 for (toList ms) $ \(Loc name rgn) ->
                     case Map.lookup name mods of
-                        Just b  -> return (unLoc b)
+                        Just b  -> return (NamedModuleBody name (unLoc b))
                         Nothing -> throwError [Error rgn UndefinedModule]
 
 

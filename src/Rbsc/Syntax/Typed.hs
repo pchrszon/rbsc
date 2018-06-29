@@ -20,6 +20,7 @@ module Rbsc.Syntax.Typed
     , TImplBody
     , TModule
     , TModuleBody
+    , TNamedModuleBody
     , TCommand
     , TUpdate
     , TAssignment
@@ -64,7 +65,7 @@ data Model = Model
     { modelConstants :: [TConstant]
     , modelGlobals   :: TInits
     , modelSystem    :: [Loc (Expr Bool)]
-    , modelImpls     :: Map TypeName [TModuleBody ElemMulti]
+    , modelImpls     :: Map TypeName [TNamedModuleBody ElemMulti]
     } deriving (Show)
 
 
@@ -78,10 +79,11 @@ type TParameter = Parameter LSomeExpr
 type TVarDecl = VarDecl LSomeExpr
 
 
-type TImplementation  = Implementation ElemMulti TInits TQuantifiedType LSomeExpr
-type TImplBody        = ImplBody ElemMulti TInits TQuantifiedType LSomeExpr
-type TModule          = Module ElemMulti TInits TQuantifiedType LSomeExpr
-type TModuleBody elem = ModuleBody elem TInits TQuantifiedType LSomeExpr
+type TImplementation       = Implementation ElemMulti TInits TQuantifiedType LSomeExpr
+type TImplBody             = ImplBody ElemMulti TInits TQuantifiedType LSomeExpr
+type TModule               = Module ElemMulti TInits TQuantifiedType LSomeExpr
+type TModuleBody elem      = ModuleBody elem TInits TQuantifiedType LSomeExpr
+type TNamedModuleBody elem = NamedModuleBody elem TInits TQuantifiedType LSomeExpr
 
 type TInits = [TInit]
 type TInit  = (Name, Maybe LSomeExpr)

@@ -3,6 +3,7 @@ module Rbsc.Data.Name
     ( Name
     , RoleName
     , TypeName(..)
+    , Qualified(..)
     ) where
 
 
@@ -32,3 +33,11 @@ instance Pretty TypeName where
 
 instance IsString TypeName where
     fromString = TypeName . fromString
+
+
+-- | A fully qualified name.
+data Qualified
+    = QlName !Name
+    | QlMember Qualified !Name
+    | QlIndex Qualified !Int
+    deriving (Eq, Ord, Show)

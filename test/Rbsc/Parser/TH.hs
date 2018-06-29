@@ -112,6 +112,7 @@ deriving instance (Data expr, Data ty, Data vars) => Data (Implementation ElemMu
 deriving instance (Data expr, Data ty, Data vars) => Data (ImplBody ElemMulti vars ty expr)
 deriving instance (Data expr, Data ty, Data vars) => Data (Module ElemMulti vars ty expr)
 deriving instance (Data expr, Data ty, Data vars) => Data (ModuleBody ElemMulti vars ty expr)
+deriving instance (Data expr, Data ty, Data vars) => Data (NamedModuleBody ElemMulti vars ty expr)
 deriving instance (Data expr, Data ty) => Data (Command ElemMulti ty expr)
 deriving instance (Data expr, Data ty) => Data (Update ElemMulti ty expr)
 deriving instance Data expr => Data (Assignment expr)

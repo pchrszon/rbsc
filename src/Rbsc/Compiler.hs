@@ -9,12 +9,13 @@ import Control.Monad.Reader
 
 import Data.Foldable
 
-import Data.List (intersperse)
-import Data.Map.Strict (Map)
-import Data.Set (Set)
+import           Data.List                                 (intersperse)
+import           Data.Map.Strict                           (Map)
 import qualified Data.Text.IO                              as Text
 import           Data.Text.Prettyprint.Doc                 (pretty)
 import           Data.Text.Prettyprint.Doc.Render.Terminal
+
+import qualified Language.Prism as Prism
 
 import System.Process (callCommand)
 
@@ -22,31 +23,32 @@ import System.Process (callCommand)
 import Rbsc.Config
 
 import Rbsc.Data.Info
-import Rbsc.Data.System
 import Rbsc.Data.ModelInfo
+import Rbsc.Data.System
 
 import Rbsc.Instantiation
 
 import Rbsc.Parser
 
 import Rbsc.Report
+import Rbsc.Report.Error   as Error
 import Rbsc.Report.Result
-import Rbsc.Report.Error as Error
 import Rbsc.Report.Warning as Warning
 
-import Rbsc.Syntax.Untyped
-import qualified Rbsc.Syntax.Typed as T
+import qualified Rbsc.Syntax.Typed   as T
+import           Rbsc.Syntax.Untyped
 
-import Rbsc.Translator.Alphabet
-import Rbsc.Translator.Binding
 import Rbsc.Translator.Instantiation
+import Rbsc.Translator.Module
 
 import Rbsc.TypeChecker
 
 import Rbsc.Visualization.System
 
 
-compile :: FilePath -> IO [(Map Name [T.TModuleBody Elem], Map Name (Set RoleName))]
+compile ::
+       FilePath
+    -> IO [Map Name [T.TNamedModuleBody Elem]]
 compile path = do
     content <- Text.readFile path
     parseResult <- parse path content
@@ -54,9 +56,8 @@ compile path = do
     let (result, warnings) = toEither' $ do
             (model, sysInfos) <- generateSystems parseResult
             bodiess <- traverse (instantiateComponents' model) sysInfos
-            ass <- traverse alphabets bodiess
-            bindss <- traverse (\(as, (sys, _)) -> generateBindings sys as) (zip ass sysInfos)
-            return (bodiess, bindss, sysInfos)
+            bodiess' <- traverse (uncurry translateComponents) (zip sysInfos bodiess)
+            return (bodiess, bodiess', sysInfos)
 
     case result of
         Left errors -> do
@@ -64,12 +65,13 @@ compile path = do
             unless (null errors) (putStrLn "")
             printWarnings warnings
             return []
-        Right (bodiess, bindss, results) -> do
+        Right (bodiess, bodiess', results) -> do
             printWarnings warnings
             let systems = fmap fst results
             traverse_ printSystem systems
+            traverse_ (traverse_ (print . pretty)) bodiess'
             -- drawSystems systems
-            return (zip bodiess bindss)
+            return bodiess
 
 
 generateSystems :: Result Model -> Result (T.Model, [(System, ModelInfo)])
@@ -81,9 +83,19 @@ generateSystems parseResult = flip runReaderT (10 :: RecursionDepth) $ do
 
 
 instantiateComponents' ::
-       T.Model -> (System, ModelInfo) -> Result (Map Name [T.TModuleBody Elem])
+       T.Model
+    -> (System, ModelInfo)
+    -> Result (Map Name [T.TNamedModuleBody Elem])
 instantiateComponents' m (sys, info) =
     runReaderT (instantiateComponents m sys) (Info info 10)
+
+
+translateComponents ::
+       (System, ModelInfo)
+    -> Map Name [T.TNamedModuleBody Elem]
+    -> Result [Prism.Module]
+translateComponents (sys, info) bodies =
+    runReaderT (trnsModules sys bodies) (Info info 10)
 
 
 printSystem :: System -> IO ()

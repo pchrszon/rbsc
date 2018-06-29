@@ -24,6 +24,7 @@ module Rbsc.Syntax.Untyped
     , UImplBody
     , UModule
     , UModuleBody
+    , UNamedModuleBody
     , UCommand
     , UUpdate
     , UAssignment
@@ -65,7 +66,7 @@ data Model = Model
     , modelRoleTypes        :: [RoleTypeDef]
     , modelCompartmentTypes :: [UCompartmentTypeDef]
     , modelSystem           :: [LExpr]
-    , modelImpls            :: Map TypeName [UModuleBody]
+    , modelImpls            :: Map TypeName [UNamedModuleBody]
     } deriving (Show)
 
 
@@ -83,10 +84,11 @@ type UParameter = Parameter LExpr
 type UVarDecl = VarDecl LExpr
 
 
-type UImplementation = Implementation ElemMulti UVarDecls UQuantifiedType LExpr
-type UImplBody       = ImplBody ElemMulti UVarDecls UQuantifiedType LExpr
-type UModule         = Module ElemMulti UVarDecls UQuantifiedType LExpr
-type UModuleBody     = ModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
+type UImplementation  = Implementation ElemMulti UVarDecls UQuantifiedType LExpr
+type UImplBody        = ImplBody ElemMulti UVarDecls UQuantifiedType LExpr
+type UModule          = Module ElemMulti UVarDecls UQuantifiedType LExpr
+type UModuleBody      = ModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
+type UNamedModuleBody = NamedModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
 
 type UVarDecls = [VarDecl LExpr]
 

@@ -59,5 +59,6 @@ type Alphabets = Map Name Alphabet
 
 -- | Given a map of component implementations, get the action 'Alphabet' of
 -- each component.
-alphabets :: MonadError Error m => Map Name [TModuleBody Elem] -> m Alphabets
-alphabets = traverse (fmap Set.unions . traverse alphabet)
+alphabets ::
+       MonadError Error m => Map Name [TNamedModuleBody Elem] -> m Alphabets
+alphabets = traverse (fmap Set.unions . traverse (alphabet . _namedBody))

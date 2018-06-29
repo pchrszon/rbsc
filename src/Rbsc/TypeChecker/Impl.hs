@@ -36,10 +36,14 @@ import Rbsc.Util (renderPretty)
 
 
 tcImpls ::
-       Map TypeName [UModuleBody] -> TypeChecker (Map TypeName [TModuleBody ElemMulti])
+       Map TypeName [UNamedModuleBody]
+    -> TypeChecker (Map TypeName [TNamedModuleBody ElemMulti])
 tcImpls = Map.traverseWithKey tc
   where
-    tc tyName bs = localScope tyName (traverse tcModuleBody bs)
+    tc :: TypeName
+       -> [UNamedModuleBody]
+       -> TypeChecker [TNamedModuleBody ElemMulti]
+    tc tyName bs = localScope tyName ((traverse.namedBody) tcModuleBody bs)
 
 
 tcModuleBody :: UModuleBody -> TypeChecker (TModuleBody ElemMulti)

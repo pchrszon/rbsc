@@ -13,7 +13,6 @@ module Rbsc.Translator.Instantiation
 
 
 import Control.Lens
-import Control.Monad
 
 import           Data.Map.Strict  (Map)
 import qualified Data.Map.Strict  as Map
@@ -40,14 +39,15 @@ instantiateComponents ::
        (MonadEval r m, HasSymbolTable r, HasRangeTable r)
     => Model
     -> System
-    -> m (Map Name [TModuleBody Elem])
+    -> m (Map Name [TNamedModuleBody Elem])
 instantiateComponents m = fmap Map.fromList . traverse inst . toComponents
   where
     inst comp = do
-        bodies <-
-            traverse (reduceModuleBody <=< removeVariableIndices comp) =<<
-            instantiateComponent m comp
-        return (view compName comp, bodies)
+        bodies <- instantiateComponent m comp
+        bodies' <- for bodies $ \(NamedModuleBody name body) -> do
+            body' <- reduceModuleBody =<< removeVariableIndices comp body
+            return (NamedModuleBody name body')
+        return (view compName comp, bodies')
 
 
 reduceModuleBody :: MonadEval r m => TModuleBody Elem -> m (TModuleBody Elem)
@@ -59,7 +59,7 @@ reduceModuleBody ModuleBody {..} = do
 
 -- | Instantiate all 'ModuleBody's for the given 'Component'.
 instantiateComponent ::
-       MonadEval r m => Model -> Component -> m [TModuleBody Elem]
+       MonadEval r m => Model -> Component -> m [TNamedModuleBody Elem]
 instantiateComponent m comp = traverse (instantiateModuleBody comp) bodies
   where
     bodies = fromMaybe [] (Map.lookup (view compTypeName comp) (modelImpls m))
@@ -68,9 +68,10 @@ instantiateComponent m comp = traverse (instantiateModuleBody comp) bodies
 instantiateModuleBody ::
        MonadEval r m
     => Component
-    -> TModuleBody ElemMulti
-    -> m (TModuleBody Elem)
-instantiateModuleBody comp body = unrollModuleBody (substituteSelf comp body)
+    -> TNamedModuleBody ElemMulti
+    -> m (TNamedModuleBody Elem)
+instantiateModuleBody comp (NamedModuleBody name body) =
+    NamedModuleBody name <$> unrollModuleBody (substituteSelf comp body)
 
 
 unrollModuleBody ::

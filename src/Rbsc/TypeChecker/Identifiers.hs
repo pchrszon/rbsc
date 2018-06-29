@@ -139,11 +139,11 @@ insertComponents es = for_ es $ \case
     _ -> return ()
 
 
-insertLocalVars :: Map TypeName [UModuleBody] -> Builder ()
+insertLocalVars :: Map TypeName [UNamedModuleBody] -> Builder ()
 insertLocalVars = traverse_ insertVarsForType . Map.assocs
   where
     insertVarsForType (tyName, bodies) =
-        for_ bodies $ \body ->
+        for_ bodies $ \(NamedModuleBody _ body) ->
             for_ (bodyVars body) $
                 insert (Local tyName) <$> declName <*> DefLocal tyName
 
