@@ -22,7 +22,7 @@ import Control.Monad.Except
 import Control.Monad.Reader
 
 import           Data.List          (genericLength)
-import           Data.List.NonEmpty (NonEmpty)
+import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict    as Map
 import           Data.Maybe         (mapMaybe)
@@ -36,7 +36,7 @@ import           Rbsc.Data.Action
 import           Rbsc.Data.Array     (Array)
 import qualified Rbsc.Data.Array     as Array
 import           Rbsc.Data.Component
-import           Rbsc.Data.Function  (Fn (..), function)
+import           Rbsc.Data.Function  (function, functionType)
 import           Rbsc.Data.Name
 import           Rbsc.Data.Type
 
@@ -98,8 +98,8 @@ evalInternal :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Error t
 evalInternal cs depth e = do
     Loc e' _ <- reduceInternal cs depth e
     case e' of
-        Literal x -> return x
-        _         -> throw (getLoc e) NotConstant
+        Literal x _ -> return x
+        _           -> throw (getLoc e) NotConstant
 
 
 reduceInternal ::
@@ -115,8 +115,8 @@ reduceInternal cs depth (Loc e rgn) =
         LogicOp lOp l r -> do
             l' <- go l
             case l' of
-                Literal x -> case logicOpShortcut lOp x of
-                    Just b -> return (Literal b)
+                Literal x _ -> case logicOpShortcut lOp x of
+                    Just b -> return (Literal b TyBool)
                     Nothing -> do
                         r' <- go r
                         toLiteral (LogicOp lOp l' r')
@@ -139,8 +139,8 @@ reduceInternal cs depth (Loc e rgn) =
         IfThenElse cond _then _else -> do
             cond' <- go cond
             case cond' of
-                Literal True  -> go _then
-                Literal False -> go _else
+                Literal True _  -> go _then
+                Literal False _ -> go _else
                 _ -> do
                     _then' <- go _then
                     _else' <- go _else
@@ -158,8 +158,10 @@ reduceInternal cs depth (Loc e rgn) =
             lower' <- go lower
             upper' <- go upper
             case (lower', upper') of
-                (Literal l, Literal u) -> do
-                    let es = fmap (\i -> SomeExpr (Literal i) TyInt) [l .. u]
+                (Literal l _, Literal u _) -> do
+                    let es = fmap
+                                (\i -> SomeExpr (Literal i TyInt) TyInt)
+                                [l .. u]
                     go (quantifier q (fmap (instantiate sc) es))
                 _ -> return (Quantified q
                         (QdTypeInt (Loc lower' rgnL, Loc upper' rgnU)) sc)
@@ -173,7 +175,7 @@ reduceInternal cs depth (Loc e rgn) =
 toLiteral :: Expr t -> Reducer (Expr t)
 toLiteral e = case e of
     Identifier name TyAction ->
-        return (Literal (Action name))
+        return (Literal (Action name) TyAction)
 
     Identifier name ty ->
         view (riConstants.at name) >>= \case
@@ -183,63 +185,63 @@ toLiteral e = case e of
             Nothing -> return e
 
     LitArray es -> return $ case toArray es of
-        Just arr -> Literal arr
-        Nothing  -> e
+        Just (arr, ty) -> Literal arr ty
+        Nothing        -> e
 
     LitFunction func ->
-        return (Literal (Fn (function func)))
+        return (Literal (Fn (function func)) (functionType func))
 
-    Cast (Literal x) ->
-        return (Literal (fromInteger x))
+    Cast (Literal x _) ->
+        return (Literal (fromInteger x) TyDouble)
 
-    Not (Literal x) ->
-        return (Literal (not x))
+    Not (Literal x _) ->
+        return (Literal (not x) TyBool)
 
-    Negate (Literal x) ->
-        return (Literal (negate x))
+    Negate (Literal x ty) ->
+        return (Literal (negate x) ty)
 
-    ArithOp aOp (Literal l) (Literal r) ->
-        return (Literal (arithOp aOp l r))
+    ArithOp aOp (Literal l ty) (Literal r _) ->
+        return (Literal (arithOp aOp l r) ty)
 
-    Divide rgn (Literal l) (Literal r)
+    Divide rgn (Literal l _) (Literal r _)
         | r == 0.0  -> throw rgn DivisionByZero
-        | otherwise -> return (Literal (l / r))
+        | otherwise -> return (Literal (l / r) TyDouble)
 
-    EqOp eOp (Literal l) (Literal r) ->
-        return (Literal (eqOp eOp l r))
+    EqOp eOp (Literal l _) (Literal r _) ->
+        return (Literal (eqOp eOp l r) TyBool)
 
-    RelOp rOp (Literal l) (Literal r) ->
-        return (Literal (relOp rOp l r))
+    RelOp rOp (Literal l _) (Literal r _) ->
+        return (Literal (relOp rOp l r) TyBool)
 
-    LogicOp And (Literal True) r ->
+    LogicOp And (Literal True _) r ->
         return r
 
-    LogicOp And l (Literal True) ->
+    LogicOp And l (Literal True _) ->
         return l
 
     -- the case "false and _" is already handled in "reduceInternal"
-    LogicOp And _ (Literal False) ->
-        return (Literal False)
+    LogicOp And _ (Literal False _) ->
+        return (Literal False TyBool)
 
-    LogicOp Or (Literal False) r ->
+    LogicOp Or (Literal False _) r ->
         return r
 
-    LogicOp Or l (Literal False) ->
+    LogicOp Or l (Literal False _) ->
         return l
 
     -- the case "true or _" is already handled in "reduceInternal"
-    LogicOp Or _ (Literal True) ->
-        return (Literal True)
+    LogicOp Or _ (Literal True _) ->
+        return (Literal True TyBool)
 
-    LogicOp lOp (Literal l) (Literal r) ->
-        return (Literal (logicOp lOp l r))
+    LogicOp lOp (Literal l _) (Literal r _) ->
+        return (Literal (logicOp lOp l r) TyBool)
 
-    Member (Literal comp) name TyAction ->
-        return (Literal (LocalAction (view compName comp) name))
+    Member (Literal comp _) name TyAction ->
+        return (Literal (LocalAction (view compName comp) name) TyAction)
 
-    Index (Literal arr) (LitIndex i rgn) ->
+    Index (Literal arr (TyArray _ innerTy)) (LitIndex i rgn) ->
         case Array.index arr i of
-            Just x  -> return (Literal x)
+            Just x  -> return (Literal x innerTy)
             Nothing -> throw rgn (IndexOutOfBounds (Array.bounds arr) i)
 
     Index (LitArray arr) (LitIndex i rgn)
@@ -247,40 +249,46 @@ toLiteral e = case e of
             throw rgn (IndexOutOfBounds (0, NonEmpty.length arr - 1) i)
         | otherwise -> return (arr NonEmpty.!! i)
 
-    Index (ActionArray (Literal act)) (LitIndex i _) ->
-        return (Literal (IndexedAction act i))
+    Index (ActionArray (Literal act _)) (LitIndex i _) ->
+        return (Literal (IndexedAction act i) TyAction)
 
-    Apply (Literal (Fn f)) (Literal arg) ->
-        return (Literal (f arg))
+    Apply (Literal (Fn f) (TyFunc _ ty)) (Literal arg _) ->
+        return (Literal (f arg) ty)
 
-    HasType (Literal comp) tyName ->
-        return (Literal (view compTypeName comp == tyName))
+    HasType (Literal comp _) tyName ->
+        return (Literal (view compTypeName comp == tyName) TyBool)
 
-    BoundTo (Loc (Literal role) _) (Loc (Literal player) _) ->
-        return (Literal (view compBoundTo role == Just (view compName player)))
-
-    Element (Loc (Literal role) _) (Loc (Literal compartment) _) ->
+    BoundTo (Loc (Literal role _) _) (Loc (Literal player _) _) ->
         return (Literal
-            (view compContainedIn role == Just (view compName compartment)))
+            (view compBoundTo role == Just (view compName player)) TyBool)
 
-    Count tySet (Literal comp) -> do
+    Element (Loc (Literal role _) _) (Loc (Literal compartment _) _) ->
+        return (Literal
+            (view compContainedIn role == Just (view compName compartment))
+            TyBool)
+
+    Count tySet (Literal comp _) -> do
         comps <- componentConsts tySet <$> view riConstants
-        return (Literal (genericLength (filter (isElement comp) comps)))
+        return (Literal (genericLength (filter (isElement comp) comps)) TyInt)
 
     _ -> return e
 
 
 pattern LitIndex :: (Num a, Integral t, Show t) => a -> Region -> Loc (Expr t)
-pattern LitIndex i rgn <- Loc (Literal (fromIntegral -> i)) rgn
+pattern LitIndex i rgn <- Loc (Literal (fromIntegral -> i) _) rgn
 
 
 -- | Transforms an array into an array value if the array only consists of
 -- literals.
-toArray :: NonEmpty (Expr t) -> Maybe (Array t)
-toArray = fmap Array.fromList . traverse f . NonEmpty.toList
+toArray :: NonEmpty (Expr t) -> Maybe (Array t, Type (Array t))
+toArray xs@(lit :| xs') = case lit of
+    Literal _ ty -> (,)
+        <$> fmap Array.fromList (traverse f (NonEmpty.toList xs))
+        <*> pure (TyArray (0, length xs') ty)
+    _ -> Nothing
   where
-    f (Literal x) = Just x
-    f _           = Nothing
+    f (Literal x _) = Just x
+    f _             = Nothing
 
 
 -- | Check whether the maximum recursion depth has been reached. If so, an
@@ -302,10 +310,10 @@ quantifier q = foldr qOp neutralElement
         Product -> ArithOp Mul
 
     neutralElement = case q of
-        Forall  -> Literal True
-        Exists  -> Literal False
-        Sum     -> Literal 0
-        Product -> Literal 1
+        Forall  -> Literal True TyBool
+        Exists  -> Literal False TyBool
+        Sum     -> Literal 0 TyInt
+        Product -> Literal 1 TyInt
 
 
 -- | Get a list of all constants that have a component type contained in
@@ -321,6 +329,6 @@ componentConsts tySet = mapMaybe f . Map.elems
 
 isElement :: Component -> SomeExpr -> Bool
 isElement comp = \case
-    SomeExpr (Literal role) (TyComponent _) ->
+    SomeExpr (Literal role _) (TyComponent _) ->
         view compContainedIn role == Just (view compName comp)
     _ -> False

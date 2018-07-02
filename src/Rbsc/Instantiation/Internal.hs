@@ -186,7 +186,7 @@ componentLiteral = \case
     Identifier name (TyComponent' tyName) -> Just (name, tyName)
     Index
         (Identifier name (TyArray _ (TyComponent' tyName)))
-        (Loc (Literal idx) _) ->
+        (Loc (Literal idx _) _) ->
             Just (indexedName name idx, tyName)
     _ -> Nothing
 
@@ -213,7 +213,8 @@ generateConstants sys = Map.mapWithKey generateConstant
   where
     generateConstant name tyName =
         let comp = componentForName sys tyName name
-        in SomeExpr (Literal comp) (TyComponent (Set.singleton tyName))
+            ty   = TyComponent (Set.singleton tyName)
+        in SomeExpr (Literal comp ty) ty
 
 
 generateArrays :: System -> [ArrayInfo] -> (Constants, Map Name TypeName)
@@ -223,7 +224,7 @@ generateArrays sys arrayInfos =
     generateArray (ArrayInfo name tyName componentNames) =
         let arr = fmap (componentForName sys tyName) componentNames
             ty  = TyArray (bounds arr) (TyComponent (Set.singleton tyName))
-            e   = SomeExpr (Literal arr) ty
+            e   = SomeExpr (Literal arr ty) ty
         in (name, e)
 
     instances' = foldr Map.delete (view instances sys) (fmap arrName arrayInfos)
@@ -245,7 +246,7 @@ checkConstraints cs = and <$> traverse eval cs
 clauses :: Loc (Expr Bool) -> [Loc (Expr Bool)]
 clauses e@(Loc e' rgn) = case e' of
     LogicOp And l r -> clauses (Loc l rgn) ++ clauses (Loc r rgn)
-    Literal True    -> []
+    Literal True _  -> []
     _               -> [e]
 
 

@@ -78,7 +78,7 @@ data Range
 -- value.
 valueGuard :: [(Variable, SomeExpr)] -> Expr Bool
 valueGuard = \case
-    []   -> Literal True
+    []   -> Literal True TyBool
     vars -> foldr1 (LogicOp And) (fmap toGuard vars)
   where
     toGuard :: (Variable, SomeExpr) -> Expr Bool
@@ -100,10 +100,10 @@ variableValues = (traverse._2) getValue
     getValue = \case
         BoolRange -> do
             val <- [False, True]
-            return (SomeExpr (Literal val) TyBool)
+            return (SomeExpr (Literal val TyBool) TyBool)
         IntRange (lower, upper) -> do
             val <- fromIntegral <$> [lower .. upper]
-            return (SomeExpr (Literal val) TyInt)
+            return (SomeExpr (Literal val TyInt) TyInt)
 
 
 -- | Substitute a 'Variable' with the given expression everywhere.

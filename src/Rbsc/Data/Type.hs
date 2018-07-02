@@ -12,6 +12,7 @@
 module Rbsc.Data.Type
     ( -- * Representation of types
       Type(..)
+    , Fn(..)
     , (-->)
     , arrayLength
 
@@ -57,7 +58,6 @@ import Data.Type.Equality        ((:~:) (..))
 import Rbsc.Data.Action
 import Rbsc.Data.Array
 import Rbsc.Data.Component
-import Rbsc.Data.Function
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
@@ -88,6 +88,16 @@ instance Pretty (Type t) where
             "array" <+> brackets (pretty idxStart <> ".." <> pretty idxEnd) <+>
             "of" <+> pretty t
         TyFunc a b -> parens (pretty a <+> "->" <+> pretty b)
+
+
+-- | Wrapper for a function.
+--
+-- This wrapper provides dummy instances for 'Show' which (for obvious reasons)
+-- does not exist for the type @a -> b@.
+newtype Fn a = Fn { getFn :: a }
+
+instance Show (Fn a) where
+    show _ = "<function>"
 
 
 infixr 9 -->

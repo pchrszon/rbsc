@@ -128,12 +128,12 @@ spec = do
         it "evaluates constant expressions" $
             reduce' TyBool [expr| (x + 1) * 2 = 4 |]
             `shouldBe`
-            Right "Literal True"
+            Right "Literal True TyBool"
 
         it "evaluates constant sub-expressions" $
             reduce' TyBool [expr| y + 1 < x * 2 |]
             `shouldBe`
-            Right "RelOp Lt (ArithOp Add (Identifier \"y\" TyInt) (Literal 1)) (Literal 2)"
+            Right "RelOp Lt (ArithOp Add (Identifier \"y\" TyInt) (Literal 1 TyInt)) (Literal 2 TyInt)"
 
         it "resolves array accesses for non-constant arrays" $
             reduce' TyInt [expr| [y, z][1] |]

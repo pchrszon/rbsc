@@ -110,7 +110,7 @@ addConstant (U.Constant (Loc name rgn) msTy e) = do
     v <- evalExpr (e' `withLocOf` e)
 
     insertSymbol Global name (Some ty)
-    insertConstant name (SomeExpr (T.Literal v) ty)
+    insertConstant name (SomeExpr (T.Literal v ty) ty)
 
     let c' = T.Constant (Loc name rgn) msTy' (SomeExpr e' ty `withLocOf` e)
     modifying constantDefs (c' :)

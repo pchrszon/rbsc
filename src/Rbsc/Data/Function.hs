@@ -5,22 +5,14 @@
 
 -- | Built-in functions.
 module Rbsc.Data.Function
-    ( Fn(..)
-
-    , FunctionName(..)
+    ( FunctionName(..)
     , TypedFunction(..)
     , function
+    , functionType
     ) where
 
 
--- | Wrapper for a function.
---
--- This wrapper provides dummy instances for 'Show' which (for obvious reasons)
--- does not exist for the type @a -> b@.
-newtype Fn a = Fn { getFn :: a }
-
-instance Show (Fn a) where
-    show _ = "<function>"
+import Rbsc.Data.Type
 
 
 -- | Abstract syntax for built-in functions.
@@ -68,3 +60,18 @@ function = \case
     PowDouble -> Fn . (**)
     Mod       -> Fn . mod
     Log       -> Fn . logBase
+
+
+-- | The 'Type' of a built-in function.
+functionType :: TypedFunction t -> Type (Fn t)
+functionType = \case
+    MinInt    -> TyFunc TyInt (TyFunc TyInt TyInt)
+    MinDouble -> TyFunc TyDouble (TyFunc TyDouble TyDouble)
+    MaxInt    -> TyFunc TyInt (TyFunc TyInt TyInt)
+    MaxDouble -> TyFunc TyDouble (TyFunc TyDouble TyDouble)
+    Floor     -> TyFunc TyDouble TyInt
+    Ceil      -> TyFunc TyDouble TyInt
+    PowInt    -> TyFunc TyInt (TyFunc TyInt TyInt)
+    PowDouble -> TyFunc TyDouble (TyFunc TyDouble TyDouble)
+    Mod       -> TyFunc TyInt (TyFunc TyInt TyInt)
+    Log       -> TyFunc TyDouble (TyFunc TyDouble TyDouble)

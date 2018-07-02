@@ -60,13 +60,13 @@ tcAction e = local (set inAction True) $ do
 tcExpr :: Loc U.Expr -> TypeChecker SomeExpr
 tcExpr (Loc e rgn) = case e of
     U.LitBool b ->
-        T.Literal b `withType` TyBool
+        T.Literal b TyBool `withType` TyBool
 
     U.LitInt i ->
-        T.Literal i `withType` TyInt
+        T.Literal i TyInt `withType` TyInt
 
     U.LitDouble d ->
-        T.Literal d `withType` TyDouble
+        T.Literal d TyDouble `withType` TyDouble
 
     U.LitFunction f ->
         return (fromFunctionName f)

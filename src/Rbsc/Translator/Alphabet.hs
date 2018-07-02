@@ -47,7 +47,7 @@ alphabet = fmap (Set.fromList . catMaybes) . traverse action . bodyCommands
         => TElem (TCommand Elem)
         -> m (Maybe (Loc Action, ActionKind))
     action (Elem Command{..}) = case cmdAction of
-        Just (Loc (SomeExpr (Literal act) TyAction) rgn) ->
+        Just (Loc (SomeExpr (Literal act _) TyAction) rgn) ->
             return (Just (Loc act rgn, cmdActionKind))
         Just (Loc _ rgn) -> throw rgn NotConstant
         Nothing -> return Nothing

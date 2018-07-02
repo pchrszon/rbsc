@@ -17,6 +17,7 @@ import Control.Lens
 import           Data.Map.Strict  (Map)
 import qualified Data.Map.Strict  as Map
 import           Data.Maybe
+import qualified Data.Set         as Set
 import           Data.Traversable
 
 
@@ -111,13 +112,12 @@ unrollElemMulti = \case
   where
     unrollLoop Loop{..} = do
         consts <- view constants
-        es <-
-            case loopType of
-                QdTypeComponent tySet -> return (componentConsts tySet consts)
-                QdTypeInt (lower, upper) -> do
-                    l <- eval lower
-                    u <- eval upper
-                    return (fmap (\i -> SomeExpr (Literal i) TyInt) [l .. u])
+        es <- case loopType of
+            QdTypeComponent tySet -> return (componentConsts tySet consts)
+            QdTypeInt (lower, upper) -> do
+                l <- eval lower
+                u <- eval upper
+                return (fmap (\i -> SomeExpr (Literal i TyInt) TyInt) [l .. u])
         let bodies' = concatMap (\e -> fmap (instantiateExprs e) loopBody) es
         unrollElemMultis bodies'
 
@@ -128,5 +128,6 @@ substituteSelf comp ModuleBody{..} =
   where
     subst :: Expr t -> Expr t
     subst e = case e of
-        Self -> Literal comp
-        _    -> e
+        Self ->
+            Literal comp (TyComponent (Set.singleton (view compTypeName comp)))
+        _ -> e

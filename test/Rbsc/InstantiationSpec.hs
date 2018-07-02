@@ -272,7 +272,7 @@ getComponents m = do
     return (Map.fromList (mapMaybe getComponent (Map.assocs consts)))
   where
     getComponent :: (Name, SomeExpr) -> Maybe (Name, Component)
-    getComponent (name, SomeExpr (Literal comp) (TyComponent _)) =
+    getComponent (name, SomeExpr (Literal comp _) (TyComponent _)) =
         Just (name, comp)
     getComponent _ = Nothing
 
@@ -283,7 +283,7 @@ getComponentArrays m = do
     return (Map.fromList (mapMaybe getArray (Map.assocs consts)))
   where
     getArray :: (Name, SomeExpr) -> Maybe (Name, [Component])
-    getArray (name, SomeExpr (Literal arr) (TyArray _ (TyComponent _))) =
+    getArray (name, SomeExpr (Literal arr _) (TyArray _ (TyComponent _))) =
         Just (name, toList arr)
     getArray _ = Nothing
 

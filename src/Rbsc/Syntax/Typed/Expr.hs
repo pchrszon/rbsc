@@ -75,7 +75,7 @@ instance HasExprs (Loc SomeExpr) where
 
 -- | Typed abstract syntax of expressions.
 data Expr t where
-    Literal     :: Show t => t -> Expr t
+    Literal     :: Show t => t -> Type t -> Expr t
     LitArray    :: Show t => NonEmpty (Expr t) -> Expr (Array t)
     LitFunction :: TypedFunction t -> Expr (Fn t)
     Self        :: Expr Component
@@ -215,7 +215,7 @@ universeExprs = concat . flip appEndo [] .
 plateExpr ::
        Applicative m => (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
 plateExpr f = \case
-    Literal x          -> pure (Literal x)
+    Literal x ty       -> pure (Literal x ty)
     LitArray es        -> LitArray <$> traverse f es
     LitFunction g      -> pure (LitFunction g)
     Self               -> pure Self
