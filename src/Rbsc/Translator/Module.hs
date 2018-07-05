@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 
@@ -6,12 +7,11 @@ module Rbsc.Translator.Module where
 
 
 import Control.Lens
-import Control.Monad.Reader
 
-import Data.Traversable
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
+import           Data.Map.Strict  (Map)
+import qualified Data.Map.Strict  as Map
 import           Data.Semigroup
+import           Data.Traversable
 
 import qualified Language.Prism as Prism
 
@@ -20,13 +20,15 @@ import Rbsc.Data.Name
 import Rbsc.Data.System
 import Rbsc.Data.Type
 
+import Rbsc.Eval
+
 import Rbsc.Syntax.Typed
 
 import Rbsc.Translator.Variable
 
 
 trnsModules ::
-       (MonadReader r m, HasSymbolTable r, HasRangeTable r)
+       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
     => System
     -> Map Name [TNamedModuleBody Elem]
     -> m [Prism.Module]
@@ -38,7 +40,7 @@ trnsModules sys bodiess =
 
 
 trnsModule ::
-       (MonadReader r m, HasSymbolTable r, HasRangeTable r)
+       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
     => TypeName
     -> Name
     -> TNamedModuleBody Elem

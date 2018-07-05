@@ -68,6 +68,9 @@ data ErrorDesc
     | InvalidUpperBound !Int
     | IndexOutOfBounds (Int, Int) !Int
     | ExceededDepth
+
+    -- translation errors
+    | TranslationNotSupported !Text
     deriving (Eq, Show)
 
 
@@ -275,6 +278,13 @@ toReport (Error rgn desc) = case desc of
         errorReport "exceeded maximum recursion depth"
             [ errorPart rgn . Just $
                 "exceeded recursion depth evaluating this expression"
+            ]
+
+
+    TranslationNotSupported node ->
+        errorReport "translation not supported"
+            [ errorPart rgn . Just $
+                "could not translate " <> node
             ]
 
 

@@ -88,7 +88,7 @@ valueGuard = \case
                 LocalVar tyName cName ->
                     Member (Identifier cName (TyComponent [tyName])) name ty
         in case checkEq ty of
-            Just Dict -> EqOp Eq ident val
+            Just Dict -> EqOp Eq ty ident val
             Nothing   -> error "variableGuard: type error"
 
 

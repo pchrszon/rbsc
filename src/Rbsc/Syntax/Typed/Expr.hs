@@ -86,7 +86,7 @@ data Expr t where
     Negate      :: Num t => Expr t -> Expr t
     ArithOp     :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
     Divide      :: Region -> Expr Double -> Expr Double -> Expr Double
-    EqOp        :: Eq t => EqOp -> Expr t -> Expr t -> Expr Bool
+    EqOp        :: Eq t => EqOp -> Type t -> Expr t -> Expr t -> Expr Bool
     RelOp       :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool
     LogicOp     :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
     Member      :: Expr Component -> Name -> Type t -> Expr t
@@ -226,7 +226,7 @@ plateExpr f = \case
     Negate e           -> Negate <$> f e
     ArithOp aOp l r    -> ArithOp aOp <$> f l <*> f r
     Divide rgn l r     -> Divide rgn <$> f l <*> f r
-    EqOp eOp l r       -> EqOp eOp <$> f l <*> f r
+    EqOp eOp ty l r    -> EqOp eOp ty <$> f l <*> f r
     RelOp rOp l r      -> RelOp rOp <$> f l <*> f r
     LogicOp lOp l r    -> LogicOp lOp <$> f l <*> f r
     Member e name ty   -> Member <$> f e <*> pure name <*> pure ty

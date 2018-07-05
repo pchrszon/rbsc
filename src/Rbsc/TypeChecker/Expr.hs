@@ -116,7 +116,7 @@ tcExpr (Loc e rgn) = case e of
         Dict <- isEqType tyL (getLoc l)
         _    <- isEqType tyR (getLoc r)
         Refl <- expect tyL (getLoc r) tyR
-        T.EqOp eOp l' r' `withType` TyBool
+        T.EqOp eOp tyL l' r' `withType` TyBool
 
     U.RelOp rOp l r -> do
         (SomeExpr l' tyL, SomeExpr r' tyR) <-

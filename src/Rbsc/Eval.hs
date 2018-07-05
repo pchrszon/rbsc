@@ -207,7 +207,7 @@ toLiteral e = case e of
         | r == 0.0  -> throw rgn DivisionByZero
         | otherwise -> return (Literal (l / r) TyDouble)
 
-    EqOp eOp (Literal l _) (Literal r _) ->
+    EqOp eOp _ (Literal l _) (Literal r _) ->
         return (Literal (eqOp eOp l r) TyBool)
 
     RelOp rOp (Literal l _) (Literal r _) ->
