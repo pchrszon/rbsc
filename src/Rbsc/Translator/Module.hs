@@ -24,6 +24,7 @@ import Rbsc.Eval
 
 import Rbsc.Syntax.Typed
 
+import Rbsc.Translator.Command
 import Rbsc.Translator.Variable
 
 
@@ -47,6 +48,7 @@ trnsModule ::
     -> m Prism.Module
 trnsModule typeName compName (NamedModuleBody moduleName body) = do
     vars' <- trnsLocalVars typeName compName (bodyVars body)
-    return (Prism.Module ident vars' [])
+    cmds' <- traverse (trnsCommand typeName compName . getElem) (bodyCommands body)
+    return (Prism.Module ident vars' cmds')
   where
     ident = compName <> "_" <> moduleName

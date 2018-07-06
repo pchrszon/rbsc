@@ -11,6 +11,8 @@ module Rbsc.Translator.Expr
     ) where
 
 
+import Control.Lens
+
 import Data.Text (pack)
 import Data.Traversable
 
@@ -18,6 +20,7 @@ import qualified Language.Prism as Prism
 
 
 import Rbsc.Data.Array (Array)
+import Rbsc.Data.Component
 import Rbsc.Data.Function
 import Rbsc.Data.Some
 import Rbsc.Data.Type
@@ -92,8 +95,8 @@ trnsExpr mCompName rgn = go
             Just compName' -> QlMember (QlName compName') name
             Nothing        -> QlName name
 
-        Member (trnsIdent -> Just qname) name _ ->
-            Just (QlMember qname name)
+        Member (Literal comp (TyComponent _)) name _ ->
+            Just (QlMember (QlName (view compName comp)) name)
 
         Index (trnsIdent -> Just qname) (Loc (Literal i _) _) ->
             Just (QlIndex qname (fromInteger i))
