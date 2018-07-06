@@ -160,8 +160,8 @@ addComponentType = \case
     toRoleRef (U.MultiRole (Loc tyName _) mBounds) = case mBounds of
         Nothing -> return (RoleRef tyName (1, 1))
         Just (lower, upper) -> do
-            lower' <- fst <$> evalIntegerExpr lower
-            upper' <- fst <$> evalIntegerExpr upper
+            lower' <- fst <$> evalIntExpr lower
+            upper' <- fst <$> evalIntExpr upper
             checkCardinalities lower upper lower' upper'
             return (RoleRef tyName (lower', upper'))
 
@@ -178,7 +178,7 @@ addComponents :: ComponentDef -> Builder ()
 addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
     -- add component array
     Just len -> do
-        len' <- fst <$> evalIntegerExpr len
+        len' <- fst <$> evalIntExpr len
         if len' > 0
             then
                 let tyArray = TyArray (0, len' - 1) tyComponent
@@ -200,8 +200,8 @@ fromSyntaxType = \case
         tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
         return (T.TyComponent tySet, Some (TyComponent tySet'))
     U.TyArray (lower, upper) sTy -> do
-        (lowerVal, lower') <- evalIntegerExpr lower
-        (upperVal, upper') <- evalIntegerExpr upper
+        (lowerVal, lower') <- evalIntExpr lower
+        (upperVal, upper') <- evalIntExpr upper
         (sTy', Some ty) <- fromSyntaxType sTy
         return
             ( T.TyArray (lower', upper') sTy'
@@ -217,12 +217,12 @@ fromSyntaxVarType :: UVarType -> Builder (Some Type, Maybe (Int, Int))
 fromSyntaxVarType = \case
     U.VarTyBool -> return (Some TyBool, Nothing)
     U.VarTyInt (lower, upper) -> do
-        (lowerVal, _) <- evalIntegerExpr lower
-        (upperVal, _) <- evalIntegerExpr upper
+        (lowerVal, _) <- evalIntExpr lower
+        (upperVal, _) <- evalIntExpr upper
         return (Some TyInt, Just (lowerVal, upperVal))
     U.VarTyArray (lower, upper) vTy -> do
-        (lowerVal, _) <- evalIntegerExpr lower
-        (upperVal, _) <- evalIntegerExpr upper
+        (lowerVal, _) <- evalIntExpr lower
+        (upperVal, _) <- evalIntExpr upper
         (Some ty, mRange) <- fromSyntaxVarType vTy
         return (Some (TyArray (lowerVal, upperVal) ty), mRange)
 
@@ -238,10 +238,10 @@ runBuilder m depth = do
     initial = BuilderState emptyModelInfo [] depth
 
 
-evalIntegerExpr :: Num a => Loc U.Expr -> Builder (a, Loc SomeExpr)
-evalIntegerExpr e = do
+evalIntExpr :: Loc U.Expr -> Builder (Int, Loc SomeExpr)
+evalIntExpr e = do
     e' <- typeCheckExpr TyInt e
-    v  <- fromInteger <$> evalExpr (e' `withLocOf` e)
+    v  <- evalExpr (e' `withLocOf` e)
     return (v, SomeExpr e' TyInt `withLocOf` e)
 
 

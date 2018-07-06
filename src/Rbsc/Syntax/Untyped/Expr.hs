@@ -31,7 +31,7 @@ import Rbsc.Syntax.Quantification
 -- | An untyped expression.
 data Expr
     = LitBool !Bool
-    | LitInt !Integer
+    | LitInt !Int
     | LitDouble !Double
     | LitFunction !FunctionName
     | LitArray (NonEmpty LExpr)

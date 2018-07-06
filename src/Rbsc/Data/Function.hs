@@ -32,15 +32,15 @@ data FunctionName
 
 -- | Typed abstract syntax for built-in functions.
 data TypedFunction t where
-    MinInt    :: TypedFunction (Integer -> Fn (Integer -> Integer))
+    MinInt    :: TypedFunction (Int -> Fn (Int -> Int))
     MinDouble :: TypedFunction (Double -> Fn (Double -> Double))
-    MaxInt    :: TypedFunction (Integer -> Fn (Integer -> Integer))
+    MaxInt    :: TypedFunction (Int -> Fn (Int -> Int))
     MaxDouble :: TypedFunction (Double -> Fn (Double -> Double))
-    Floor     :: TypedFunction (Double -> Integer)
-    Ceil      :: TypedFunction (Double -> Integer)
-    PowInt    :: TypedFunction (Integer -> Fn (Integer -> Integer))
+    Floor     :: TypedFunction (Double -> Int)
+    Ceil      :: TypedFunction (Double -> Int)
+    PowInt    :: TypedFunction (Int -> Fn (Int -> Int))
     PowDouble :: TypedFunction (Double -> Fn (Double -> Double))
-    Mod       :: TypedFunction (Integer -> Fn (Integer -> Integer))
+    Mod       :: TypedFunction (Int -> Fn (Int -> Int))
     Log       :: TypedFunction (Double -> Fn (Double -> Double))
 
 deriving instance Eq (TypedFunction t)

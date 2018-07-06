@@ -114,7 +114,7 @@ litNumber = do
     n <- number
     return $ case n of
         Left d  -> LitDouble <$> d
-        Right i -> LitInt <$> i
+        Right i -> LitInt . fromInteger <$> i
 
 
 litArray :: Parser LExpr

@@ -66,7 +66,7 @@ import Rbsc.Data.Some
 -- | Value-level representation of types.
 data Type t where
     TyBool      :: Type Bool
-    TyInt       :: Type Integer
+    TyInt       :: Type Int
     TyDouble    :: Type Double
     TyAction    :: Type Action
     TyComponent :: Set TypeName -> Type Component

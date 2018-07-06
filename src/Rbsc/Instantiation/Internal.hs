@@ -193,7 +193,7 @@ componentLiteral = \case
 
 -- indexedName is guaranteed to be unused, because brackets
 -- are not allowed in identifier names
-indexedName :: Name -> Integer -> Name
+indexedName :: Name -> Int -> Name
 indexedName name i = name <> "[" <> pack (show i) <> "]"
 
 

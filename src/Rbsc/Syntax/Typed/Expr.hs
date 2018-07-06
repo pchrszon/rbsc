@@ -80,7 +80,7 @@ data Expr t where
     LitFunction :: TypedFunction t -> Expr (Fn t)
     Self        :: Expr Component
     Identifier  :: Name -> Type t -> Expr t
-    Cast        :: Expr Integer -> Expr Double
+    Cast        :: Expr Int -> Expr Double
     ActionArray :: Expr Action -> Expr (Array Action)
     Not         :: Expr Bool -> Expr Bool
     Negate      :: Num t => Expr t -> Expr t
@@ -90,14 +90,14 @@ data Expr t where
     RelOp       :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool
     LogicOp     :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
     Member      :: Expr Component -> Name -> Type t -> Expr t
-    Index       :: Show t => Expr (Array t) -> Loc (Expr Integer) -> Expr t
+    Index       :: Show t => Expr (Array t) -> Loc (Expr Int) -> Expr t
     Apply       :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
     IfThenElse  :: Expr Bool -> Expr t -> Expr t -> Expr t
     HasType     :: Expr Component -> TypeName -> Expr Bool
     BoundTo     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Element     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound       :: Int -> Type t -> Expr t
-    Count       :: Set TypeName -> Expr Component -> Expr Integer
+    Count       :: Set TypeName -> Expr Component -> Expr Int
     Lambda      :: Type a -> Scoped b -> Expr (Fn (a -> b))
     Quantified  :: Quantifier t -> TQuantifiedType -> Scoped t -> Expr t
 
@@ -107,15 +107,15 @@ deriving instance Show (Expr t)
 data Quantifier t where
     Forall  :: Quantifier Bool
     Exists  :: Quantifier Bool
-    Sum     :: Quantifier Integer
-    Product :: Quantifier Integer
+    Sum     :: Quantifier Int
+    Product :: Quantifier Int
 
 deriving instance Show (Quantifier t)
 
 
-type TQuantifiedType = QuantifiedType (Set TypeName) (Loc (Expr Integer))
+type TQuantifiedType = QuantifiedType (Set TypeName) (Loc (Expr Int))
 
-instance HasExprs (QuantifiedType ty (Loc (Expr Integer))) where
+instance HasExprs (QuantifiedType ty (Loc (Expr Int))) where
     exprs f = \case
         QdTypeComponent c -> pure (QdTypeComponent c)
         QdTypeInt (lower, upper) ->

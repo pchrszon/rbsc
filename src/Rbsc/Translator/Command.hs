@@ -3,7 +3,6 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ViewPatterns          #-}
 
 
 module Rbsc.Translator.Command where
@@ -110,7 +109,7 @@ trnsAssignment typeName comp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty
 trnsIndices :: MonadError Error m => Qualified -> Type t -> [LSomeExpr] -> m Qualified
 trnsIndices qname (TyArray (lower, upper) innerTy) (Loc (SomeExpr idx TyInt) rgn : idxs) =
     case idx of
-        Literal (fromInteger -> i) _
+        Literal i _
             | lower <= i && i <= upper ->
                 trnsIndices (QlIndex qname i) innerTy idxs
             | otherwise -> throw rgn (IndexOutOfBounds (lower, upper) i)

@@ -192,7 +192,7 @@ toLiteral e = case e of
         return (Literal (Fn (function func)) (functionType func))
 
     Cast (Literal x _) ->
-        return (Literal (fromInteger x) TyDouble)
+        return (Literal (fromIntegral x) TyDouble)
 
     Not (Literal x _) ->
         return (Literal (not x) TyBool)

@@ -51,7 +51,7 @@ trnsExpr mCompName rgn = go
             return (Prism.LitBool b)
 
         Literal i TyInt ->
-            return (Prism.LitInt i)
+            return (Prism.LitInt (fromIntegral i))
 
         Literal d TyDouble ->
             return (Prism.LitDouble d)
@@ -99,7 +99,7 @@ trnsExpr mCompName rgn = go
             Just (QlMember (QlName (view compName comp)) name)
 
         Index (trnsIdent -> Just qname) (Loc (Literal i _) _) ->
-            Just (QlIndex qname (fromInteger i))
+            Just (QlIndex qname i)
 
         _ -> Nothing
 
