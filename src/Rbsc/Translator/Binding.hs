@@ -9,6 +9,10 @@
 module Rbsc.Translator.Binding
     ( Bindings
     , generateBindings
+
+    , OverrideActions
+    , overrideActions
+    , overrideActionsOfRoles
     ) where
 
 
@@ -35,6 +39,24 @@ import Rbsc.Translator.Alphabet
 import Rbsc.Util (renderPretty)
 
 
+type OverrideActions = Map Name (Set Action)
+
+
+overrideActions :: Alphabets -> OverrideActions
+overrideActions =
+    Map.map (Set.map (unLoc . fst) . Set.filter (isOverrideAction . snd))
+
+
+-- | Get the set of actions that are overridden in the given component.
+overrideActionsOfRoles ::
+       Bindings -> OverrideActions -> Name -> Set (RoleName, Action)
+overrideActionsOfRoles binds oas compName =
+    case Map.lookup compName binds of
+        Just roles -> Set.unions . flip fmap (toList roles) $ \role ->
+            Set.map ((,) role) (Map.findWithDefault Set.empty role oas)
+        Nothing -> Set.empty
+
+
 -- | A mapping from components to the role components that are bound to it.
 type Bindings = Map Name (Set RoleName)
 
@@ -42,7 +64,7 @@ type Bindings = Map Name (Set RoleName)
 -- | Generate the 'Bindings' for a given 'System'. If there are
 -- incompatible roles bound to the same component, 'IncompatibleRoles'
 -- errors are thrown.
-generateBindings :: System -> Alphabets -> Result (Map Name (Set RoleName))
+generateBindings :: System -> Alphabets -> Result Bindings
 generateBindings sys as = invert <$> globalBindings sys as
   where
     invert = Map.unionsWith Set.union . fmap (\(Binding role ps) ->
@@ -146,18 +168,20 @@ compatPairs sys plays roleNames =
 incompatibilities :: Alphabet -> Alphabet -> [(Action, Region, Region)]
 incompatibilities l r = Set.toList (incompat l r `Set.union` incompat r l)
   where
-    incompat l' r' = Set.unions (fmap (`joinWith` r') (overrideActions l'))
+    incompat l' r' = Set.unions (fmap (`joinWith` r') (overrideActs l'))
 
-    overrideActions =
+    overrideActs =
         Set.toList . Set.map fst . Set.filter (isOverrideAction . snd)
 
     joinWith act = Set.map (getLocs act) . Set.filter ((act ==) . fst)
 
     getLocs (Loc act lRgn) (Loc _ rRgn, _) = (act, lRgn, rRgn)
 
-    isOverrideAction = \case
-        OverrideAction _ -> True
-        NormalAction     -> False
+
+isOverrideAction :: ActionKind -> Bool
+isOverrideAction = \case
+    OverrideAction _ -> True
+    NormalAction     -> False
 
 
 players :: System -> Name -> Set Name

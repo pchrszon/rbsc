@@ -36,28 +36,31 @@ import Rbsc.Translator.Internal
 
 trnsCommand ::
        (MonadEval r m, HasSymbolTable r)
-    => TypeName
+    => Bool
+    -> TypeName
     -> Name
     -> TCommand Elem
     -> m Prism.Command
-trnsCommand typeName comp Command{..} = do
-    act'  <- maybeToList <$> _Just trnsActionExpr cmdAction
+trnsCommand isRole typeName comp Command{..} = do
+    act' <- _Just trnsActionExpr cmdAction
+    let acts' = catMaybes [act', roleAct, overrideAct]
     grd'  <- trnsLSomeExpr (Just comp) cmdGuard
     upds' <- traverse (trnsUpdate typeName comp . getElem) cmdUpdates
-    return (Prism.Command act' Prism.ActionClosed grd' upds')
+    return (Prism.Command acts' Prism.ActionOpen grd' upds')
+  where
+    roleAct
+        | isRole    = Just comp
+        | otherwise = Nothing
+
+    overrideAct = case cmdActionKind of
+        OverrideAction _ -> Just (overrideActionIdent comp)
+        _                -> Nothing
 
 
 trnsActionExpr :: MonadError Error m => LSomeExpr -> m Prism.Ident
 trnsActionExpr (Loc e rgn) = case e of
     SomeExpr (Literal act _) TyAction -> trnsQualified (trnsAction act)
     _ -> throw rgn NotConstant
-
-
-trnsAction :: Action -> Qualified
-trnsAction = \case
-    Action name -> QlName name
-    LocalAction comp name -> QlMember (QlName comp) name
-    IndexedAction act idx -> QlIndex (trnsAction act) idx
 
 
 trnsUpdate ::

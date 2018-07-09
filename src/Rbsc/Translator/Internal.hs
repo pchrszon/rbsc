@@ -7,6 +7,8 @@
 
 module Rbsc.Translator.Internal
     ( trnsQualified
+    , trnsAction
+    , overrideActionIdent
     , addIndex
     , reduceLSomeExpr
     ) where
@@ -19,6 +21,7 @@ import Data.Text      (pack)
 import qualified Language.Prism as Prism
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.Type
 
 import Rbsc.Eval
@@ -35,6 +38,17 @@ trnsQualified = return . go
         QlName name         -> name
         QlMember inner name -> go inner <> "_" <> name
         QlIndex inner idx   -> go inner <> "_" <> pack (show idx)
+
+
+trnsAction :: Action -> Qualified
+trnsAction = \case
+    Action name           -> QlName name
+    LocalAction comp name -> QlMember (QlName comp) name
+    IndexedAction act idx -> QlIndex (trnsAction act) idx
+
+
+overrideActionIdent :: RoleName -> Prism.Ident
+overrideActionIdent roleName = "override_" <> roleName
 
 
 addIndex :: Int -> LSomeExpr -> LSomeExpr
