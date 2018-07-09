@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
 
@@ -89,24 +88,17 @@ trnsAssignment typeName comp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty
                     Just ty' -> (QlName name, ty')
                     Nothing -> error $
                         "trnsAssignment: " ++ show name ++ "not in symbol table"
-        mods = go id id ty
 
     Some varTy' <- return varTy
     indexedBaseName <- trnsIndices baseName varTy' idxs
 
-    for mods $ \(modifyName, modifyExpr) -> do
-        ident <- trnsQualified (modifyName indexedBaseName)
-        e'    <- trnsLSomeExpr (Just comp) =<< reduceLSomeExpr (modifyExpr e)
-        return (ident, e')
-  where
-    go :: (Qualified -> Qualified)
-       -> (LSomeExpr -> LSomeExpr)
-       -> Type t
-       -> [(Qualified -> Qualified, LSomeExpr -> LSomeExpr)]
-    go modifyName modifyExpr = \case
-        TyArray (lower, upper) innerTy -> flip concatMap [lower .. upper] $ \i ->
-            go ((`QlIndex` i) . modifyName) (addIndex i . modifyExpr) innerTy
-        _ -> [(modifyName, modifyExpr)]
+    let qnames = indexedNames indexedBaseName ty
+        es'    = indexedExprs e ty
+
+    for (zip qnames es') $ \(qname, e') -> do
+        ident <- trnsQualified qname
+        e''   <- trnsLSomeExpr (Just comp) =<< reduceLSomeExpr e'
+        return (ident, e'')
 
 
 trnsIndices :: MonadError Error m => Qualified -> Type t -> [LSomeExpr] -> m Qualified

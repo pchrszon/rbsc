@@ -47,12 +47,18 @@ trnsVarDecl ::
 trnsVarDecl mComp (varName, mInit) =
     view (symbolTable.at scName) >>= \case
         Just (Some ty) -> do
-            decls <- go id id ty
-            for decls $ \(qname, ty', mInit') -> do
+            baseTy' <- baseType ty
+            let qnames  = indexedNames baseName ty
+                mInits' = case mInit of
+                    Just e -> fmap Just (indexedExprs e ty)
+                    Nothing -> repeat Nothing
+
+            for (zip qnames mInits') $ \(qname, mInit') -> do
                 ident <- trnsQualified qname
                 mInit'' <-
                     _Just (trnsLSomeExpr mCompName <=< reduceLSomeExpr) mInit'
-                return (Prism.Declaration ident ty' mInit'')
+                return (Prism.Declaration ident baseTy' mInit'')
+
         Nothing -> error $
             "trnsVarDecl: " ++ show scName ++ "not in symbol table"
   where
@@ -66,29 +72,15 @@ trnsVarDecl mComp (varName, mInit) =
 
     mCompName = fmap snd mComp
 
-    go :: (MonadReader r m, HasSymbolTable r, HasRangeTable r)
-       => (Qualified -> Qualified)
-       -> (LSomeExpr -> LSomeExpr)
-       -> Type t
-       -> m [(Qualified, Prism.DeclarationType, Maybe LSomeExpr)]
-    go modifyName modifyInit = \case
-        TyBool -> return [
-            ( modifyName baseName
-            , Prism.DeclTypeBool
-            , fmap modifyInit mInit
-            ) ]
-        TyInt ->
-            view (rangeTable.at scName) >>= \case
-                Just (lower, upper) -> return [
-                    ( modifyName baseName
-                    , Prism.DeclTypeInt
-                        (Prism.LitInt (fromIntegral lower))
-                        (Prism.LitInt (fromIntegral upper))
-                    , fmap modifyInit mInit
-                    ) ]
-                Nothing -> error $
-                    "trnsVarDecl: " ++ show scName ++ "not in range table"
-        TyArray (lower, upper) innerTy ->
-            fmap concat . for [lower .. upper] $ \i ->
-                go ((`QlIndex` i) . modifyName) (addIndex i . modifyInit) innerTy
+    baseType ::
+       (MonadReader r m, HasRangeTable r) => Type t -> m Prism.DeclarationType
+    baseType = \case
+        TyBool -> return Prism.DeclTypeBool
+        TyInt  -> view (rangeTable.at scName) >>= \case
+            Just (lower, upper) -> return (Prism.DeclTypeInt
+                (Prism.LitInt (fromIntegral lower))
+                (Prism.LitInt (fromIntegral upper)))
+            Nothing -> error $
+                "trnsVarDecl: " ++ show scName ++ "not in range table"
+        TyArray _ innerTy -> baseType innerTy
         ty -> error $ "trnsVarDecl: illegal var type " ++ show ty

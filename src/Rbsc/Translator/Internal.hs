@@ -9,6 +9,8 @@ module Rbsc.Translator.Internal
     ( trnsQualified
     , trnsAction
     , overrideActionIdent
+    , indexedNames
+    , indexedExprs
     , addIndex
     , reduceLSomeExpr
     ) where
@@ -49,6 +51,28 @@ trnsAction = \case
 
 overrideActionIdent :: RoleName -> Prism.Ident
 overrideActionIdent roleName = "override_" <> roleName
+
+
+indexedNames :: Qualified -> Type t -> [Qualified]
+indexedNames qname = go id
+  where
+    go :: (Qualified -> Qualified) -> Type t -> [Qualified]
+    go f = \case
+        TyArray (lower, upper) innerTy ->
+            flip concatMap [lower .. upper] $ \i ->
+                go ((`QlIndex` i) . f) innerTy
+        _ -> [f qname]
+
+
+indexedExprs :: LSomeExpr -> Type t -> [LSomeExpr]
+indexedExprs e = go id
+  where
+    go :: (LSomeExpr -> LSomeExpr) -> Type t -> [LSomeExpr]
+    go f = \case
+        TyArray (lower, upper) innerTy ->
+            flip concatMap [lower .. upper] $ \i ->
+                go (addIndex i . f) innerTy
+        _ -> [f e]
 
 
 addIndex :: Int -> LSomeExpr -> LSomeExpr
