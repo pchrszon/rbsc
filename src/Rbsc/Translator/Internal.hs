@@ -17,7 +17,7 @@ module Rbsc.Translator.Internal
 
 
 import Data.Semigroup
-import Data.Text      (pack)
+import Data.Text      (pack, replace)
 
 
 import qualified Language.Prism as Prism
@@ -37,9 +37,11 @@ trnsQualified :: Monad m => Qualified -> m Prism.Ident
 trnsQualified = return . go
   where
     go = \case
-        QlName name         -> name
+        QlName name         -> removeBrackets name
         QlMember inner name -> go inner <> "_" <> name
         QlIndex inner idx   -> go inner <> "_" <> pack (show idx)
+
+    removeBrackets = replace "[" "_" . replace "]" ""
 
 
 trnsAction :: Action -> Qualified

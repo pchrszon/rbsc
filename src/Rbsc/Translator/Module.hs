@@ -12,7 +12,6 @@ import Control.Monad.Trans
 import           Data.Foldable
 import           Data.Map.Strict  (Map)
 import qualified Data.Map.Strict  as Map
-import           Data.Semigroup
 import qualified Data.Set         as Set
 import           Data.Traversable
 
@@ -75,6 +74,7 @@ trnsModule ::
     -> TNamedModuleBody Elem
     -> m Prism.Module
 trnsModule binds alph oas isRole typeName compName (NamedModuleBody moduleName body) = do
+    ident <- trnsQualified (QlMember (QlName compName) moduleName)
     vars' <- trnsLocalVars typeName compName (bodyVars body)
 
     cmds' <- traverse
@@ -87,8 +87,6 @@ trnsModule binds alph oas isRole typeName compName (NamedModuleBody moduleName b
         else return []
 
     return (Prism.Module ident vars' (concat [cmds', override, nonblocking]))
-  where
-    ident = compName <> "_" <> moduleName
 
 
 genOverrideSelfLoops ::
