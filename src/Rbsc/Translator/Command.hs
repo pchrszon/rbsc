@@ -34,11 +34,16 @@ import Rbsc.Translator.Internal
 trnsCommand
     :: Bool -> TypeName -> Name -> TCommand Elem -> Translator Prism.Command
 trnsCommand isRole typeName comp Command{..} = do
-    act' <- _Just trnsActionExpr cmdAction
-    let acts' = catMaybes [act', roleAct, overrideAct]
     grd'  <- trnsLSomeExpr (Just comp) cmdGuard
     upds' <- traverse (trnsUpdate typeName comp . getElem) cmdUpdates
-    return (Prism.Command acts' Prism.ActionOpen grd' upds')
+
+    case cmdAction of
+        Just act -> do
+            act' <- trnsActionExpr act
+            let acts' = catMaybes [Just act', roleAct, overrideAct]
+            return (Prism.Command acts' Prism.ActionOpen grd' upds')
+        Nothing ->
+            return (Prism.Command [] Prism.ActionClosed grd' upds')
   where
     roleAct
         | isRole    = Just comp
