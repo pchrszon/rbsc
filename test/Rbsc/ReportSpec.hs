@@ -4,7 +4,6 @@
 module Rbsc.ReportSpec (spec) where
 
 
-import Data.Monoid
 import Data.Text (Text)
 import Data.Text.Prettyprint.Doc (Pretty(..))
 

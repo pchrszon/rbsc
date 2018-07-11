@@ -246,7 +246,7 @@ referencedFunctions f = Set.toList <$> execStateT (go f) Set.empty
     functionVars e = do
         idents <- lift (identsInExpr e)
         funcs  <- lift (view functions)
-        return (catMaybes (fmap ((`Map.lookup` funcs) . unLoc) (toList idents)))
+        return (mapMaybe ((`Map.lookup` funcs) . unLoc) (toList idents))
 
 
 identsInSignature :: UFunction -> Analyzer (Set (Loc Name))
@@ -327,7 +327,7 @@ runAnalyzer idents m =
     execStateT (runReaderT m info) Map.empty
   where
     info  = AnalyzerInfo idents Set.empty funcs Nothing False
-    funcs = Map.fromAscList (catMaybes (fmap getFunc (Map.toAscList idents)))
+    funcs = Map.fromAscList (mapMaybe getFunc (Map.toAscList idents))
     getFunc (ScopedName _ name, def) = case def of
         Loc (DefFunction f) _ -> Just (name, f)
         _                     -> Nothing
@@ -340,7 +340,7 @@ newDependency :: Dependency -> Region -> Analyzer a -> Analyzer a
 newDependency dep rgn m = do
     let lDep = Loc dep rgn
     modify (Map.insertWith Set.union lDep Set.empty)
-    local (currentDependency .~ Just lDep) m
+    local (currentDependency ?~ lDep) m
 
 
 -- | @dependOn dep rgn@ states that the current dependency depends on the

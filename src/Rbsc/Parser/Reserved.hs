@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | The list of reserved keywords used to parse valid identifiers.
 module Rbsc.Parser.Reserved
     ( reservedWords
@@ -5,8 +8,11 @@ module Rbsc.Parser.Reserved
     ) where
 
 
+import Data.Text (Text)
+
+
 -- | List of reserved keywords.
-reservedWords :: [String]
+reservedWords :: [Text]
 reservedWords =
     [ "include"
     , "bool"

@@ -22,6 +22,7 @@ import           Data.Foldable
 import           Data.Map.Strict  (Map)
 import qualified Data.Map.Strict  as Map
 import           Data.Traversable
+import           Data.Void
 
 import Text.Megaparsec
 
@@ -33,7 +34,7 @@ import Rbsc.Syntax.Untyped
 
 
 -- | A parse error or a definition.
-type ErrorOrDef = Either (ParseError Char Dec) Definition
+type ErrorOrDef = Either (ParseError Char Void) Definition
 
 
 -- | Top-level definitions of a model.

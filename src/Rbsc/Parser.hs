@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 module Rbsc.Parser
     ( parse
     ) where

@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | Parser for constant definitions.
 module Rbsc.Parser.Constant
     ( constantDef

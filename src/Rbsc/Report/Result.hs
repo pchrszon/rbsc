@@ -30,8 +30,6 @@ module Rbsc.Report.Result
 import Control.Lens              hiding (Empty)
 import Control.Monad.Error.Class (MonadError (..))
 
-import Data.Semigroup
-
 import GHC.Exts (IsList (..))
 
 

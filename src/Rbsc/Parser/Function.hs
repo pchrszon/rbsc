@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | Parser for function definitions.
 module Rbsc.Parser.Function
     ( functionDef

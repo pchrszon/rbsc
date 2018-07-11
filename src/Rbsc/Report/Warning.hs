@@ -5,9 +5,8 @@
 module Rbsc.Report.Warning where
 
 
-import           Data.Monoid
-import           Data.Text   (Text)
-import qualified Data.Text   as Text
+import           Data.Text (Text)
+import qualified Data.Text as Text
 
 
 import Rbsc.Data.Name

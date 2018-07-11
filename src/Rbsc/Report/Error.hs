@@ -11,8 +11,6 @@ module Rbsc.Report.Error where
 import Control.Lens
 import Control.Monad.Except
 
-import Data.Monoid
-
 import           Data.Text (Text, pack)
 import qualified Data.Text as Text
 

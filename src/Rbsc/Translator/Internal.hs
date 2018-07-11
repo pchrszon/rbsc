@@ -16,8 +16,7 @@ module Rbsc.Translator.Internal
     ) where
 
 
-import Data.Semigroup
-import Data.Text      (pack, replace)
+import Data.Text (pack, replace)
 
 
 import qualified Language.Prism as Prism

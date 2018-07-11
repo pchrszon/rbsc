@@ -1,6 +1,7 @@
-{-# LANGUAGE RankNTypes      #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 
 -- | Parsers for tokens.
@@ -49,7 +50,7 @@ module Rbsc.Parser.Lexer
     ) where
 
 
-import Control.Applicative
+import Control.Applicative        hiding (many)
 import Control.Lens
 import Control.Monad              (void)
 import Control.Monad.State.Strict
@@ -58,10 +59,12 @@ import           Data.List.NonEmpty (NonEmpty (..))
 import           Data.Map.Strict    (Map)
 import qualified Data.Map.Strict    as Map
 import           Data.String
-import           Data.Text          (Text)
+import           Data.Text          (Text, pack)
+import           Data.Void
 
 import           Text.Megaparsec
-import qualified Text.Megaparsec.Lexer as Lexer
+import           Text.Megaparsec.Char
+import qualified Text.Megaparsec.Char.Lexer as Lexer
 
 
 import           Rbsc.Report.Region (Loc (..), Region)
@@ -79,7 +82,7 @@ type Parser a = forall m. Monad m => ParserT m a
 
 
 -- | Parser monad transformer with stream type 'Text'.
-type ParserT m a = ParsecT Dec Text (StateT ParserState m) a
+type ParserT m a = ParsecT Void Text (StateT ParserState m) a
 
 
 -- | @run p path content@ runs a parser @p@ on the given @content@ obtained
@@ -89,7 +92,7 @@ run :: Monad m
     => ParserT m a
     -> FilePath
     -> Text
-    -> m (Either (ParseError Char Dec) a, SourceMap)
+    -> m (Either (ParseError Char Void) a, SourceMap)
 run p path content = do
     (result, parserState) <-
         runStateT (runParserT p path content) (initialState path content)
@@ -121,7 +124,7 @@ makeLenses ''ParserState
 
 
 -- | Parser for a reserved word.
-reserved :: String -> Parser Region
+reserved :: Text -> Parser Region
 reserved s =
     getLoc <$> lexeme ((Loc <$> string s) <* notFollowedBy alphaNumChar)
 
@@ -130,7 +133,7 @@ reserved s =
 --
 -- This parser checks that the parsed operator is not a prefix of another
 -- valid operator.
-operator :: String -> Parser Region
+operator :: Text -> Parser Region
 operator s = getLoc <$>
     try (lexeme ((Loc <$> string s) <* notFollowedBy (oneOf opLetter)))
 
@@ -139,7 +142,7 @@ operator s = getLoc <$>
 identifier :: IsString a => Parser (Loc a)
 identifier = label "identifier" . lexeme . try $ do
     ident <- (:) <$> identStart <*> many identLetter
-    if ident `elem` reservedWords
+    if pack ident `elem` reservedWords
         then fail ("unexpected reserved word " ++ ident)
         else return (Loc (fromString ident))
   where
@@ -149,7 +152,7 @@ identifier = label "identifier" . lexeme . try $ do
 
 -- | @block name p@ is a parser for named blocks. A block starts with
 -- @name@ followed by @p@ surrounded by braces.
-block :: Monad m => String -> ParserT m a -> ParserT m a
+block :: Monad m => Text -> ParserT m a -> ParserT m a
 block name p = reserved name *> braces p
 
 
@@ -209,7 +212,7 @@ equals = symbol "="
 
 -- | Parser for an integer.
 integer :: Parser (Loc Integer)
-integer = lexeme (Loc <$> Lexer.signed sc Lexer.integer)
+integer = lexeme (Loc <$> Lexer.signed sc Lexer.decimal)
 
 
 -- | Parser for decimal numbers.
@@ -222,7 +225,7 @@ float = lexeme (Loc <$> Lexer.signed sc Lexer.float)
 
 
 -- | Parser for a symbol.
-symbol :: String -> Parser Region
+symbol :: Text -> Parser Region
 symbol s = getLoc <$> lexeme (Loc <$> string s)
 
 
@@ -250,7 +253,7 @@ sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty
 -- | @withRecoveryOn end p@ runs parser @p@. In case @p@ fails, the input
 -- is skipped until @end@ is parsed successfully.
 withRecoveryOn ::
-       ParserT m b -> ParserT m a -> ParserT m (Either (ParseError Char Dec) a)
+       ParserT m b -> ParserT m a -> ParserT m (Either (ParseError Char Void) a)
 withRecoveryOn end =
     withRecovery (\err -> Left err <$ anyChar `manyTill` end) . fmap Right
 

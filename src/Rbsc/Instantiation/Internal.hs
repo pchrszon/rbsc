@@ -24,15 +24,13 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 
-import           Data.List       (sortBy)
+import           Data.List       (sortOn)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import qualified Data.Set        as Set
 
 import Data.Foldable
-import Data.Monoid
-import Data.Ord
 import Data.Text        (pack)
 import Data.Traversable
 
@@ -272,7 +270,7 @@ checkCompartment sys name roleRefLists
         (os:_) -> throw dummyRegion (TooManyRoles name (Map.assocs os))
         _      -> return ()
   where
-    sortedOverfulls = sortBy (comparing numAdditional) overfulls
+    sortedOverfulls = sortOn numAdditional overfulls
     overfulls = fmap (getOverfullTypes sys name) roleRefLists
 
     numAdditional = Map.foldr (+) 0

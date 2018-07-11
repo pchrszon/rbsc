@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | Parser for implementation definitions.
 module Rbsc.Parser.Impl
     ( implementationDef

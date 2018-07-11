@@ -17,8 +17,6 @@ module Rbsc.Data.Bag
     ) where
 
 
-import Data.Semigroup
-
 import GHC.Exts (IsList (..))
 
 

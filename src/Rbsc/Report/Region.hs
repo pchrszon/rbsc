@@ -15,7 +15,6 @@ module Rbsc.Report.Region
 
 
 import Data.Ord
-import Data.Semigroup
 import Data.Text      (Text)
 
 

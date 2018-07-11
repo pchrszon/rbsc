@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | Parser for global definitions.
 module Rbsc.Parser.Global
     ( globalDef

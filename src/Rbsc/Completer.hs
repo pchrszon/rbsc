@@ -198,9 +198,8 @@ missingRoles contained sys roleRefLists = nub $ do
 
     return (concatMap unfold (Map.toList stillRequired))
   where
-    fromRoleRef (RoleRef tyName (lower, upper)) = do
-        i <- [lower .. upper]
-        return (Map.singleton tyName i)
+    fromRoleRef (RoleRef tyName (lower, upper)) =
+        Map.singleton tyName <$> [lower .. upper]
 
     unfold (tyName, i) = replicate i tyName
 

@@ -15,8 +15,7 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 
 import           Data.Foldable
-import           Data.Semigroup
-import qualified Data.Set       as Set
+import qualified Data.Set      as Set
 
 
 import Rbsc.Config

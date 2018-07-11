@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | Parser for variable types.
 module Rbsc.Parser.VarType
     ( varType

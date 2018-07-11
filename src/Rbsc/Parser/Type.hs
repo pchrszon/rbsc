@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | Parser for types.
 module Rbsc.Parser.Type
     ( typ

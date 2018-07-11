@@ -1,4 +1,5 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 
 
 -- | Parser for expressions.
@@ -10,13 +11,14 @@ module Rbsc.Parser.Expr
     ) where
 
 
-import Control.Applicative
+import Control.Applicative        hiding (many)
 import Control.Monad.State.Strict
 
 import           Data.List.NonEmpty (NonEmpty (..))
 import           Data.Semigroup     ((<>))
 import qualified Data.Set           as Set
 import           Data.Text          (Text)
+import           Data.Void
 
 import Text.Megaparsec
 import Text.Megaparsec.Expr
@@ -204,7 +206,7 @@ quantifiedType = label "type" $
 
 
 -- | Operators working on 'Expr's.
-type ExprOp m = Operator (ParsecT Dec Text (StateT ParserState m)) LExpr
+type ExprOp m = Operator (ParsecT Void Text (StateT ParserState m)) LExpr
 
 
 -- | Operator table for expressions.
@@ -242,11 +244,11 @@ table =
     ]
 
 
-binaryLOp :: Monad m => String -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
+binaryLOp :: Monad m => Text -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
 binaryLOp n c = binary InfixL c (operator n)
 
 
-binaryNOp :: Monad m => String -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
+binaryNOp :: Monad m => Text -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
 binaryNOp n c = binary InfixN c (operator n)
 
 
@@ -284,7 +286,7 @@ binary assoc c p = assoc ((\l r -> Loc (c l r) (getLoc l <> getLoc r)) <$ p)
 -- | @unary c s@ creates a prefix 'Operator' that parses the symbol @s@.
 -- The expression is annotated with the 'Region' including both the operand
 -- and the prefix operator.
-unary :: Monad m => (Loc Expr -> Expr) -> String -> ExprOp m
+unary :: Monad m => (Loc Expr -> Expr) -> Text -> ExprOp m
 unary c s =
     Prefix $ do
         rgn <- operator s

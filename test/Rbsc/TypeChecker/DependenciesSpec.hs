@@ -9,8 +9,6 @@ module Rbsc.TypeChecker.DependenciesSpec (spec) where
 import Control.Arrow ((+++))
 import Control.Lens
 
-import Data.Monoid
-
 import Test.Hspec
 
 
