@@ -78,7 +78,7 @@ hintTitleStyle = color Blue <> bold
 
 
 errorUnderlineStyle :: AnsiStyle
-errorUnderlineStyle = color Red
+errorUnderlineStyle = color Red <> bold
 
 
 hintUnderlineStyle :: AnsiStyle
@@ -153,9 +153,14 @@ renderPart marginWidth (Part partType region message, path) =
 renderLineRegion :: Int -> MessageType -> (Text, LineRegion) -> Doc AnsiStyle
 renderLineRegion marginWidth partType (sourceLine, LineRegion lrLine lrStart lrEnd) =
     annotate lineNumberStyle (fill marginWidth (pretty lrLine) <+> pipe) <+>
-    pretty sourceLine <> hardline <> spaces marginWidth <+>
+    prettySourceLine <> hardline <> spaces marginWidth <+>
     annotate lineNumberStyle pipe <+> underline
   where
+    prettySourceLine =
+        let (prefix, sourceLine') = Text.splitAt (lrStart - 1) sourceLine
+            (lineRegion, suffix) = Text.splitAt (lrEnd' - lrStart) sourceLine'
+        in pretty prefix <> annotate ulStyle (pretty lineRegion) <> pretty suffix
+
     underline = spaces (lrStart - 1) <>
         annotate ulStyle (replicateDoc (lrEnd' - lrStart) ulChar)
 
