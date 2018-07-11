@@ -19,12 +19,10 @@ import qualified Language.Prism as Prism
 
 
 import Rbsc.Data.ComponentType
-import Rbsc.Data.Info
 import Rbsc.Data.Name
 import Rbsc.Data.System
 
 import Rbsc.Report.Region
-import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed
 
@@ -36,11 +34,8 @@ import Rbsc.Translator.Variable
 
 
 trnsModules
-    :: Info
-    -> System
-    -> Map Name [TNamedModuleBody Elem]
-    -> Result [Prism.Module]
-trnsModules info sys bodiess = runTranslator info $ do
+    :: System -> Map Name [TNamedModuleBody Elem] -> Translator [Prism.Module]
+trnsModules sys bodiess = do
     compTys <- view componentTypes
 
     as <- alphabets bodiess

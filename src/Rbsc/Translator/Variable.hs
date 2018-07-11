@@ -5,7 +5,10 @@
 {-# LANGUAGE OverloadedStrings     #-}
 
 
-module Rbsc.Translator.Variable where
+module Rbsc.Translator.Variable
+    ( trnsGlobalVars
+    , trnsLocalVars
+    ) where
 
 
 import Control.Lens
@@ -27,9 +30,17 @@ import Rbsc.Translator.Expr
 import Rbsc.Translator.Internal
 
 
+trnsGlobalVars :: TInits -> Translator [Prism.Declaration]
+trnsGlobalVars = trnsVarDecls Nothing
+
+
 trnsLocalVars :: TypeName -> Name -> TInits -> Translator [Prism.Declaration]
-trnsLocalVars typeName compName =
-    fmap concat . traverse (trnsVarDecl (Just (typeName, compName)))
+trnsLocalVars typeName compName = trnsVarDecls (Just (typeName, compName))
+
+
+trnsVarDecls
+    :: Maybe (TypeName, Name) -> TInits -> Translator [Prism.Declaration]
+trnsVarDecls mComp = fmap concat . traverse (trnsVarDecl mComp)
 
 
 trnsVarDecl
