@@ -1,12 +1,18 @@
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 module Rbsc.Translator.Internal
-    ( trnsQualified
+    ( Translator
+    , runTranslator
+    , TranslatorState(..)
+
+    , trnsQualified
     , trnsAction
     , overrideActionIdent
     , indexedNames
@@ -16,29 +22,74 @@ module Rbsc.Translator.Internal
     ) where
 
 
-import Data.Text (pack, replace)
+import Control.Lens
+import Control.Monad.Reader
+import Control.Monad.State
+
+import Data.Map.Strict     as Map
+import Data.Text           (pack, replace)
+import qualified Data.Set as Set
 
 
 import qualified Language.Prism as Prism
 
 
 import Rbsc.Data.Action
+import Rbsc.Data.Info
 import Rbsc.Data.Type
 
 import Rbsc.Eval
 
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed hiding (Type (..))
 
+import Rbsc.Util.NameGen
 
-trnsQualified :: Monad m => Qualified -> m Prism.Ident
-trnsQualified = return . go
+
+data TranslatorState = TranslatorState
+    { _tsNameGen :: NameGen
+    , _tsIdents  :: !(Map Qualified Prism.Ident)
+    }
+
+makeLenses ''TranslatorState
+
+instance HasNameGen TranslatorState where
+    nameGen = tsNameGen
+
+
+type Translator a = StateT TranslatorState (ReaderT Info Result) a
+
+
+runTranslator :: Info -> Translator a -> Result a
+runTranslator info m = runReaderT (evalStateT m initState) info
   where
-    go = \case
+    initState = TranslatorState (mkNameGen id Set.empty) Map.empty
+
+
+
+trnsQualified :: MonadState TranslatorState m => Qualified -> m Prism.Ident
+trnsQualified qname = use (tsIdents.at qname) >>= \case
+    Just ident -> return ident
+    Nothing    -> do
+        -- A Qualified name in the original model is unique. However,
+        -- translating a Qualified name into a PRISM identifier may lead to
+        -- clashes. Example: `QlName "c_x"` and `QlMember (QlName "c") "x"`
+        -- map to the same identifier "c_x". Therefore, we use the NameGen
+        -- to generate unique identifiers.
+
+        let ident = mkIdent qname
+        ident' <- newNameFrom ident
+
+        tsIdents.at qname ?= ident'
+
+        return ident'
+  where
+    mkIdent = \case
         QlName name         -> removeBrackets name
-        QlMember inner name -> go inner <> "_" <> name
-        QlIndex inner idx   -> go inner <> "_" <> pack (show idx)
+        QlMember inner name -> mkIdent inner <> "_" <> name
+        QlIndex inner idx   -> mkIdent inner <> "_" <> pack (show idx)
 
     removeBrackets = replace "[" "_" . replace "]" ""
 

@@ -22,8 +22,6 @@ import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
 
-import Rbsc.Eval
-
 import Rbsc.Report.Error
 import Rbsc.Report.Region
 
@@ -33,13 +31,8 @@ import Rbsc.Translator.Expr
 import Rbsc.Translator.Internal
 
 
-trnsCommand ::
-       (MonadEval r m, HasSymbolTable r)
-    => Bool
-    -> TypeName
-    -> Name
-    -> TCommand Elem
-    -> m Prism.Command
+trnsCommand
+    :: Bool -> TypeName -> Name -> TCommand Elem -> Translator Prism.Command
 trnsCommand isRole typeName comp Command{..} = do
     act' <- _Just trnsActionExpr cmdAction
     let acts' = catMaybes [act', roleAct, overrideAct]
@@ -56,29 +49,20 @@ trnsCommand isRole typeName comp Command{..} = do
         _                -> Nothing
 
 
-trnsActionExpr :: MonadError Error m => LSomeExpr -> m Prism.Ident
+trnsActionExpr :: LSomeExpr -> Translator Prism.Ident
 trnsActionExpr (Loc e rgn) = case e of
     SomeExpr (Literal act _) TyAction -> trnsQualified (trnsAction act)
-    _ -> throw rgn NotConstant
+    _                                 -> throw rgn NotConstant
 
 
-trnsUpdate ::
-       (MonadEval r m, HasSymbolTable r)
-    => TypeName
-    -> Name
-    -> TUpdate Elem
-    -> m Prism.Update
+trnsUpdate :: TypeName -> Name -> TUpdate Elem -> Translator Prism.Update
 trnsUpdate typeName comp Update{..} = Prism.Update <$>
     _Just (trnsLSomeExpr (Just comp)) updProb <*>
     (concat <$> traverse (trnsAssignment typeName comp . getElem) updAssignments)
 
 
-trnsAssignment ::
-       (MonadEval r m, HasSymbolTable r)
-    => TypeName
-    -> Name
-    -> TAssignment
-    -> m [(Prism.Ident, Prism.Expr)]
+trnsAssignment
+    :: TypeName -> Name -> TAssignment -> Translator [(Prism.Ident, Prism.Expr)]
 trnsAssignment typeName comp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = do
     symTable <- view symbolTable
     let (baseName, varTy) =

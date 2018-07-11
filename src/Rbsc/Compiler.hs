@@ -94,8 +94,7 @@ translateComponents ::
        (System, ModelInfo)
     -> Map Name [T.TNamedModuleBody Elem]
     -> Result [Prism.Module]
-translateComponents (sys, info) bodies =
-    runReaderT (trnsModules sys bodies) (Info info 10)
+translateComponents (sys, info) = trnsModules (Info info 10) sys
 
 
 printSystem :: System -> IO ()

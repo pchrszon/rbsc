@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 
 -- | Translation of expressions.
@@ -13,13 +13,13 @@ module Rbsc.Translator.Expr
 
 import Control.Lens
 
-import Data.Text (pack)
+import Data.Text        (pack)
 import Data.Traversable
 
 import qualified Language.Prism as Prism
 
 
-import Rbsc.Data.Array (Array)
+import Rbsc.Data.Array     (Array)
 import Rbsc.Data.Component
 import Rbsc.Data.Function
 import Rbsc.Data.Some
@@ -35,14 +35,14 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 import Rbsc.Translator.Internal
 
 
-trnsLSomeExpr :: MonadEval r m => Maybe Name -> LSomeExpr -> m Prism.Expr
+trnsLSomeExpr :: Maybe Name -> LSomeExpr -> Translator Prism.Expr
 trnsLSomeExpr mCompName (Loc (SomeExpr e _) rgn) = trnsExpr mCompName rgn e
 
 
-trnsExpr :: MonadEval r m => Maybe Name -> Region -> Expr t -> m Prism.Expr
+trnsExpr :: Maybe Name -> Region -> Expr t -> Translator Prism.Expr
 trnsExpr mCompName rgn = go
   where
-    go :: MonadEval r m => Expr t -> m Prism.Expr
+    go :: Expr t -> Translator Prism.Expr
     go = \case
         (trnsIdent -> Just qname) ->
             Prism.Ident <$> trnsQualified qname
@@ -104,7 +104,7 @@ trnsExpr mCompName rgn = go
         _ -> Nothing
 
 
-    trnsApply :: MonadEval r m => Expr t -> [Some Expr] -> m Prism.Expr
+    trnsApply :: Expr t -> [Some Expr] -> Translator Prism.Expr
     trnsApply f args = case f of
         LitFunction l ->
             Prism.Func (trnsFunction l) <$> traverse (\(Some e) -> go e) args
@@ -112,18 +112,17 @@ trnsExpr mCompName rgn = go
         _ -> throw rgn (TranslationNotSupported (pack (show f)))
 
 
-trnsEq ::
-       MonadEval r m
-    => Maybe Name
+trnsEq
+    :: Maybe Name
     -> Region
     -> EqOp
     -> Type t
     -> Expr t
     -> Expr t
-    -> m Prism.Expr
+    -> Translator Prism.Expr
 trnsEq mCompName rgn eOp = go
   where
-    go :: MonadEval r m => Type t -> Expr t -> Expr t -> m Prism.Expr
+    go :: Type t -> Expr t -> Expr t -> Translator Prism.Expr
     go ty l r = case ty of
         TyArray (lower, upper) innerTy -> do
             es' <- for [lower .. upper] $ \i ->

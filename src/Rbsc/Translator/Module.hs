@@ -7,7 +7,7 @@ module Rbsc.Translator.Module where
 
 
 import Control.Lens
-import Control.Monad.Trans
+import Control.Monad.State
 
 import           Data.Foldable
 import           Data.Map.Strict  (Map)
@@ -19,11 +19,9 @@ import qualified Language.Prism as Prism
 
 
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Info
 import Rbsc.Data.Name
 import Rbsc.Data.System
-import Rbsc.Data.Type
-
-import Rbsc.Eval
 
 import Rbsc.Report.Region
 import Rbsc.Report.Result
@@ -37,21 +35,16 @@ import Rbsc.Translator.Internal
 import Rbsc.Translator.Variable
 
 
-trnsModules ::
-       ( MonadEval r (t Result)
-       , HasSymbolTable r
-       , HasRangeTable r
-       , HasComponentTypes r
-       , MonadTrans t
-       )
-    => System
+trnsModules
+    :: Info
+    -> System
     -> Map Name [TNamedModuleBody Elem]
-    -> t Result [Prism.Module]
-trnsModules sys bodiess = do
+    -> Result [Prism.Module]
+trnsModules info sys bodiess = runTranslator info $ do
     compTys <- view componentTypes
 
     as <- alphabets bodiess
-    binds <- lift (generateBindings sys as)
+    binds <- lift (lift (generateBindings sys as))
     let oas = overrideActions as
 
     fmap concat . for (Map.assocs bodiess) $ \(name, bodies) ->
@@ -63,16 +56,15 @@ trnsModules sys bodiess = do
             Nothing -> error $ "trnsModules: undefined component " ++ show name
 
 
-trnsModule ::
-       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
-    => Bindings
+trnsModule
+    :: Bindings
     -> Alphabet
     -> OverrideActions
     -> Bool
     -> TypeName
     -> Name
     -> TNamedModuleBody Elem
-    -> m Prism.Module
+    -> Translator Prism.Module
 trnsModule binds alph oas isRole typeName compName (NamedModuleBody moduleName body) = do
     ident <- trnsQualified (QlMember (QlName compName) moduleName)
     vars' <- trnsLocalVars typeName compName (bodyVars body)
@@ -89,8 +81,12 @@ trnsModule binds alph oas isRole typeName compName (NamedModuleBody moduleName b
     return (Prism.Module ident vars' (concat [cmds', override, nonblocking]))
 
 
-genOverrideSelfLoops ::
-       Monad m => Bindings -> OverrideActions -> Name -> m [Prism.Command]
+genOverrideSelfLoops
+    :: MonadState TranslatorState m
+    => Bindings
+    -> OverrideActions
+    -> Name
+    -> m [Prism.Command]
 genOverrideSelfLoops binds oas =
     traverse genCommand . toList . overrideActionsOfRoles binds oas
   where
@@ -100,7 +96,8 @@ genOverrideSelfLoops binds oas =
         return (selfLoops acts Prism.ActionOpen)
 
 
-genNonblockingSelfLoops :: Monad m => Alphabet -> m [Prism.Command]
+genNonblockingSelfLoops
+    :: MonadState TranslatorState m => Alphabet -> m [Prism.Command]
 genNonblockingSelfLoops = traverse genCommand . toList . Set.map (unLoc . fst)
   where
     genCommand act = do

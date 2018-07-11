@@ -21,29 +21,21 @@ import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
 
-import Rbsc.Eval
-
 import Rbsc.Syntax.Typed hiding (Type (..))
 
 import Rbsc.Translator.Expr
 import Rbsc.Translator.Internal
 
 
-trnsLocalVars ::
-       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
-    => TypeName
-    -> Name
-    -> TInits
-    -> m [Prism.Declaration]
+trnsLocalVars :: TypeName -> Name -> TInits -> Translator [Prism.Declaration]
 trnsLocalVars typeName compName =
     fmap concat . traverse (trnsVarDecl (Just (typeName, compName)))
 
 
-trnsVarDecl ::
-       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
-    => Maybe (TypeName, Name)
+trnsVarDecl
+    :: Maybe (TypeName, Name)
     -> (Name, Maybe LSomeExpr)
-    -> m [Prism.Declaration]
+    -> Translator [Prism.Declaration]
 trnsVarDecl mComp (varName, mInit) =
     view (symbolTable.at scName) >>= \case
         Just (Some ty) -> do
