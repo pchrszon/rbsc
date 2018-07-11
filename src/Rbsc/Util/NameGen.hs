@@ -21,7 +21,7 @@ import Control.Monad.State.Strict
 import           Data.Map   (Map)
 import qualified Data.Map   as Map
 import           Data.Maybe (fromMaybe)
-import           Data.Set   (Set, member)
+import           Data.Set   (Set, member, insert)
 import           Data.Text  (Text)
 import qualified Data.Text  as T
 
@@ -73,17 +73,22 @@ newName = newNameFrom "x"
 -- | Creates a new name derived from the given name.
 newNameFrom :: (MonadState s m, HasNameGen s) => Text -> m Text
 newNameFrom name = do
-    dn <- use $ nameGen.deriveName
-    ts <- use $ nameGen.taken
+    dn <- use (nameGen.deriveName)
+    ts <- use (nameGen.taken)
 
     let base = dn name
 
-    i <- fromMaybe 0 <$> use (nameGen.counters.at base)
-    let i' = findUnusedIndex ts base i
+    if base `member` ts
+        then do
+            i <- fromMaybe 2 <$> use (nameGen.counters.at base)
+            let i' = findUnusedIndex ts base i
 
-    nameGen.counters.at base .= Just (i' + 1)
+            nameGen.counters.at base ?= i' + 1
 
-    return $ appendIndex base i'
+            return (appendIndex base i')
+        else do
+            nameGen.taken %= insert base
+            return base
 
 
 -- | Find the smallest index greater or equal i that is unused.
