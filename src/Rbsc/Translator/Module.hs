@@ -34,11 +34,13 @@ import Rbsc.Translator.Variable
 
 
 trnsModules
-    :: System -> Map Name [TNamedModuleBody Elem] -> Translator [Prism.Module]
-trnsModules sys bodiess = do
+    :: System
+    -> Alphabets
+    -> Map Name [TNamedModuleBody Elem]
+    -> Translator [Prism.Module]
+trnsModules sys as bodiess = do
     compTys <- view componentTypes
 
-    as <- alphabets bodiess
     binds <- lift (lift (generateBindings sys as))
     let oas = overrideActions as
 
