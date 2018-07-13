@@ -126,7 +126,7 @@ makeLenses ''ParserState
 -- | Parser for a reserved word.
 reserved :: Text -> Parser Region
 reserved s =
-    getLoc <$> lexeme ((Loc <$> string s) <* notFollowedBy alphaNumChar)
+    getLoc <$> lexeme (try ((Loc <$> string s) <* notFollowedBy alphaNumChar))
 
 
 -- | Parser for an operator.
