@@ -7,6 +7,7 @@ module Rbsc.Util
     , inverseLookup
     , appendIndex
     , toMaybe
+    , whenIsJust
     , topoSort
     ) where
 
@@ -44,6 +45,13 @@ appendIndex base i = base `append` pack (show i)
 toMaybe :: a -> Bool -> Maybe a
 toMaybe x True  = Just x
 toMaybe _ False = Nothing
+
+
+-- | If the given value is 'Just' @x@, then apply @x@ to the given @IO@
+-- action.
+whenIsJust :: Maybe a -> (a -> IO ()) -> IO ()
+whenIsJust (Just x) m = m x
+whenIsJust Nothing  _ = return ()
 
 
 -- | @topoSort nodes outgoingEdges@ sorts the @nodes@ topologically. If

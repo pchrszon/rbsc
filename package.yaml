@@ -18,10 +18,12 @@ dependencies:
   - containers
   - directory
   - filepath
+  - gitrev
   - lang-prism
   - lens
   - megaparsec
   - mtl
+  - optparse-applicative
   - prettyprinter
   - prettyprinter-ansi-terminal
   - process

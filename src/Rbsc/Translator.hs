@@ -2,33 +2,54 @@
 
 
 module Rbsc.Translator
-    ( translateModel
+    ( translateModels
+    , translateModel
     ) where
 
 
 import Control.Monad.Reader
 
-import Data.Foldable
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import           Data.Foldable
+import qualified Data.Map.Strict  as Map
+import qualified Data.Set         as Set
+import           Data.Traversable
 
 import qualified Language.Prism as Prism
 
+
+import Rbsc.Config
 
 import Rbsc.Data.Action
 import Rbsc.Data.Info
 import Rbsc.Data.System
 
+import Rbsc.Instantiation
+
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import Rbsc.Syntax.Typed
+import           Rbsc.Syntax.Typed
+import qualified Rbsc.Syntax.Untyped as U
 
 import Rbsc.Translator.Alphabet
 import Rbsc.Translator.Instantiation
 import Rbsc.Translator.Internal
 import Rbsc.Translator.Module
 import Rbsc.Translator.Variable
+
+import Rbsc.TypeChecker
+
+
+translateModels :: RecursionDepth -> U.Model -> Result [(System, Prism.Model)]
+translateModels depth model = do
+    (typedModel, sysInfos) <- flip runReaderT depth $ do
+        (typedModel, mi) <- typeCheck model
+        sysInfos <- generateInstances typedModel mi
+        return (typedModel, sysInfos)
+
+    for sysInfos $ \(sys, mi) -> do
+        model' <- translateModel typedModel sys (Info mi depth)
+        return (sys, model')
 
 
 translateModel :: Model -> System -> Info -> Result Prism.Model
