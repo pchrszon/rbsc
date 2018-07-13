@@ -49,7 +49,7 @@ toMaybe _ False = Nothing
 
 -- | If the given value is 'Just' @x@, then apply @x@ to the given @IO@
 -- action.
-whenIsJust :: Maybe a -> (a -> IO ()) -> IO ()
+whenIsJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
 whenIsJust (Just x) m = m x
 whenIsJust Nothing  _ = return ()
 

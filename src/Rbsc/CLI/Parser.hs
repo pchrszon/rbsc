@@ -65,6 +65,10 @@ options = Options
     <*> flag True False
         ( long "no-warn"
        <> help helpNoWarnings )
+    <*> flag NonVerbose Verbose
+        ( short 'v'
+       <> long "verbose"
+       <> help helpVerbose )
 
 
 helpModelFile      = "The model file"
@@ -74,6 +78,7 @@ helpExportDiagrams = "Export the component diagram as Graphviz dot"
 helpRecursionDepth = "The maximal recursion depth for evaluating expressions"
 helpNoColor        = "Do not use colored output"
 helpNoWarnings     = "Suppress warnings"
+helpVerbose        = "Enable verbose output"
 
 
 versionInfo :: String

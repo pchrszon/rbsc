@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 
 module Rbsc.CLI
@@ -14,7 +15,7 @@ import Control.Monad.Reader
 import           Data.Foldable
 import           Data.List                                 (intersperse)
 import           Data.Maybe
-import           Data.Text                                 (Text)
+import           Data.Text                                 (Text, pack)
 import qualified Data.Text.IO                              as Text
 import           Data.Text.Prettyprint.Doc
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as T
@@ -89,7 +90,14 @@ handleResults results = do
     mSysPath     <- asks optExportSystems
     mDiagramPath <- asks optExportDiagrams
 
-    for_ iresults $ \(i, (sys, model')) -> liftIO $ do
+    putStrLnVerbose $ "Generated " <> if numResults == 1
+        then "1 system\n"
+        else pack (show numResults) <> " systems\n"
+
+    for_ iresults $ \(i, (sys, model')) -> do
+        putStrLnVerbose (renderPretty sys)
+        when (fromInteger i < numResults - 1) (putStrLnVerbose "")
+
         writeDoc (pretty model') i path
         whenIsJust mSysPath (writeDoc (pretty sys) i)
         whenIsJust mDiagramPath (writeDoc (visualizeSystem sys) i)
@@ -98,14 +106,19 @@ handleResults results = do
 
     getOutputPath = fromMaybe "out.prism" <$> asks optOutput
 
-    writeDoc doc i path = withFile (addFileNameIndex path i) WriteMode $ \h ->
-        U.hPutDoc h doc
+    writeDoc doc i path =
+        liftIO . withFile (addFileNameIndex path i) WriteMode $ \h ->
+            U.hPutDoc h doc
 
     addFileNameIndex path i
         | length results > 1 =
             let (name, ext) = splitExtension path
             in name ++ "_" ++ show i ++ ext
         | otherwise = path
+
+    numResults = length results
+
+    renderPretty = U.renderStrict . layoutPretty defaultLayoutOptions . pretty
 
 
 readModel :: App (FilePath, Text)
@@ -137,10 +150,16 @@ printReports f h xs = do
 
     liftIO (sequence_ (intersperse (putStrLn "") (fmap (p . toDocStream) xs)))
   where
-    toDocStream = layoutPretty defaultLayoutOptions . pretty . f
+    toDocStream = layoutPretty defaultLayoutOptions . render . f
 
     putColor   = T.renderIO h
     putNoColor = U.renderIO h
+
+
+putStrLnVerbose :: Text -> App ()
+putStrLnVerbose s = asks optVerbose >>= \case
+    Verbose    -> liftIO (Text.putStrLn s)
+    NonVerbose -> return ()
 
 
 ioExceptionHandler :: IOException -> IO a

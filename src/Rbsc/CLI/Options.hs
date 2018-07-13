@@ -1,6 +1,7 @@
 -- | Representation of command line options.
 module Rbsc.CLI.Options
     ( Options(..)
+    , Verbosity(..)
     ) where
 
 
@@ -30,4 +31,10 @@ data Options = Options
 
       -- | Enable/disable warnings.
     , optShowWarnings   :: !Bool
+
+      -- | Enable/disable verbose output
+    , optVerbose        :: !Verbosity
     }
+
+
+data Verbosity = NonVerbose | Verbose
