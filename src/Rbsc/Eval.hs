@@ -134,7 +134,7 @@ reduceInternal cs depth (Loc e rgn) =
                         go body'
                 _ -> do
                     arg' <- go arg
-                    toLiteral (Apply f' arg')
+                    return (tryEvalBuiltIn f' arg')
 
         IfThenElse cond _then _else -> do
             cond' <- go cond
@@ -169,6 +169,28 @@ reduceInternal cs depth (Loc e rgn) =
         _ -> plateExpr go e' >>= toLiteral
 
 
+-- | A built-in function can be evaluated if all arguments are provided
+-- (i.e. it is not partially applied) and all arguments are 'Literal's.
+tryEvalBuiltIn :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
+tryEvalBuiltIn f arg =
+    let e = Apply f arg
+    in case go e of
+        Literal _ (TyFunc _ _) -> e -- the function is partially applied
+        l@(Literal _ _)        -> l -- the function application was fully evaluated
+        _                      -> e
+  where
+    go :: Expr t -> Expr t
+    go e = case e of
+        LitFunction func ->
+            Literal (Fn (function func)) (functionType func)
+        Apply f' (Literal argLit _) ->
+            case go f' of
+                Literal (Fn funcLit) (TyFunc _ ty) ->
+                    Literal (funcLit argLit) ty
+                _ -> e
+        _ -> e
+
+
 -- | Reduces an expression to a literal if possible, otherwise the original
 -- expression is returned. An expression can only be reduced if all
 -- sub-expressions are literals.
@@ -187,9 +209,6 @@ toLiteral e = case e of
     LitArray es -> return $ case toArray es of
         Just (arr, ty) -> Literal arr ty
         Nothing        -> e
-
-    LitFunction func ->
-        return (Literal (Fn (function func)) (functionType func))
 
     Cast (Literal x _) ->
         return (Literal (fromIntegral x) TyDouble)
@@ -251,9 +270,6 @@ toLiteral e = case e of
 
     Index (ActionArray (Literal act _)) (LitIndex i _) ->
         return (Literal (IndexedAction act i) TyAction)
-
-    Apply (Literal (Fn f) (TyFunc _ ty)) (Literal arg _) ->
-        return (Literal (f arg) ty)
 
     HasType (Literal comp _) tyName ->
         return (Literal (view compTypeName comp == tyName) TyBool)
