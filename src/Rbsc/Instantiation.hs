@@ -25,6 +25,7 @@ import Rbsc.Data.System
 
 import Rbsc.Instantiation.Internal
 
+import Rbsc.Report.Error
 import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed
@@ -57,5 +58,9 @@ generateInstances model info = do
 
         let sysInfos = fmap (updateModelInfo info arrayInfos) syss
 
-        flip filterM sysInfos $ \(_, info') ->
+        sysInfos' <- flip filterM sysInfos $ \(_, info') ->
             local (set modelInfo info') (checkConstraints constraints)
+
+        when (null sysInfos') (throwNoLoc NoSystems)
+
+        return sysInfos'

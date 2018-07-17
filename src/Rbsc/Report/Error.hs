@@ -84,6 +84,7 @@ data LocErrorDesc
 
 data NoLocErrorDesc
     = TooManyRoles !Name [(TypeName, Int)]
+    | NoSystems
     deriving (Eq, Show)
 
 
@@ -310,6 +311,11 @@ noLocReport = \case
                 pack (show amount) <>
                 " more role" <> (if amount > 1 then "s" else "") <>
                 " of type " <> tyName <> " than allowed") amounts)
+
+    NoSystems ->
+        errorReport
+            "there is no system instance satisfying the defined constraints"
+            []
 
 
 throw :: MonadError Error m => Region -> LocErrorDesc -> m a
