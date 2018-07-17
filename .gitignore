@@ -19,3 +19,6 @@ Icon
 
 # tmux
 tmux.conf
+
+# documentation
+doc/development/
