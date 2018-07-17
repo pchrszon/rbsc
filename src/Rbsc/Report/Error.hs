@@ -18,8 +18,9 @@ import qualified Data.Text as Text
 
 import Rbsc.Data.Name
 
-import Rbsc.Report
-import Rbsc.Report.Region
+import           Rbsc.Report        hiding (errorReport)
+import qualified Rbsc.Report        as Report
+import           Rbsc.Report.Region
 
 
 data Error
@@ -324,6 +325,10 @@ throw rgn = throwError . LocError . MkLocError rgn
 
 throwNoLoc :: MonadError Error m => NoLocErrorDesc -> m a
 throwNoLoc = throwError . NoLocError
+
+
+errorReport :: Text -> [Part] -> Report
+errorReport title = Report.errorReport ("error: " <> title)
 
 
 list :: Text -> [Text] -> Text
