@@ -26,6 +26,9 @@ import Rbsc.Syntax.Untyped
 import Rbsc.TypeChecker.Identifiers
 
 
+import Util
+
+
 spec :: Spec
 spec = describe "identifierDefs" $ do
     it "extracts all identifiers" $
@@ -88,8 +91,8 @@ spec = describe "identifierDefs" $ do
                     n : Comp
                 }
             |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._DuplicateIdentifier)
+        `shouldThrowError`
+        _DuplicateIdentifier
 
 
 shouldBeLike ::

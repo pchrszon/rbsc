@@ -150,8 +150,8 @@ checkCompatibilities sys plays as core = do
             rAlphabet = Map.findWithDefault Set.empty r as
         in fmap (incompatError l r) (incompatibilities lAlphabet rAlphabet)
 
-    incompatError first second (act, firstRgn, secondRgn) = Error firstRgn $
-        IncompatibleRoles first secondRgn second core (renderPretty act)
+    incompatError first second (act, firstRgn, secondRgn) = locError firstRgn
+        (IncompatibleRoles first secondRgn second core (renderPretty act))
 
 
 -- | Given a set of roles, get the set of all pairs of roles that must be

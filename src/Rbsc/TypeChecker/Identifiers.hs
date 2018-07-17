@@ -162,7 +162,7 @@ runBuilder m
 insert :: Scope -> Loc Name -> IdentifierDef -> Builder ()
 insert sc (Loc name rgn) def =
     use (identifiers.at (ScopedName sc name)) >>= \case
-        Just def' -> throw' (Error rgn (DuplicateIdentifier (getLoc def')))
+        Just def' -> throw' (locError rgn (DuplicateIdentifier (getLoc def')))
         Nothing -> identifiers.at (ScopedName sc name) .= Just (Loc def rgn)
 
 

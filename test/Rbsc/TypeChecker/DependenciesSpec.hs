@@ -7,7 +7,6 @@ module Rbsc.TypeChecker.DependenciesSpec (spec) where
 
 
 import Control.Arrow ((+++))
-import Control.Lens
 
 import Test.Hspec
 
@@ -21,6 +20,9 @@ import Rbsc.Syntax.Untyped
 
 import Rbsc.TypeChecker.Dependencies
 import Rbsc.TypeChecker.Identifiers
+
+
+import Util
 
 
 spec :: Spec
@@ -59,8 +61,8 @@ spec = describe "sortDefinitions" $ do
                 const n = k + 1;
                 const k = n + 1;
             |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._CyclicDefinition)
+        `shouldThrowError`
+        _CyclicDefinition
 
 
 dependencies :: Model -> Either [Error] [Name]

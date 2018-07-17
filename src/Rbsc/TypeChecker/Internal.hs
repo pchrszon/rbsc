@@ -110,7 +110,7 @@ getIdentifierType name rgn = do
 
     case varTyLocal <|> varTyGlobal <|> varTyAction of
         Just ty -> return ty
-        Nothing -> throwOne rgn UndefinedIdentifier
+        Nothing -> throw rgn UndefinedIdentifier
 
 
 -- | Looks up the type and the de-Bruijn index of a given identifier.
@@ -136,7 +136,7 @@ whenTypeExists (Loc tyName rgn) m = do
     types <- view componentTypes
     if Map.member tyName types
         then m
-        else throwOne rgn UndefinedType
+        else throw rgn UndefinedType
 
 
 -- | Unwrap 'SomeExpr'. If the given expected 'Type' and the actual @Type@ do
@@ -162,7 +162,7 @@ expect :: MonadError Error m => Type s -> Region -> Type t -> m (s :~: t)
 expect expected rgn actual =
     case typeEq expected actual of
         Just Refl -> return Refl
-        Nothing   -> throwOne rgn (typeError [Some expected] actual)
+        Nothing   -> throw rgn (typeError [Some expected] actual)
 
 
 -- | Assume that values of the given type can be checked for equality. If
@@ -170,7 +170,7 @@ expect expected rgn actual =
 isEqType :: Type t -> Region -> TypeChecker (Dict (Eq t))
 isEqType ty rgn = case checkEq ty of
     Just Dict -> return Dict
-    Nothing   -> throwOne rgn (NotComparable (renderPretty ty))
+    Nothing   -> throw rgn (NotComparable (renderPretty ty))
 
 
 -- | Assume that values of the given type are comparable. If not, an error
@@ -178,7 +178,7 @@ isEqType ty rgn = case checkEq ty of
 isOrdType :: Type t -> Region -> TypeChecker (Dict (Ord t))
 isOrdType ty rgn = case checkOrd ty of
     Just Dict -> return Dict
-    Nothing   -> throwOne rgn (NotComparable (renderPretty ty))
+    Nothing   -> throw rgn (NotComparable (renderPretty ty))
 
 
 -- | Assume that the given type is a number type. If not, a type error is
@@ -186,7 +186,7 @@ isOrdType ty rgn = case checkOrd ty of
 isNumType :: Type t -> Region -> TypeChecker (Dict (Num t))
 isNumType ty rgn = case checkNum ty of
     Just Dict -> return Dict
-    Nothing   -> throwOne rgn (typeError numTypes ty)
+    Nothing   -> throw rgn (typeError numTypes ty)
 
 
 -- | Returns an expression tagged with its 'Type'.
@@ -195,7 +195,7 @@ withType e ty = return (SomeExpr e ty)
 
 
 -- | @typeError expected actual region@ constructs a 'Type.Error'.
-typeError :: [Some Type] -> Type t -> ErrorDesc
+typeError :: [Some Type] -> Type t -> LocErrorDesc
 typeError expected actual =
     TypeError (fmap renderSomeType expected) (renderPretty actual)
   where

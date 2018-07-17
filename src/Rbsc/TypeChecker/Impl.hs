@@ -65,8 +65,8 @@ tcCommand Command{..} = do
         OverrideAction rgn -> view scope >>= \case
             Local tyName -> view (componentTypes.at tyName) >>= \case
                 Just (RoleType _) -> return ()
-                _ -> throwOne rgn InvalidOverrideAction
-            Global -> throwOne rgn InvalidOverrideAction
+                _ -> throw rgn InvalidOverrideAction
+            Global -> throw rgn InvalidOverrideAction
         NormalAction -> return ()
 
 
@@ -94,7 +94,7 @@ tcIndices rgn (i:is) (Some (TyArray _ elemTy)) = do
     i' <- someExpr i TyInt
     (is', ty') <- tcIndices rgn is (Some elemTy)
     return (i' : is', ty')
-tcIndices rgn (_:_) (Some ty) = throwOne rgn (NotAnArray (renderPretty ty))
+tcIndices rgn (_:_) (Some ty) = throw rgn (NotAnArray (renderPretty ty))
 
 
 tcElemMultis ::

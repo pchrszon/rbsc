@@ -17,12 +17,13 @@ module Rbsc.Report.Result
     , toEither
     , toEither'
 
-    , throwOne
+    , throw
     , throwMany
     , warn
 
     , Error(..)
-    , ErrorDesc(..)
+    , LocErrorDesc(..)
+    , NoLocErrorDesc(..)
     , Warning(..)
     ) where
 
@@ -37,7 +38,6 @@ import           Rbsc.Data.Bag (Bag)
 import qualified Rbsc.Data.Bag as Bag
 
 import Rbsc.Report.Error
-import Rbsc.Report.Region
 import Rbsc.Report.Warning
 
 
@@ -75,11 +75,6 @@ instance MonadError Error Result where
         (e:es') ->
             let Result ws' _ = h e
             in Result (ws <> ws') (Left (Bag.fromList es'))
-
-
--- | Throw a single 'Error'.
-throwOne :: MonadError Error m => Region -> ErrorDesc -> m a
-throwOne rgn = throwError . Error rgn
 
 
 -- | Throw many 'Error's.

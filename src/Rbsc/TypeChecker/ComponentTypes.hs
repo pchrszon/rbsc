@@ -38,9 +38,9 @@ validateComponentTypes types model
 
     exists (Loc tyName rgn)
         | Map.member tyName types = Nothing
-        | otherwise = Just (Error rgn UndefinedType)
+        | otherwise = Just (locError rgn UndefinedType)
 
     isRoleType (MultiRole (Loc tyName rgn) _) = case Map.lookup tyName types of
         Just (RoleType _) -> Nothing
-        Just _            -> Just (Error rgn NonRoleInCompartment)
-        Nothing           -> Just (Error rgn UndefinedType)
+        Just _            -> Just (locError rgn NonRoleInCompartment)
+        Nothing           -> Just (locError rgn UndefinedType)

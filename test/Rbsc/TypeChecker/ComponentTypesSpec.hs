@@ -6,7 +6,6 @@
 module Rbsc.TypeChecker.ComponentTypesSpec (spec) where
 
 
-import Control.Lens
 import Control.Monad.Reader
 
 import Test.Hspec
@@ -27,6 +26,9 @@ import Rbsc.Syntax.Untyped (Model)
 import Rbsc.TypeChecker.ModelInfo
 
 
+import Util
+
+
 spec :: Spec
 spec = describe "validateComponentTypes" $ do
     it "detects undefined types" $
@@ -34,8 +36,8 @@ spec = describe "validateComponentTypes" $ do
             [model|
                 role type R(Undefined);
             |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._UndefinedType)
+        `shouldThrowError`
+        _UndefinedType
 
     it "detects non-role types in compartments" $
         getModelInfo'
@@ -43,8 +45,8 @@ spec = describe "validateComponentTypes" $ do
                 natural type N;
                 compartment type C(N);
             |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._NonRoleInCompartment)
+        `shouldThrowError`
+        _NonRoleInCompartment
 
 
 getModelInfo' :: Model -> Either [Error] (ModelInfo, [TConstant])

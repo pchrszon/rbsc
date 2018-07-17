@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TemplateHaskell       #-}
@@ -21,13 +22,23 @@ import Rbsc.Report
 import Rbsc.Report.Region
 
 
-data Error = Error
+data Error
+    = LocError !LocError
+    | NoLocError !NoLocErrorDesc
+    deriving (Eq, Show)
+
+
+data LocError = MkLocError
     { _errorRegion :: !Region
-    , _errorDesc   :: !ErrorDesc
+    , _errorDesc   :: !LocErrorDesc
     } deriving (Eq, Show)
 
 
-data ErrorDesc
+locError :: Region -> LocErrorDesc -> Error
+locError rgn desc = LocError (MkLocError rgn desc)
+
+
+data LocErrorDesc
     -- syntax errors
     = ParseError !Text
     | DuplicateModule !Region
@@ -56,7 +67,6 @@ data ErrorDesc
     | RoleAlreadyBound !Region
     | InvalidLowerBound !Int
     | InvalidCardinalities !Int !Int
-    | TooManyRoles !Name [(TypeName, Int)]
     | InvalidOverrideAction
     | IncompatibleRoles !Name !Region !Name !Name !Text
 
@@ -72,12 +82,25 @@ data ErrorDesc
     deriving (Eq, Show)
 
 
-makeLenses ''Error
-makePrisms ''ErrorDesc
+data NoLocErrorDesc
+    = TooManyRoles !Name [(TypeName, Int)]
+    deriving (Eq, Show)
+
+
+makePrisms ''Error
+makeLenses ''LocError
+makePrisms ''LocErrorDesc
+makePrisms ''NoLocErrorDesc
 
 
 toReport :: Error -> Report
-toReport (Error rgn desc) = case desc of
+toReport = \case
+    LocError (MkLocError rgn desc) -> locReport rgn desc
+    NoLocError desc                -> noLocReport desc
+
+
+locReport :: Region -> LocErrorDesc -> Report
+locReport rgn = \case
     ParseError err ->
         errorReport "syntax error" [errorPart rgn (Just err)]
 
@@ -225,14 +248,6 @@ toReport (Error rgn desc) = case desc of
                 pack (show upper)
             ]
 
-    TooManyRoles name amounts ->
-        flip errorReport [] $
-            "the compartment " <> name <> " contains " <>
-            list "and" (fmap (\(TypeName tyName, amount) ->
-                pack (show amount) <>
-                " more role" <> (if amount > 1 then "s" else "") <>
-                " of type " <> tyName <> " than allowed") amounts)
-
     InvalidOverrideAction ->
         errorReport "invalid override action"
             [ errorPart rgn $ Just
@@ -286,8 +301,23 @@ toReport (Error rgn desc) = case desc of
             ]
 
 
-throw :: MonadError Error m => Region -> ErrorDesc -> m a
-throw rgn = throwError . Error rgn
+noLocReport :: NoLocErrorDesc -> Report
+noLocReport = \case
+    TooManyRoles name amounts ->
+        flip errorReport [] $
+            "the compartment " <> name <> " contains " <>
+            list "and" (fmap (\(TypeName tyName, amount) ->
+                pack (show amount) <>
+                " more role" <> (if amount > 1 then "s" else "") <>
+                " of type " <> tyName <> " than allowed") amounts)
+
+
+throw :: MonadError Error m => Region -> LocErrorDesc -> m a
+throw rgn = throwError . LocError . MkLocError rgn
+
+
+throwNoLoc :: MonadError Error m => NoLocErrorDesc -> m a
+throwNoLoc = throwError . NoLocError
 
 
 list :: Text -> [Text] -> Text

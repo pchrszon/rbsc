@@ -34,7 +34,7 @@ import Rbsc.Parser.Impl
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
 
-import           Rbsc.Report.Error  (Error (..))
+import           Rbsc.Report.Error  (Error (..), LocError (..))
 import qualified Rbsc.Report.Error  as Error
 import qualified Rbsc.Report.Region as Region
 import           Rbsc.Report.Result (Result, fromEither)
@@ -121,7 +121,7 @@ fromParseError ::
     => SourceMap
     -> ParseError t e
     -> Error
-fromParseError sourceMap err = Error rgn (Error.ParseError msg)
+fromParseError sourceMap err = LocError (MkLocError rgn (Error.ParseError msg))
   where
     rgn = Region.Region path content start end
     msg = fromString (parseErrorTextPretty err)

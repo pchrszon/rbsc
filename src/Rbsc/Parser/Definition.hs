@@ -87,7 +87,7 @@ getImplementations defs = do
                 for (toList ms) $ \(Loc name rgn) ->
                     case Map.lookup name mods of
                         Just b  -> return (NamedModuleBody name (unLoc b))
-                        Nothing -> throwError [Error rgn UndefinedModule]
+                        Nothing -> throwError [locError rgn UndefinedModule]
 
 
 getModules ::
@@ -95,5 +95,6 @@ getModules ::
 getModules defs = flip execStateT Map.empty $
     forOf_ (traverse._DefModule) defs $ \(Module (Loc name rgn) body) ->
         use (at name) >>= \case
-            Just (Loc _ first) -> throwError [Error rgn (DuplicateModule first)]
-            Nothing -> at name .= Just (Loc body rgn)
+            Just (Loc _ first) -> throwError
+                [locError rgn (DuplicateModule first)]
+            Nothing -> at name ?= Loc body rgn

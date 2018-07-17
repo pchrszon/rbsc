@@ -77,7 +77,7 @@ tcExpr (Loc e rgn) = case e of
     U.Self -> do
         sc <- view scope
         case sc of
-            Global       -> throwOne rgn SelfOutsideImpl
+            Global       -> throw rgn SelfOutsideImpl
             Local tyName -> T.Self `withType` TyComponent (Set.singleton tyName)
 
     U.Identifier name ->
@@ -151,7 +151,7 @@ tcExpr (Loc e rgn) = case e of
             TyAction ->
                 T.Index (T.ActionArray inner') (idx' `withLocOf` idx) `withType`
                 TyAction
-            _ -> throwOne (getLoc inner) (NotAnArray (renderPretty ty))
+            _ -> throw (getLoc inner) (NotAnArray (renderPretty ty))
 
     U.Call f args -> do
         f' <- tcExpr f
@@ -267,7 +267,7 @@ tcArray (e :| es) = do
 checkCallArity :: Region -> SomeExpr -> [args] -> TypeChecker ()
 checkCallArity rgn (SomeExpr _ ty) args
     | numParams > 0 && numParams < numArgs =
-        throwOne rgn (WrongNumberOfArguments numParams numArgs)
+        throw rgn (WrongNumberOfArguments numParams numArgs)
     | otherwise = return ()
   where
     numParams = paramsLength ty
@@ -286,7 +286,7 @@ tcCall (Loc (SomeExpr f (TyFunc tyParam tyRes)) rgn) (arg : args) = do
     Dict <- return (dictShow tyRes)
     tcCall (Loc (SomeExpr (T.Apply f arg') tyRes) rgn) args
 tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
-    throwOne rgn (NotAFunction (renderPretty ty))
+    throw rgn (NotAFunction (renderPretty ty))
 
 
 -- | @getLocalVarTypes name tySet@ returns the type of the member @name@
@@ -311,12 +311,12 @@ getMemberType ::
     -> [(TypeName, Maybe (Some Type))]
     -> TypeChecker (Some Type)
 getMemberType rgn name memberTys
-    | not (null undefineds) = throwOne rgn (UndefinedMember undefineds name)
+    | not (null undefineds) = throw rgn (UndefinedMember undefineds name)
     | otherwise = case nubBy ((==) `on` snd) defineds of
         [] -> error "getMemberType: empty list"
         [(_, ty)] -> return ty
         ((firstTyName, Some firstTy):(secondTyName, Some secondTy):_) ->
-            throwOne rgn
+            throw rgn
                 (ConflictingMemberTypes
                      name
                      firstTyName
@@ -409,7 +409,7 @@ cast _ e = e
 checkComponentType :: Type t -> Region -> Type t -> TypeChecker ()
 checkComponentType expected@(TyComponent tySetExp) rgn actual@(TyComponent tySetAct)
     | tySetAct `Set.isSubsetOf` tySetExp = return ()
-    | otherwise = throwOne rgn (typeError [Some expected] actual)
+    | otherwise = throw rgn (typeError [Some expected] actual)
 checkComponentType _ _ _ = return ()
 
 

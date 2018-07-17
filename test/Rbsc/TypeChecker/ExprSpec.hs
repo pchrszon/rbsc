@@ -31,6 +31,9 @@ import Rbsc.TypeChecker.Internal  (extract, runTypeChecker)
 import Rbsc.TypeChecker.ModelInfo
 
 
+import Util
+
+
 spec :: Spec
 spec = describe "typeCheck" $ do
     it "computes the correct type" $
@@ -40,53 +43,53 @@ spec = describe "typeCheck" $ do
 
     it "detects type errors" $
         typeCheck TyBool [expr| true : N |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._TypeError)
+        `shouldThrowError`
+        _TypeError
 
     it "reports comparison of uncomparable values" $
         typeCheck TyBool [expr| n > 5 |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._NotComparable)
+        `shouldThrowError`
+        _NotComparable
 
     it "reports undefined local variables" $
         typeCheck TyInt [expr| n.y |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._UndefinedMember)
+        `shouldThrowError`
+        _UndefinedMember
 
     it "reports conflicting local variable types" $
         typeCheck TyInt [expr| forall c: {N, K}. c.x > 0 |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._ConflictingMemberTypes)
+        `shouldThrowError`
+        _ConflictingMemberTypes
 
     it "reports use of the self keyword in global scope" $
         typeCheck TyInt [expr| self.x |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._SelfOutsideImpl)
+        `shouldThrowError`
+        _SelfOutsideImpl
 
     it "reports indexing of non-array values" $
         typeCheck TyBool [expr| n[1] |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._NotAnArray)
+        `shouldThrowError`
+        _NotAnArray
 
     it "reports invocation on a non-function value" $
         typeCheck TyBool [expr| n(1) |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._NotAFunction)
+        `shouldThrowError`
+        _NotAFunction
 
     it "detects too many arguments on a function call" $
         typeCheck TyBool [expr| floor(1, 2) |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._WrongNumberOfArguments)
+        `shouldThrowError`
+        _WrongNumberOfArguments
 
     it "detects undefined types" $
         typeCheck TyBool [expr| n : Undefined |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._UndefinedType)
+        `shouldThrowError`
+        _UndefinedType
 
     it "detects undefined identifiers" $
         typeCheck TyBool [expr| undefined : N |]
-        `shouldSatisfy`
-        has (_Left.traverse.errorDesc._UndefinedIdentifier)
+        `shouldThrowError`
+        _UndefinedIdentifier
 
 
 testModel :: Model

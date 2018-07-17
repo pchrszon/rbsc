@@ -64,17 +64,17 @@ makeLenses ''AnalyzerInfo
 -- then a 'CyclicDefinition' error is returned.
 sortDefinitions :: Identifiers -> Either Error [Dependency]
 sortDefinitions idents = do
-    depGraph <-
-        runAnalyzer idents (traverse_ (insert . unLoc) (Map.elems idents))
+    depGraph <- runAnalyzer idents
+                            (traverse_ (insert . unLoc) (Map.elems idents))
     case topoSort (Map.keys depGraph) (lookupEdges depGraph) of
-        Right deps    -> return (fmap unLoc deps)
-        Left depCycle -> throwError (buildError depCycle)
+        Right deps     -> return (fmap unLoc deps)
+        Left  depCycle -> throwError (buildError depCycle)
   where
     lookupEdges depGraph dep =
         toList (Map.findWithDefault Set.empty dep depGraph)
 
-    buildError (Loc dep rgn :| deps) =
-        Error rgn (CyclicDefinition (getConstructName dep) (fmap getLoc deps))
+    buildError (Loc dep rgn :| deps) = locError rgn
+        (CyclicDefinition (getConstructName dep) (fmap getLoc deps))
 
     getConstructName = \case
         DepDefinition def -> case def of

@@ -37,6 +37,9 @@ import Rbsc.TypeChecker.Expr
 import Rbsc.TypeChecker.Internal hiding (componentTypes, symbolTable)
 
 
+import Util
+
+
 spec :: Spec
 spec = do
     describe "eval" $ do
@@ -111,18 +114,18 @@ spec = do
 
         it "detects division by zero" $
             eval' TyDouble [expr| 1.0 / 0 |]
-            `shouldSatisfy`
-            has (_Left.traverse.errorDesc._DivisionByZero)
+            `shouldThrowError`
+            _DivisionByZero
 
         it "detects out-of-bound array accesses" $
             eval' TyInt [expr| [0, 1, 2][3] |]
-            `shouldSatisfy`
-            has (_Left.traverse.errorDesc._IndexOutOfBounds)
+            `shouldThrowError`
+            _IndexOutOfBounds
 
         it "stops after exceeding the maximum recursion depth" $
             eval' TyInt [expr| f(1) |]
-            `shouldSatisfy`
-            has (_Left.traverse.errorDesc._ExceededDepth)
+            `shouldThrowError`
+            _ExceededDepth
 
     describe "reduce" $ do
         it "evaluates constant expressions" $

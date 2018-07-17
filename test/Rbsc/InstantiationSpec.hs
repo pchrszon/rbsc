@@ -31,13 +31,15 @@ import Rbsc.Instantiation.Internal
 import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
-import Rbsc.Report.Region
 import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed.Expr (Expr (..), SomeExpr (..))
 import Rbsc.Syntax.Untyped    (Model)
 
 import Rbsc.TypeChecker
+
+
+import Util
 
 
 spec :: Spec
@@ -118,8 +120,8 @@ spec = do
                         , n boundto m
                         }
                 |]
-            `shouldSatisfy`
-            has (_Left.traverse.errorDesc._NotARole)
+            `shouldThrowError`
+            _NotARole
 
         it "detects invalid bindings" $
             buildSystem'
@@ -133,8 +135,8 @@ spec = do
                         , r boundto m
                         }
                 |]
-            `shouldSatisfy`
-            has (_Left.traverse.errorDesc._InvalidBinding)
+            `shouldThrowError`
+            _InvalidBinding
 
         it "detects multiple bindings of the same role" $
             buildSystem'
@@ -149,8 +151,8 @@ spec = do
                         , r boundto m
                         }
                 |]
-            `shouldSatisfy`
-            has (_Left.traverse.errorDesc._RoleAlreadyBound)
+            `shouldThrowError`
+            _RoleAlreadyBound
 
         it "detects invalid use of 'in' relation" $
             buildSystem'
@@ -163,8 +165,8 @@ spec = do
                         , r in n
                         }
                 |]
-            `shouldSatisfy`
-            has (_Left.traverse.errorDesc._NotACompartment)
+            `shouldThrowError`
+            _NotACompartment
 
         it "detects invalid component array sizes" $
             buildSystem'
@@ -172,8 +174,8 @@ spec = do
                     natural type N;
                     system { n[-1]: N }
                 |]
-            `shouldSatisfy`
-            has (_Left.traverse.errorDesc._InvalidUpperBound)
+            `shouldThrowError`
+            _InvalidUpperBound
 
 
     describe "checkCompartmentUpperBounds" $
@@ -192,7 +194,7 @@ spec = do
                         }
                 |]
             `shouldBe`
-            Left [Error dummyRegion (TooManyRoles "c" [("R", 1)])]
+            Left [NoLocError (TooManyRoles "c" [("R", 1)])]
 
 
     describe "updateModelInfo" $ do
@@ -252,10 +254,6 @@ checkCompartmentUpperBounds' m =
         local (set modelInfo info) $ do
             (sys, _, _) <- buildSystem m'
             checkCompartmentUpperBounds sys
-
-
-dummyRegion :: Region
-dummyRegion = Region "" "" (Position 1 1) (Position 1 2)
 
 
 buildSystem' :: Model -> Either [Error] System

@@ -165,9 +165,9 @@ addComponentType = \case
             return (RoleRef tyName (lower', upper'))
 
     checkCardinalities lower upper lower' upper'
-        | lower' < 0 = throwOne (getLoc lower) (InvalidLowerBound lower')
+        | lower' < 0 = throw (getLoc lower) (InvalidLowerBound lower')
         | upper' < lower' =
-            throwOne
+            throw
                 (getLoc lower <> getLoc upper)
                 (InvalidCardinalities lower' upper')
         | otherwise = return ()
@@ -182,7 +182,7 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
             then
                 let tyArray = TyArray (0, len' - 1) tyComponent
                 in insertSymbol Global name (Some tyArray)
-            else throwOne (getLoc len) (InvalidUpperBound len')
+            else throw (getLoc len) (InvalidUpperBound len')
     -- add single component
     Nothing -> insertSymbol Global name (Some tyComponent)
   where

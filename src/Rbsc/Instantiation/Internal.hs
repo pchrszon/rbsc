@@ -267,18 +267,13 @@ checkCompartment :: MonadError Error m => System -> Name -> [[RoleRef]] -> m ()
 checkCompartment sys name roleRefLists
     | any Map.null overfulls = return ()
     | otherwise = case sortedOverfulls of
-        (os:_) -> throw dummyRegion (TooManyRoles name (Map.assocs os))
+        (os:_) -> throwNoLoc (TooManyRoles name (Map.assocs os))
         _      -> return ()
   where
     sortedOverfulls = sortOn numAdditional overfulls
     overfulls = fmap (getOverfullTypes sys name) roleRefLists
 
     numAdditional = Map.foldr (+) 0
-
-    -- A 'TooManyRoles' error cannot be given a precise code region, since
-    -- it is potentially a result of multiple constraints in the system
-    -- block.
-    dummyRegion = Region "" "" (Position 1 1) (Position 1 2)
 
 
 getOverfullTypes :: System -> Name -> [RoleRef] -> Map TypeName Int
