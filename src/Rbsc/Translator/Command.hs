@@ -40,18 +40,24 @@ trnsCommand isRole typeName comp Command{..} = do
     case cmdAction of
         Just act -> do
             act' <- trnsActionExpr act
-            let acts' = catMaybes [Just act', roleAct, overrideAct]
+            ract <- roleAct
+            oact <- overrideAct
+            let acts' = catMaybes [Just act', ract, oact]
             return (Prism.Command acts' Prism.ActionOpen grd' upds')
         Nothing ->
             return (Prism.Command [] Prism.ActionClosed grd' upds')
   where
     roleAct
-        | isRole    = Just comp
-        | otherwise = Nothing
+        | isRole = do
+            act <- trnsQualified (QlName comp)
+            return (Just act)
+        | otherwise = return Nothing
 
     overrideAct = case cmdActionKind of
-        OverrideAction _ -> Just (overrideActionIdent comp)
-        _                -> Nothing
+        OverrideAction _ -> do
+            act <- trnsQualified (QlName (overrideActionIdent comp))
+            return (Just act)
+        _ -> return Nothing
 
 
 trnsActionExpr :: LSomeExpr -> Translator Prism.Ident
