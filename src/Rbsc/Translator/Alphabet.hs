@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
 
@@ -11,12 +12,17 @@ module Rbsc.Translator.Alphabet
 
     , Alphabets
     , alphabets
+
+    , OverrideActions
+    , overrideActions
+    , isOverrideAction
     ) where
 
 
 import Control.Monad.Except
 
 import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import           Data.Maybe
 import           Data.Set        (Set)
 import qualified Data.Set        as Set
@@ -62,3 +68,20 @@ type Alphabets = Map Name Alphabet
 alphabets ::
        MonadError Error m => Map Name [TNamedModuleBody Elem] -> m Alphabets
 alphabets = traverse (fmap Set.unions . traverse (alphabet . _namedBody))
+
+
+-- | The override actions of a component.
+type OverrideActions = Map Name (Set Action)
+
+
+-- | Get the override actions of all components from the given 'Alphabets'.
+overrideActions :: Alphabets -> OverrideActions
+overrideActions =
+    Map.map (Set.map (unLoc . fst) . Set.filter (isOverrideAction . snd))
+
+
+-- | Returns 'True' if the given 'ActionKind' is 'OverrideAction'.
+isOverrideAction :: ActionKind -> Bool
+isOverrideAction = \case
+    OverrideAction _ -> True
+    NormalAction     -> False

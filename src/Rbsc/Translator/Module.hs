@@ -41,7 +41,7 @@ trnsModules
 trnsModules sys as bodiess = do
     compTys <- view componentTypes
 
-    binds <- lift (lift (generateBindings sys as))
+    binds <- lift (lift (generateBindingInfo sys as))
     let oas = overrideActions as
 
     fmap concat . for (Map.assocs bodiess) $ \(name, bodies) ->
@@ -54,7 +54,7 @@ trnsModules sys as bodiess = do
 
 
 trnsModule
-    :: Bindings
+    :: BindingInfo
     -> Alphabet
     -> OverrideActions
     -> Bool
@@ -62,7 +62,7 @@ trnsModule
     -> Name
     -> TNamedModuleBody Elem
     -> Translator Prism.Module
-trnsModule binds alph oas isRole typeName compName (NamedModuleBody moduleName body) = do
+trnsModule bi alph oas isRole typeName compName (NamedModuleBody moduleName body) = do
     ident <- trnsQualified (QlMember (QlName compName) moduleName)
     vars' <- trnsLocalVars typeName compName (bodyVars body)
 
@@ -70,7 +70,7 @@ trnsModule binds alph oas isRole typeName compName (NamedModuleBody moduleName b
         (trnsCommand isRole typeName compName . getElem)
         (bodyCommands body)
 
-    override <- genOverrideSelfLoops binds oas compName
+    override <- genOverrideSelfLoops bi oas compName
     nonblocking <- if isRole
         then genNonblockingSelfLoops alph
         else return []
@@ -80,12 +80,12 @@ trnsModule binds alph oas isRole typeName compName (NamedModuleBody moduleName b
 
 genOverrideSelfLoops
     :: MonadState TranslatorState m
-    => Bindings
+    => BindingInfo
     -> OverrideActions
     -> Name
     -> m [Prism.Command]
-genOverrideSelfLoops binds oas =
-    traverse genCommand . toList . overrideActionsOfRoles binds oas
+genOverrideSelfLoops bi oas =
+    traverse genCommand . toList . overrideActionsOfRoles bi oas
   where
     genCommand (roleName, act) = do
         act' <- trnsQualified (trnsAction act)

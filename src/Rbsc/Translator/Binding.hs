@@ -1,17 +1,16 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 
 -- | This module provides functionality to generate role bindings and
 -- check for incompatibilities between roles.
 module Rbsc.Translator.Binding
-    ( Bindings
-    , generateBindings
+    ( BindingInfo
+    , rolesOfComponent
+    , playersOfRole
+    , generateBindingInfo
 
-    , OverrideActions
-    , overrideActions
     , overrideActionsOfRoles
     ) where
 
@@ -19,11 +18,11 @@ module Rbsc.Translator.Binding
 import Control.Lens
 
 import           Data.Foldable
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import           Data.Set        (Set)
-import qualified Data.Set        as Set
-import Data.Traversable
+import           Data.Map.Strict  (Map)
+import qualified Data.Map.Strict  as Map
+import           Data.Set         (Set)
+import qualified Data.Set         as Set
+import           Data.Traversable
 
 
 import Rbsc.Data.Action
@@ -39,36 +38,48 @@ import Rbsc.Translator.Alphabet
 import Rbsc.Util (renderPretty)
 
 
-type OverrideActions = Map Name (Set Action)
+data BindingInfo = BindingInfo
+    { _rolesOfComponent :: Map Name (Set RoleName)
+    , _playersOfRole    :: Map RoleName (Set Name)
+    }
 
 
-overrideActions :: Alphabets -> OverrideActions
-overrideActions =
-    Map.map (Set.map (unLoc . fst) . Set.filter (isOverrideAction . snd))
+rolesOfComponent :: BindingInfo -> Name -> Set RoleName
+rolesOfComponent bi compName =
+    Map.findWithDefault Set.empty compName (_rolesOfComponent bi)
+
+
+playersOfRole :: BindingInfo -> RoleName -> Set Name
+playersOfRole bi roleName =
+    Map.findWithDefault Set.empty roleName (_playersOfRole bi)
+
+
+-- | Generate the 'BindingInfo' for a given 'System'. If there are
+-- incompatible roles bound to the same component, 'IncompatibleRoles'
+-- errors are thrown.
+generateBindingInfo :: System -> Alphabets -> Result BindingInfo
+generateBindingInfo sys as = do
+    binds <- globalBindings sys as
+    return BindingInfo
+        { _rolesOfComponent = invert binds
+        , _playersOfRole    = fromBindings binds
+        }
+  where
+    fromBindings = Map.fromList . fmap fromBinding
+    fromBinding (Binding roleName ps) = (roleName, Set.fromList ps)
+
+    invert = Map.unionsWith Set.union . fmap (\(Binding role ps) ->
+        Map.unions (fmap (`Map.singleton` Set.singleton role) ps))
 
 
 -- | Get the set of actions that are overridden in the given component.
 overrideActionsOfRoles ::
-       Bindings -> OverrideActions -> Name -> Set (RoleName, Action)
-overrideActionsOfRoles binds oas compName =
-    case Map.lookup compName binds of
-        Just roles -> Set.unions . flip fmap (toList roles) $ \role ->
-            Set.map ((,) role) (Map.findWithDefault Set.empty role oas)
-        Nothing -> Set.empty
-
-
--- | A mapping from components to the role components that are bound to it.
-type Bindings = Map Name (Set RoleName)
-
-
--- | Generate the 'Bindings' for a given 'System'. If there are
--- incompatible roles bound to the same component, 'IncompatibleRoles'
--- errors are thrown.
-generateBindings :: System -> Alphabets -> Result Bindings
-generateBindings sys as = invert <$> globalBindings sys as
+       BindingInfo -> OverrideActions -> Name -> Set (RoleName, Action)
+overrideActionsOfRoles bi oas compName =
+    Set.unions . flip fmap (toList roles) $ \role ->
+        Set.map ((,) role) (Map.findWithDefault Set.empty role oas)
   where
-    invert = Map.unionsWith Set.union . fmap (\(Binding role ps) ->
-        Map.unions (fmap (`Map.singleton` Set.singleton role) ps))
+    roles = rolesOfComponent bi compName
 
 
 data Binding = Binding
@@ -176,12 +187,6 @@ incompatibilities l r = Set.toList (incompat l r `Set.union` incompat r l)
     joinWith act = Set.map (getLocs act) . Set.filter ((act ==) . fst)
 
     getLocs (Loc act lRgn) (Loc _ rRgn, _) = (act, lRgn, rRgn)
-
-
-isOverrideAction :: ActionKind -> Bool
-isOverrideAction = \case
-    OverrideAction _ -> True
-    NormalAction     -> False
 
 
 players :: System -> Name -> Set Name

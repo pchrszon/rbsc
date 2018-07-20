@@ -114,7 +114,7 @@ tcElemMulti tc =
   where
     tcLoop (Loop (Loc var rgn) qdTy body) = do
         (qdTy', varTy) <- tcQuantifiedType qdTy
-        body' <- local (over boundVars ((var, varTy) :)) $ tcElemMultis tc body
+        body' <- local (over boundVars ((var, varTy) :)) (tcElemMultis tc body)
         return (Loop (Loc var rgn) qdTy' body')
 
 
