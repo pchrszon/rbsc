@@ -41,7 +41,7 @@ trnsModules
 trnsModules sys as bodiess = do
     compTys <- view componentTypes
 
-    binds <- lift (lift (generateBindingInfo sys as))
+    bi <- lift (lift (generateBindingInfo sys as))
     let oas = overrideActions as
 
     fmap concat . for (Map.assocs bodiess) $ \(name, bodies) ->
@@ -49,12 +49,13 @@ trnsModules sys as bodiess = do
             Just typeName -> do
                 let isRole = has (at typeName._Just._RoleType) compTys
                     alph   = Map.findWithDefault Set.empty name as
-                traverse (trnsModule binds alph oas isRole typeName name) bodies
+                traverse (trnsModule bi as alph oas isRole typeName name) bodies
             Nothing -> error $ "trnsModules: undefined component " ++ show name
 
 
 trnsModule
     :: BindingInfo
+    -> Alphabets
     -> Alphabet
     -> OverrideActions
     -> Bool
@@ -62,7 +63,7 @@ trnsModule
     -> Name
     -> TNamedModuleBody Elem
     -> Translator Prism.Module
-trnsModule bi alph oas isRole typeName compName (NamedModuleBody moduleName body) = do
+trnsModule bi as alph oas isRole typeName compName (NamedModuleBody moduleName body) = do
     ident <- trnsQualified (QlMember (QlName compName) moduleName)
     vars' <- trnsLocalVars typeName compName (bodyVars body)
 
@@ -72,7 +73,7 @@ trnsModule bi alph oas isRole typeName compName (NamedModuleBody moduleName body
 
     override <- genOverrideSelfLoops bi oas compName
     nonblocking <- if isRole
-        then genNonblockingSelfLoops alph
+        then genNonblockingSelfLoops bi as compName alph
         else return []
 
     return (Prism.Module ident vars' (concat [cmds', override, nonblocking]))
@@ -94,12 +95,30 @@ genOverrideSelfLoops bi oas =
 
 
 genNonblockingSelfLoops
-    :: MonadState TranslatorState m => Alphabet -> m [Prism.Command]
-genNonblockingSelfLoops = traverse genCommand . toList . Set.map (unLoc . fst)
+    :: MonadState TranslatorState m
+    => BindingInfo
+    -> Alphabets
+    -> RoleName
+    -> Alphabet
+    -> m [Prism.Command]
+genNonblockingSelfLoops bi as roleName alph =
+    traverse genCommand (filter isShared (toList (stripLocAndKind alph)))
   where
     genCommand act = do
         act' <- trnsQualified (trnsAction act)
         return (selfLoops [act'] Prism.ActionOpen)
+
+    isShared = (`Set.member` sharedActions)
+
+    sharedActions = stripLocAndKind alph `Set.intersection` playerAlphabets
+
+    playerAlphabets = stripLocAndKind
+        (Set.unions (fmap getAlphabet (toList (playersOfRole bi roleName))))
+
+    getAlphabet compName = Map.findWithDefault Set.empty compName as
+
+    stripLocAndKind = Set.map (unLoc . fst)
+
 
 
 selfLoops :: [Prism.Ident] -> Prism.ActionType -> Prism.Command
