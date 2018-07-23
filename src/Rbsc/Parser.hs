@@ -27,6 +27,7 @@ import Text.Megaparsec.Error (parseErrorTextPretty)
 
 import Rbsc.Parser.ComponentType
 import Rbsc.Parser.Constant
+import Rbsc.Parser.Coordinator
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Function
 import Rbsc.Parser.Global
@@ -70,6 +71,7 @@ definition = withRecoveryOn (semi <|> symbol "}") . choice $
     , globalDef
     , implementationDef
     , moduleDef
+    , coordinatorDef
     ]
 
 

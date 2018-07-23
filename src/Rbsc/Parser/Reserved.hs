@@ -43,6 +43,7 @@ reservedWords =
     , "system"
     , "impl"
     , "module"
+    , "coordinator"
     , "self"
     , "min"
     , "minf"

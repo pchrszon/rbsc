@@ -33,6 +33,10 @@ module Rbsc.Syntax.Untyped
     , ULoop
     , UQuantifiedType
 
+      -- * Coordination
+    , UCoordinator
+    , UCoordCommand
+
       -- * Types
     , UType
     , UVarType
@@ -47,6 +51,7 @@ import Rbsc.Data.Name          as Syntax
 
 import Rbsc.Syntax.ComponentType  as Syntax
 import Rbsc.Syntax.Constant       as Syntax
+import Rbsc.Syntax.Coordinator    as Syntax
 import Rbsc.Syntax.Function       as Syntax
 import Rbsc.Syntax.Impl           as Syntax
 import Rbsc.Syntax.Operators      as Syntax
@@ -67,6 +72,7 @@ data Model = Model
     , modelCompartmentTypes :: [UCompartmentTypeDef]
     , modelSystem           :: [LExpr]
     , modelImpls            :: Map TypeName [UNamedModuleBody]
+    , modelCoordinators     :: [UCoordinator]
     } deriving (Show)
 
 
@@ -89,6 +95,9 @@ type UImplBody        = ImplBody ElemMulti UVarDecls UQuantifiedType LExpr
 type UModule          = Module ElemMulti UVarDecls UQuantifiedType LExpr
 type UModuleBody      = ModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
 type UNamedModuleBody = NamedModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
+
+type UCoordinator  = Coordinator ElemMulti UVarDecls UQuantifiedType LExpr
+type UCoordCommand = CoordCommand ElemMulti UQuantifiedType LExpr
 
 type UVarDecls = [VarDecl LExpr]
 

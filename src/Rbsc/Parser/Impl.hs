@@ -5,6 +5,8 @@
 module Rbsc.Parser.Impl
     ( implementationDef
     , moduleDef
+    , updates
+    , elemMultis
     ) where
 
 

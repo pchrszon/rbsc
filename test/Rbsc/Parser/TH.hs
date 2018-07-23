@@ -122,6 +122,9 @@ deriving instance (Data ty, Data expr, Data a) => Data (Elem ty expr a)
 deriving instance (Data ty, Data expr, Data a) => Data (ElemMulti ty expr a)
 deriving instance (Data ty, Data expr, Data a) => Data (Loop ty expr a)
 
+deriving instance (Data expr, Data ty, Data vars) => Data (Coordinator ElemMulti vars ty expr)
+deriving instance (Data expr, Data ty) => Data (CoordCommand ElemMulti ty expr)
+
 deriving instance Data Expr
 deriving instance Data FunctionName
 deriving instance Data ArithOp

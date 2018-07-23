@@ -48,6 +48,7 @@ data Definition
     | DefSystem [Loc Expr]
     | DefImplementation UImplementation
     | DefModule UModule
+    | DefCoordinator UCoordinator
     deriving (Show)
 
 makePrisms ''Definition
@@ -66,6 +67,7 @@ toModel defs = do
         , modelCompartmentTypes = def _DefCompartmentType
         , modelSystem           = concat (def _DefSystem)
         , modelImpls            = impls
+        , modelCoordinators     = def _DefCoordinator
         }
   where
     def p = toListOf (traverse.p) defs
