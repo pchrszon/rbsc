@@ -6,7 +6,6 @@ module Rbsc.Util
     ( renderPretty
     , inverseLookup
     , appendIndex
-    , toMaybe
     , whenIsJust
     , topoSort
     ) where
@@ -39,12 +38,6 @@ inverseLookup value = fmap fst . filter ((value ==) . snd) . Map.assocs
 -- | Append an 'Integer' to a 'Text'.
 appendIndex :: Text -> Integer -> Text
 appendIndex base i = base `append` pack (show i)
-
-
--- | @toMaybe x b@ returns @Just x@ if @b@ is @True@, else @Nothing@.
-toMaybe :: a -> Bool -> Maybe a
-toMaybe x True  = Just x
-toMaybe _ False = Nothing
 
 
 -- | If the given value is 'Just' @x@, then apply @x@ to the given @IO@

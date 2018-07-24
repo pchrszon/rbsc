@@ -16,7 +16,8 @@ module Rbsc.TypeChecker.Internal
     , symbolTable
     , boundVars
     , scope
-    , inAction
+    , context
+    , TcContext(..)
 
     , runTypeChecker
 
@@ -62,11 +63,18 @@ import Rbsc.Report.Result
 import           Rbsc.Syntax.Typed.Expr (SomeExpr (..))
 import qualified Rbsc.Syntax.Typed.Expr as T
 
-import Rbsc.Util (renderPretty, toMaybe)
+import Rbsc.Util (renderPretty)
 
 
 -- | The @TypeChecker@ monad.
 type TypeChecker a = ReaderT TcInfo Result a
+
+
+-- | The type checking context.
+data TcContext
+    = NoContext -- ^ Standard type checking. No special rules apply.
+    | ActionContext -- ^ In the action context, all undefined identifiers are treated as action names.
+    | ConstraintContext -- ^ In the role-constraint context, all components are treated as bool.
 
 
 -- | The information provided to the type checker.
@@ -75,7 +83,7 @@ data TcInfo = TcInfo
     , _tciSymbolTable    :: !SymbolTable        -- ^ the 'SymbolTable'
     , _boundVars         :: [(Name, Some Type)] -- ^ list of variables bound by a quantifier or lambda
     , _scope             :: !Scope              -- ^ the current scope
-    , _inAction          :: !Bool               -- ^ indicates whether the expression should return an action
+    , _context           :: !TcContext          -- ^ the current type checking context
     }
 
 makeLenses ''TcInfo
@@ -90,7 +98,7 @@ instance HasSymbolTable TcInfo where
 -- | Run a type checker action.
 runTypeChecker :: TypeChecker a -> ComponentTypes -> SymbolTable -> Result a
 runTypeChecker m types symTable =
-    runReaderT m (TcInfo types symTable [] Global False)
+    runReaderT m (TcInfo types symTable [] Global NoContext)
 
 
 -- | Looks up the type of a given identifier in the symbol table. First,
@@ -99,14 +107,17 @@ runTypeChecker m types symTable =
 -- error is thrown.
 getIdentifierType :: Name -> Region -> TypeChecker (Some Type)
 getIdentifierType name rgn = do
-    sc <- view scope
+    sc  <- view scope
+    ctx <- view context
 
     varTyLocal  <- view (symbolTable.at (ScopedName sc name))
     varTyGlobal <- view (symbolTable.at (ScopedName Global name))
 
     -- If we are inside action brackets, all undefined identifiers are
     -- actions.
-    varTyAction <- toMaybe (Some TyAction) <$> view inAction
+    let varTyAction = case ctx of
+            ActionContext -> Just (Some TyAction)
+            _ -> Nothing
 
     case varTyLocal <|> varTyGlobal <|> varTyAction of
         Just ty -> return ty

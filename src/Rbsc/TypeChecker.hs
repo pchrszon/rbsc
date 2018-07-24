@@ -27,6 +27,7 @@ import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped hiding (Model (..), Type (..))
 import qualified Rbsc.Syntax.Untyped as U
 
+import Rbsc.TypeChecker.Coordinator
 import Rbsc.TypeChecker.Expr
 import Rbsc.TypeChecker.Impl
 import Rbsc.TypeChecker.Internal
@@ -51,6 +52,7 @@ tcModel U.Model{..} consts = T.Model consts
     <$> traverse tcVarDecl modelGlobals
     <*> traverse tcConstraint modelSystem
     <*> tcImpls modelImpls
+    <*> traverse tcCoordinator modelCoordinators
 
 
 tcConstraint :: LExpr -> TypeChecker (Loc (T.Expr Bool))

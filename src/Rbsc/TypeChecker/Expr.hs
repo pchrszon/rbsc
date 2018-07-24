@@ -8,6 +8,7 @@
 module Rbsc.TypeChecker.Expr
     ( tcExpr
     , tcAction
+    , tcRoleConstraint
     , tcFunctionDef
     , tcQuantifiedType
     , hasType
@@ -45,14 +46,22 @@ import qualified Rbsc.Syntax.Untyped.Expr   as U
 
 import Rbsc.TypeChecker.Internal
 
-import Rbsc.Util (renderPretty, toMaybe)
+import Rbsc.Util (renderPretty)
 
 
 -- | Type check an action.
 tcAction :: Loc U.Expr -> TypeChecker SomeExpr
-tcAction e = local (set inAction True) $ do
+tcAction e = local (set context ActionContext) $ do
     e' <- e `hasType` TyAction
     e' `withType` TyAction
+
+
+-- | Type check a role constraint. The returned expression will have
+-- 'TyBool'.
+tcRoleConstraint :: Loc U.Expr -> TypeChecker SomeExpr
+tcRoleConstraint e = local (set context ConstraintContext) $ do
+    e' <- e `hasType` TyBool
+    e' `withType` TyBool
 
 
 -- | Type check an untyped expression. If the expression is well-typed,
@@ -295,10 +304,13 @@ tcCall (Loc (SomeExpr _ ty) rgn) (_ : _) =
 getLocalVarTypes ::
        Name -> Set TypeName -> TypeChecker [(TypeName, Maybe (Some Type))]
 getLocalVarTypes name tySet = for (Set.toList tySet) $ \tyName -> do
-    mTy  <- view (symbolTable.at (ScopedName (Local tyName) name))
+    ctx <- view context
+    mTy <- view (symbolTable.at (ScopedName (Local tyName) name))
 
     -- If we are inside action brackets, all undefined members are actions.
-    mAct <- toMaybe (Some TyAction) <$> view inAction
+    let mAct = case ctx of
+            ActionContext -> Just (Some TyAction)
+            _             -> Nothing
 
     return (tyName, mTy <|> mAct)
 
@@ -370,7 +382,7 @@ hasType e expected = fst <$> hasType' e expected
 
 hasType' :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t, Type t)
 hasType' e expected = do
-    SomeExpr e' actual <- cast expected <$> tcExpr e
+    SomeExpr e' actual <- cast expected =<< tcExpr e
     Refl <- expect expected (getLoc e) actual
     checkComponentType expected (getLoc e) actual
     return (e', actual)
@@ -388,19 +400,24 @@ binaryCast l r = (l, r)
 
 -- | @cast expected e@ inserts 'Cast's if a dynamic cast to type @expected@
 -- is possible. Otherwise, the original expression is returned.
-cast :: Type t -> SomeExpr -> SomeExpr
-cast TyDouble (SomeExpr e TyInt) = SomeExpr (T.Cast e) TyDouble
+cast :: Type t -> SomeExpr -> TypeChecker SomeExpr
+cast TyDouble (SomeExpr e TyInt) = T.Cast e `withType` TyDouble
 cast (TyArray tIndices TyDouble) (SomeExpr (T.LitArray es) (TyArray vIndices TyInt))
     | arrayLength tIndices == arrayLength vIndices =
-        SomeExpr (T.LitArray (fmap T.Cast es)) (TyArray vIndices TyDouble)
+        T.LitArray (fmap T.Cast es) `withType` TyArray vIndices TyDouble
 cast arrTy@(TyArray tIndices ty) e@(SomeExpr e' elemTy) =
     case typeEq ty elemTy of
         Just Refl -> case dictShow ty of
-            Dict -> SomeExpr
-                (T.LitArray (fromList (replicate (arrayLength tIndices) e')))
-                arrTy
-        Nothing   -> e
-cast _ e = e
+            Dict ->
+                T.LitArray (fromList (replicate (arrayLength tIndices) e'))
+                `withType` arrTy
+        Nothing -> return e
+cast TyBool e@(SomeExpr e' (TyComponent _)) = do
+    ctx <- view context
+    case ctx of
+        ConstraintContext -> T.IsPlayed e' `withType` TyBool
+        _ -> return e
+cast _ e = return e
 
 
 -- | If @expected@ and @actual@ are 'TyComponent',

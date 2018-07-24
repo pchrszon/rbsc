@@ -147,7 +147,7 @@ locReport rgn = \case
             fmap (`hintPart` Nothing) rgns
 
     TypeError expected actual ->
-        errorReport "type error"
+        errorReport "type mismatch"
             [ errorPart rgn . Just $
                 "expression has type: " <> actual <>
                 "\nexpected type: " <> list "or" expected

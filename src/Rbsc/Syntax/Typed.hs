@@ -28,6 +28,10 @@ module Rbsc.Syntax.Typed
     , TElemMulti
     , TLoop
 
+      -- * Coordination
+    , TCoordinator
+    , TCoordCommand
+
       -- * Types
     , TType
     , TVarType
@@ -50,6 +54,7 @@ import Rbsc.Report.Region (Loc)
 
 import Rbsc.Syntax.ComponentType  as Syntax
 import Rbsc.Syntax.Constant       as Syntax
+import Rbsc.Syntax.Coordinator    as Syntax
 import Rbsc.Syntax.Function       as Syntax
 import Rbsc.Syntax.Impl           as Syntax
 import Rbsc.Syntax.Operators      as Syntax
@@ -62,10 +67,11 @@ import Rbsc.Syntax.VarType        as Syntax
 
 -- | Typed abstract syntax of a model.
 data Model = Model
-    { modelConstants :: [TConstant]
-    , modelGlobals   :: TInits
-    , modelSystem    :: [Loc (Expr Bool)]
-    , modelImpls     :: Map TypeName [TNamedModuleBody ElemMulti]
+    { modelConstants    :: [TConstant]
+    , modelGlobals      :: TInits
+    , modelSystem       :: [Loc (Expr Bool)]
+    , modelImpls        :: Map TypeName [TNamedModuleBody ElemMulti]
+    , modelCoordinators :: [TCoordinator ElemMulti]
     } deriving (Show)
 
 
@@ -84,6 +90,9 @@ type TImplBody             = ImplBody ElemMulti TInits TQuantifiedType LSomeExpr
 type TModule               = Module ElemMulti TInits TQuantifiedType LSomeExpr
 type TModuleBody elem      = ModuleBody elem TInits TQuantifiedType LSomeExpr
 type TNamedModuleBody elem = NamedModuleBody elem TInits TQuantifiedType LSomeExpr
+
+type TCoordinator elem  = Coordinator elem TInits TQuantifiedType LSomeExpr
+type TCoordCommand elem = CoordCommand elem TQuantifiedType LSomeExpr
 
 type TInits = [TInit]
 type TInit  = (Name, Maybe LSomeExpr)

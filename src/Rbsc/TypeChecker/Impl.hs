@@ -6,6 +6,10 @@
 module Rbsc.TypeChecker.Impl
     ( tcImpls
     , tcVarDecl
+
+    , tcUpdate
+    , tcElemMultis
+    , someExpr
     ) where
 
 
