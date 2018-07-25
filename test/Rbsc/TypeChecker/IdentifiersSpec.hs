@@ -54,6 +54,10 @@ spec = describe "identifierDefs" $ do
                 impl K {
                     y : bool;
                 }
+
+                coordinator {
+                    z : bool;
+                }
             |]
         `shouldBeLike`
         Right
@@ -80,6 +84,8 @@ spec = describe "identifierDefs" $ do
                 (VarDecl (dummyLoc "x") VarTyBool Nothing))
             , (ScopedName (Local "K") "y", DefLocal "K"
                 (VarDecl (dummyLoc "y") VarTyBool Nothing))
+            , (ScopedName Global "z", DefGlobal
+                (VarDecl (dummyLoc "z") VarTyBool Nothing))
             ]
 
     it "detects duplicated identifiers" $

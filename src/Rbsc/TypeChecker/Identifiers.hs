@@ -105,6 +105,7 @@ identifierDefs Model{..} = runBuilder $ do
     insertComponentTypes ctdName TypeDefCompartment modelCompartmentTypes
     insertComponents modelSystem
     insertLocalVars modelImpls
+    insertCoordinatorVars modelCoordinators
 
 
 insertConstants :: [UConstant] -> Builder ()
@@ -146,6 +147,12 @@ insertLocalVars = traverse_ insertVarsForType . Map.assocs
         for_ bodies $ \(NamedModuleBody _ body) ->
             for_ (bodyVars body) $
                 insert (Local tyName) <$> declName <*> DefLocal tyName
+
+
+insertCoordinatorVars :: [UCoordinator] -> Builder ()
+insertCoordinatorVars = traverse_ insertVars
+  where
+    insertVars coord = insertGlobals (coordVars coord)
 
 
 type Builder a = State BuilderState a
