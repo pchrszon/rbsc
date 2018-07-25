@@ -95,4 +95,4 @@ getIndexRanges' ::
        Component -> T.TCommand T.Elem -> Either [Error] [(Variable, Range)]
 getIndexRanges' comp cmd =
     toEither . flip runReaderT (Info (snd typedTestModel) 10) $
-        getIndexRanges comp cmd
+        getIndexRanges T.cmdUpdates (Just comp) cmd

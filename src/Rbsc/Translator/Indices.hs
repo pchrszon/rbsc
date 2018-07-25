@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedLists       #-}
+{-# LANGUAGE RankNTypes            #-}
 
 
 -- | Removal of variables used as indices.
@@ -11,10 +12,12 @@
 -- replicating the command for every possible value of @x@. Then, the guard
 -- of the command is extended by @x = value@.
 module Rbsc.Translator.Indices
-    ( removeVariableIndices
+    ( removeVariableIndicesInModule
+    , removeVariableIndicesInCoord
     ) where
 
 
+import Control.Lens
 import Control.Monad.Reader
 
 
@@ -32,29 +35,61 @@ import Rbsc.Translator.Indices.Internal
 
 -- | Remove all variables appearing inside indexing brackets by replacing
 -- them with all possible values.
-removeVariableIndices ::
+removeVariableIndicesInModule ::
        (MonadEval r m, HasSymbolTable r, HasRangeTable r)
     => Component
     -> TModuleBody Elem
     -> m (TModuleBody Elem)
-removeVariableIndices comp (ModuleBody vars cmds) =
-    ModuleBody vars . concat <$>
-        traverse (fmap (fmap Elem) . removeInCommand comp . getElem) cmds
+removeVariableIndicesInModule comp (ModuleBody vars cmds) = ModuleBody vars
+    <$> removeInCommands cmdGuardLens cmdUpdates (Just comp) cmds
 
 
-removeInCommand ::
-       (MonadReader r m, HasConstants r, HasSymbolTable r, HasRangeTable r)
-    => Component
-    -> TCommand Elem
-    -> m [TCommand Elem]
-removeInCommand comp cmd = do
-    ranges <- getIndexRanges comp cmd
+-- | Remove all variables appearing inside indexing brackets by replacing
+-- them with all possible values.
+removeVariableIndicesInCoord
+    :: (MonadEval r m, HasSymbolTable r, HasRangeTable r)
+    => TCoordinator Elem
+    -> m (TCoordinator Elem)
+removeVariableIndicesInCoord (Coordinator vars cmds) = Coordinator vars
+    <$> removeInCommands coordGuardLens coordUpdates Nothing cmds
+
+
+removeInCommands
+    :: ( MonadReader r m
+       , HasConstants r
+       , HasSymbolTable r
+       , HasRangeTable r
+       , HasExprs a
+       )
+    => Lens' a LSomeExpr
+    -> (a -> Updates)
+    -> Maybe Component
+    -> [TElem a]
+    -> m [TElem a]
+removeInCommands guardLens getUpdates mComp = fmap concat . traverse
+    (fmap (fmap Elem) . removeInCommand guardLens getUpdates mComp . getElem)
+
+
+removeInCommand
+    :: ( MonadReader r m
+       , HasConstants r
+       , HasSymbolTable r
+       , HasRangeTable r
+       , HasExprs a
+       )
+    => Lens' a LSomeExpr
+    -> (a -> Updates)
+    -> Maybe Component
+    -> a
+    -> m [a]
+removeInCommand guardLens getUpdates mComp cmd = do
+    ranges <- getIndexRanges getUpdates mComp cmd
     return (fmap remove (variableValues ranges))
   where
     remove vals =
         let cmd' = foldr substituteVariable cmd vals
-            g = (case cmdGuard cmd' of
+            g = (case view guardLens cmd' of
                     Loc (SomeExpr e TyBool) _ -> e
                     _ -> error "removeVariableIndices: type error") :: Expr Bool
             g' = LogicOp And (valueGuard vals) g
-        in cmd' { cmdGuard = SomeExpr g' TyBool `withLocOf` cmdGuard cmd }
+        in set guardLens (SomeExpr g' TyBool `withLocOf` view guardLens cmd) cmd'

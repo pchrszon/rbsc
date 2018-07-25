@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE RecordWildCards       #-}
 
 
@@ -9,10 +10,12 @@
 module Rbsc.Translator.Instantiation
     ( instantiateComponents
     , instantiateComponent
+    , instantiateCoordinator
     ) where
 
 
 import Control.Lens
+import Control.Monad
 
 import           Data.Map.Strict  (Map)
 import qualified Data.Map.Strict  as Map
@@ -46,9 +49,19 @@ instantiateComponents m = fmap Map.fromList . traverse inst . toComponents
     inst comp = do
         bodies <- instantiateComponent m comp
         bodies' <- for bodies $ \(NamedModuleBody name body) -> do
-            body' <- reduceModuleBody =<< removeVariableIndices comp body
+            body' <-
+                reduceModuleBody =<< removeVariableIndicesInModule comp body
             return (NamedModuleBody name body')
         return (view compName comp, bodies')
+
+
+-- | Instantiate a 'Coordinator'.
+instantiateCoordinator
+    :: (MonadEval r m, HasSymbolTable r, HasRangeTable r)
+    => TCoordinator ElemMulti
+    -> m (TCoordinator Elem)
+instantiateCoordinator =
+    reduceCoordinator <=< removeVariableIndicesInCoord <=< unrollCoordinator
 
 
 reduceModuleBody :: MonadEval r m => TModuleBody Elem -> m (TModuleBody Elem)
@@ -56,6 +69,13 @@ reduceModuleBody ModuleBody {..} = do
     vars <- (traverse._2._Just) (exprs reduce) bodyVars
     cmds <- traverse (exprs reduce) bodyCommands
     return (ModuleBody vars cmds)
+
+
+reduceCoordinator :: MonadEval r m => TCoordinator Elem -> m (TCoordinator Elem)
+reduceCoordinator Coordinator {..} = do
+    vars <- (traverse._2._Just) (exprs reduce) coordVars
+    cmds <- traverse (exprs reduce) coordCommands
+    return (Coordinator vars cmds)
 
 
 -- | Instantiate all 'ModuleBody's for the given 'Component'.
@@ -77,17 +97,33 @@ instantiateModuleBody comp (NamedModuleBody name body) =
 
 unrollModuleBody ::
        MonadEval r m => TModuleBody ElemMulti -> m (TModuleBody Elem)
-unrollModuleBody ModuleBody{..} = do
+unrollModuleBody ModuleBody {..} = do
     cmds <- unrollElemMultis bodyCommands
     cmds' <- for cmds $ \(Elem cmd) -> Elem <$> unrollCommand cmd
     return (ModuleBody bodyVars cmds')
 
 
+unrollCoordinator
+    :: MonadEval r m => TCoordinator ElemMulti -> m (TCoordinator Elem)
+unrollCoordinator Coordinator {..} = do
+    cmds  <- unrollElemMultis coordCommands
+    cmds' <- for cmds $ \(Elem cmd) -> Elem <$> unrollCoordCommand cmd
+    return (Coordinator coordVars cmds')
+
+
 unrollCommand :: MonadEval r m => TCommand ElemMulti -> m (TCommand Elem)
-unrollCommand Command{..} = do
-    upds <- unrollElemMultis cmdUpdates
+unrollCommand Command {..} = do
+    upds  <- unrollElemMultis cmdUpdates
     upds' <- for upds $ \(Elem upd) -> Elem <$> unrollUpdate upd
     return (Command cmdAction cmdActionKind cmdGuard upds')
+
+
+unrollCoordCommand
+    :: MonadEval r m => TCoordCommand ElemMulti -> m (TCoordCommand Elem)
+unrollCoordCommand CoordCommand {..} = do
+    upds <- unrollElemMultis coordUpdates
+    upds' <- for upds $ \(Elem upd) -> Elem <$> unrollUpdate upd
+    return (CoordCommand coordAction coordConstraint coordGuard upds')
 
 
 unrollUpdate :: MonadEval r m => TUpdate ElemMulti -> m (TUpdate Elem)

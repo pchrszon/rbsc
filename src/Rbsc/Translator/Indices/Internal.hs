@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedLists       #-}
 {-# LANGUAGE ViewPatterns          #-}
+{-# LANGUAGE PatternGuards #-}
 
 
 -- | Internal functions for the Indices module.
@@ -15,6 +16,7 @@ module Rbsc.Translator.Indices.Internal
     , valueGuard
     , variableValues
     , substituteVariable
+    , Updates
     , getIndexRanges
     , indexExprs
     , getVariableRanges
@@ -126,25 +128,34 @@ substituteVariable (Variable name sc, SomeExpr e ty) =
         _ -> e'
 
 
+type Updates = [TElem (TUpdate Elem)]
+
+
 -- | Get the 'Range's of all variables appearing inside an 'Index' operator.
-getIndexRanges ::
-       (MonadReader r m, HasSymbolTable r, HasConstants r, HasRangeTable r)
-    => Component
-    -> TCommand Elem
+getIndexRanges
+    :: ( MonadReader r m
+       , HasSymbolTable r
+       , HasConstants r
+       , HasRangeTable r
+       , HasExprs a
+       )
+    => (a -> Updates)
+    -> Maybe Component
+    -> a
     -> m [(Variable, Range)]
-getIndexRanges comp cmd = do
-    vars <- Set.unions <$> traverse (variables comp) (indexExprs cmd)
+getIndexRanges getUpdates mComp cmd = do
+    vars <- Set.unions <$> traverse (variables mComp) (indexExprs getUpdates cmd)
     getVariableRanges (toList vars)
 
 
 -- | Retrieve all 'Expr's that appear as an index inside an 'Index' operator.
-indexExprs :: TCommand Elem -> [Some Expr]
-indexExprs cmd =
+indexExprs :: HasExprs a => (a -> Updates) -> a -> [Some Expr]
+indexExprs getUpdates cmd =
     mapMaybe indexExpr (universeExprs cmd) ++
     concatMap assignmentIndexExprs assignments
   where
     assignments =
-        concatMap (fmap getElem . updAssignments . getElem) (cmdUpdates cmd)
+        concatMap (fmap getElem . updAssignments . getElem) (getUpdates cmd)
 
     indexExpr (Some e) = case e of
         Index _ (Loc idx _) -> Just (Some idx)
@@ -184,10 +195,10 @@ getVariableRanges = fmap catMaybes . traverse getRange
 -- | Get the set of 'TypedVariable's contained in an 'Expr'.
 variables ::
        (MonadReader r m, HasSymbolTable r, HasConstants r)
-    => Component
+    => Maybe Component
     -> Some Expr
     -> m (Set TypedVariable)
-variables comp (Some e) =
+variables mComp (Some e) =
     fmap (Set.fromList . catMaybes) (traverse variable (universeExpr e))
   where
     variable (Some e') = do
@@ -195,9 +206,12 @@ variables comp (Some e) =
         consts   <- view constants
         return $ case e' of
             Identifier name ty
-                | has (at (ScopedName (Local tyName) name)._Just) symTable ->
+                | Just comp <- mComp
+                , has (at (ScopedName (Local (view compTypeName comp)) name)._Just) symTable ->
                     Just (TypedVariable
-                        (Variable name (LocalVar tyName (view compName comp)))
+                        (Variable name (LocalVar
+                            (view compTypeName comp)
+                            (view compName comp)))
                         (Some ty))
                 | has (at (ScopedName Global name)._Just) symTable &&
                   has (at name._Nothing) consts ->
@@ -208,5 +222,3 @@ variables comp (Some e) =
                         (Variable name (LocalVar tyName' cName))
                         (Some ty))
             _ -> Nothing
-
-    tyName = view compTypeName comp

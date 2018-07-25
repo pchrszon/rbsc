@@ -17,6 +17,7 @@ module Rbsc.Syntax.Impl
     , namedBody
 
     , Command(..)
+    , cmdGuardLens
     , ActionKind(..)
     , Update(..)
     , Assignment(..)
@@ -205,3 +206,4 @@ instance (HasExprs ty, HasExprs expr, HasExprs a) =>
 
 
 makeLenses ''NamedModuleBody
+makeLensesFor [("cmdGuard", "cmdGuardLens")] ''Command
