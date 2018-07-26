@@ -176,8 +176,9 @@ substituteKeywords
     -> TModuleBody ElemMulti
     -> m (TModuleBody ElemMulti)
 substituteKeywords sys comp ModuleBody {..} = do
-    cmds' <- traverse (transformExprsM subst) bodyCommands
-    return (ModuleBody bodyVars cmds')
+    vars <- (traverse._2._Just) (transformExprsM subst) bodyVars
+    cmds <- traverse (transformExprsM subst) bodyCommands
+    return (ModuleBody vars cmds)
   where
     subst :: MonadError Error m => Expr t -> m (Expr t)
     subst e = case e of
