@@ -222,6 +222,13 @@ tcExpr (Loc e rgn) = case e of
         inner' <- inner `hasType` tyComponent
         T.Count tySet' inner' `withType` TyInt
 
+    U.Length inner -> do
+        SomeExpr _ ty <- tcExpr inner
+        case ty of
+            TyArray bounds _ ->
+                T.Literal (arrayLength bounds) TyInt `withType` TyInt
+            _ -> throw (getLoc inner) (NotAnArray (renderPretty ty))
+
     U.Quantified q var qdTy body -> do
         (qdTy', varTy) <- tcQuantifiedType qdTy
         Some q' <- return (typedQuantifier q)

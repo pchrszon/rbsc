@@ -92,6 +92,11 @@ spec = do
             `shouldBe`
             Right 1
 
+        it "evaluates the length function" $
+            eval' TyInt [expr| length(arr) |]
+            `shouldBe`
+            Right 3
+
         it "does short-circuit evaluation" $
             eval' TyInt [expr| if true | (1 / 0 > 0) then 1 else f(1) |]
             `shouldBe`
@@ -156,6 +161,8 @@ testModel =
         global y: [0..1];
 
         global z: [0..1];
+
+        global arr: array [0 .. 2] of bool;
 
         function f(i: int) : int = f(i);
 

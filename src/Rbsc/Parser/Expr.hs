@@ -76,6 +76,7 @@ atom = choice
     , ifThenElse
     , function
     , countFunction
+    , lengthFunction
     , self
     , player
     , ident
@@ -159,10 +160,20 @@ function = choice
 
 
 countFunction :: Parser LExpr
-countFunction = do
-    start <- reserved "count"
+countFunction =
+    specialFunction "count" (Count <$> componentTypeSet <*> (comma *> expr))
+
+
+lengthFunction :: Parser LExpr
+lengthFunction =
+    specialFunction "length" (Length <$> expr)
+
+
+specialFunction :: Text -> Parser Expr -> Parser LExpr
+specialFunction name p = do
+    start <- reserved name
     _ <- symbol "("
-    e <- Count <$> componentTypeSet <*> (comma *> expr)
+    e <- p
     end <- symbol ")"
     return (Loc e (start <> end))
 
