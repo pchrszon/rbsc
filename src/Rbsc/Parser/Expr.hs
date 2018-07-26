@@ -77,6 +77,7 @@ atom = choice
     , function
     , countFunction
     , self
+    , player
     , ident
     ]
 
@@ -168,6 +169,10 @@ countFunction = do
 
 self :: Parser LExpr
 self = Loc Self <$> reserved "self"
+
+
+player :: Parser LExpr
+player = Loc Player <$> reserved "player"
 
 
 ident :: Parser LExpr

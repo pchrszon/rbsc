@@ -59,6 +59,8 @@ data LocErrorDesc
     | UndefinedMember [TypeName] !Name
     | ConflictingMemberTypes !Name !TypeName !Text !TypeName !Text
     | SelfOutsideImpl
+    | PlayerOutsideImpl
+    | PlayerOutsideRole
     | NotAnArray !Text
     | NotAFunction !Text
     | WrongNumberOfArguments !Int !Int
@@ -80,6 +82,7 @@ data LocErrorDesc
 
     -- translation errors
     | TranslationNotSupported !Text
+    | UndefinedPlayer !Name
     deriving (Eq, Show)
 
 
@@ -186,6 +189,19 @@ locReport rgn = \case
         errorReport "self is undefined in this context"
             [ errorPart rgn . Just $
                 "the self keyword can only be used in impl or module blocks"
+            ]
+
+    PlayerOutsideImpl ->
+        errorReport "player is undefined in this context"
+            [ errorPart rgn . Just $
+                "the player keyword can only be used in impl or module blocks"
+            ]
+
+    PlayerOutsideRole ->
+        errorReport "player is undefined in this context"
+            [ errorPart rgn . Just $
+                "the player keyword can only be used inside of role " <>
+                "implementations"
             ]
 
     NotAnArray actual ->
@@ -300,6 +316,12 @@ locReport rgn = \case
         errorReport "translation not supported"
             [ errorPart rgn . Just $
                 "could not translate " <> node
+            ]
+
+    UndefinedPlayer name ->
+        errorReport "undefined player"
+            [ errorPart rgn . Just $
+                "player is undefined for unbound role " <> name
             ]
 
 

@@ -83,11 +83,18 @@ tcExpr (Loc e rgn) = case e of
     U.LitArray es ->
         tcArray es
 
-    U.Self -> do
-        sc <- view scope
-        case sc of
+    U.Self ->
+        view scope >>= \case
             Global       -> throw rgn SelfOutsideImpl
             Local tyName -> T.Self `withType` TyComponent (Set.singleton tyName)
+
+    U.Player ->
+        view scope >>= \case
+            Global -> throw rgn PlayerOutsideImpl
+            Local tyName -> view (componentTypes.at tyName) >>= \case
+                Just (RoleType tySet) ->
+                    T.Player rgn `withType` TyComponent tySet
+                _ -> throw rgn PlayerOutsideRole
 
     U.Identifier name ->
         lookupBoundVar name >>= \case
@@ -148,7 +155,6 @@ tcExpr (Loc e rgn) = case e of
                 memberTys <- getLocalVarTypes name tySet
                 Some memberTy <- getMemberType rgn name memberTys
                 T.Member inner' name memberTy `withType` memberTy
-
 
     U.Index inner idx -> do
         SomeExpr inner' ty <- tcExpr inner

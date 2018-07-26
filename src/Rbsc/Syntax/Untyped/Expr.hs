@@ -36,6 +36,7 @@ data Expr
     | LitFunction !FunctionName
     | LitArray (NonEmpty LExpr)
     | Self
+    | Player
     | Identifier !Name
     | Not LExpr
     | Negate LExpr
@@ -76,6 +77,7 @@ instance Plated LExpr where
         LitFunction name -> pure (LitFunction name)
         LitArray es -> LitArray <$> traverse f es
         Self -> pure Self
+        Player -> pure Player
         Identifier name -> pure (Identifier name)
         Not e' -> Not <$> f e'
         Negate e' -> Negate <$> f e'

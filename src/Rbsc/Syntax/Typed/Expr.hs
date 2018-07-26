@@ -27,6 +27,7 @@ module Rbsc.Syntax.Typed.Expr
     , transformExpr
     , transformExprM
     , transformExprs
+    , transformExprsM
 
     , universeExpr
     , universeExprs
@@ -81,6 +82,7 @@ data Expr t where
     LitArray    :: Show t => NonEmpty (Expr t) -> Expr (Array t)
     LitFunction :: TypedFunction t -> Expr (Fn t)
     Self        :: Expr Component
+    Player      :: Region -> Expr Component
     Identifier  :: Name -> Type t -> Expr t
     Cast        :: Expr Int -> Expr Double
     ActionArray :: Expr Action -> Expr (Array Action)
@@ -189,12 +191,32 @@ transformExpr :: (forall a. Expr a -> Expr a) -> Expr t -> Expr t
 transformExpr f = runIdentity . transformExprM (Identity . f)
 
 
+-- | For each expression, transform every element in the expression tree,
+-- in a bottom-up manner and monadically.
+transformExprsM
+    :: forall m
+     . forall a
+     . (HasExprs a, Monad m)
+    => (forall t. Expr t -> m (Expr t))
+    -> a
+    -> m a
+transformExprsM f = exprs trans
+  where
+    trans :: Loc (Expr t) -> m (Loc (Expr t))
+    trans (Loc e rgn) = do
+        e' <- transformExprM f e
+        return (Loc e' rgn)
+
+
 -- | Transform every element in an expression tree, in a bottom-up manner
 -- and monadically.
-transformExprM ::
-       forall m.
-       forall t. Monad m =>
-                     (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
+transformExprM
+    :: forall m
+     . forall t
+     . Monad m
+    => (forall a. Expr a -> m (Expr a))
+    -> Expr t
+    -> m (Expr t)
 transformExprM f = go
   where
     go :: Expr t -> m (Expr t)
@@ -227,6 +249,7 @@ plateExpr f = \case
     LitArray es        -> LitArray <$> traverse f es
     LitFunction g      -> pure (LitFunction g)
     Self               -> pure Self
+    Player rgn         -> pure (Player rgn)
     Identifier name ty -> pure (Identifier name ty)
     Cast e             -> Cast <$> f e
     ActionArray e      -> ActionArray <$> f e

@@ -16,6 +16,7 @@ module Rbsc.Translator.Instantiation
 
 import Control.Lens
 import Control.Monad
+import Control.Monad.Except
 
 import           Data.Map.Strict  (Map)
 import qualified Data.Map.Strict  as Map
@@ -30,6 +31,7 @@ import Rbsc.Data.Type
 
 import Rbsc.Eval
 
+import Rbsc.Report.Error
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Typed hiding (Type (..))
@@ -44,10 +46,11 @@ instantiateComponents ::
     => Model
     -> System
     -> m (Map Name [TNamedModuleBody Elem])
-instantiateComponents m = fmap Map.fromList . traverse inst . toComponents
+instantiateComponents m sys =
+    fmap Map.fromList (traverse inst (toComponents sys))
   where
     inst comp = do
-        bodies <- instantiateComponent m comp
+        bodies <- instantiateComponent m sys comp
         bodies' <- for bodies $ \(NamedModuleBody name body) -> do
             body' <-
                 reduceModuleBody =<< removeVariableIndicesInModule comp body
@@ -79,20 +82,27 @@ reduceCoordinator Coordinator {..} = do
 
 
 -- | Instantiate all 'ModuleBody's for the given 'Component'.
-instantiateComponent ::
-       MonadEval r m => Model -> Component -> m [TNamedModuleBody Elem]
-instantiateComponent m comp = traverse (instantiateModuleBody comp) bodies
+instantiateComponent
+    :: MonadEval r m
+    => Model
+    -> System
+    -> Component
+    -> m [TNamedModuleBody Elem]
+instantiateComponent m sys comp =
+    traverse (instantiateModuleBody sys comp) bodies
   where
     bodies = fromMaybe [] (Map.lookup (view compTypeName comp) (modelImpls m))
 
 
 instantiateModuleBody ::
        MonadEval r m
-    => Component
+    => System
+    -> Component
     -> TNamedModuleBody ElemMulti
     -> m (TNamedModuleBody Elem)
-instantiateModuleBody comp (NamedModuleBody name body) =
-    NamedModuleBody name <$> unrollModuleBody (substituteSelf comp body)
+instantiateModuleBody sys comp (NamedModuleBody name body) = do
+    body' <- substituteKeywords sys comp body
+    NamedModuleBody name <$> unrollModuleBody body'
 
 
 unrollModuleBody ::
@@ -158,12 +168,35 @@ unrollElemMulti = \case
         unrollElemMultis bodies'
 
 
-substituteSelf :: Component -> TModuleBody ElemMulti -> TModuleBody ElemMulti
-substituteSelf comp ModuleBody{..} =
-    ModuleBody bodyVars (fmap (transformExprs subst) bodyCommands)
+-- | Replace the 'Self' and 'Player' keywords with concrete instances.
+substituteKeywords
+    :: MonadError Error m
+    => System
+    -> Component
+    -> TModuleBody ElemMulti
+    -> m (TModuleBody ElemMulti)
+substituteKeywords sys comp ModuleBody {..} = do
+    cmds' <- traverse (transformExprsM subst) bodyCommands
+    return (ModuleBody bodyVars cmds')
   where
-    subst :: Expr t -> Expr t
+    subst :: MonadError Error m => Expr t -> m (Expr t)
     subst e = case e of
-        Self ->
-            Literal comp (TyComponent (Set.singleton (view compTypeName comp)))
-        _ -> e
+        Self -> return (Literal comp
+            (TyComponent (Set.singleton (view compTypeName comp))))
+        Player rgn -> case view compBoundTo comp of
+            Just playerName -> do
+                let playerComp = toComponent playerName
+                    ty = TyComponent (Set.singleton (_compTypeName playerComp))
+                return (Literal playerComp ty)
+            Nothing -> throw rgn (UndefinedPlayer (view compName comp))
+        _ -> return e
+
+    toComponent name = case view (instances.at name) sys of
+        Just tyName -> Component
+            { _compName        = name
+            , _compTypeName    = tyName
+            , _compBoundTo     = view (boundTo.at name) sys
+            , _compContainedIn = view (containedIn.at name) sys
+            }
+        Nothing -> error $
+            "substituteKeywords: undefined component " ++ show name

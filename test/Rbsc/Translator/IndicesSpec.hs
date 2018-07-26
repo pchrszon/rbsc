@@ -6,6 +6,7 @@
 module Rbsc.Translator.IndicesSpec (spec) where
 
 
+import Control.Lens
 import Control.Monad.Reader
 
 import Test.Hspec
@@ -16,6 +17,7 @@ import Rbsc.Config
 import Rbsc.Data.Component
 import Rbsc.Data.Info
 import Rbsc.Data.ModelInfo
+import Rbsc.Data.System
 
 import Rbsc.Instantiation
 
@@ -76,23 +78,26 @@ testCommand = let T.ModuleBody _ [T.Elem cmd] = testModuleBody in cmd
 testModuleBody :: T.TModuleBody T.Elem
 testModuleBody =
     let Right [T.NamedModuleBody _ r] =
-            toEither . flip runReaderT (Info (snd typedTestModel) 10) $
-                instantiateComponent (fst typedTestModel) testComponent
+            toEither . flip runReaderT (Info (view _2 typedTestModel) 10) $
+                instantiateComponent
+                    (view _1 typedTestModel)
+                    (view _3 typedTestModel)
+                    testComponent
     in r
 
 
-typedTestModel :: (T.Model, ModelInfo)
+typedTestModel :: (T.Model, ModelInfo, System)
 typedTestModel =
-    let Right (model', [(_, info')]) =
+    let Right (model', [(sys, info')]) =
             toEither . flip runReaderT (10 :: RecursionDepth) $ do
                 (m', info) <- typeCheck testModel
                 insts <- generateInstances m' info
                 return (m', insts)
-    in (model', info')
+    in (model', info', sys)
 
 
 getIndexRanges' ::
        Component -> T.TCommand T.Elem -> Either [Error] [(Variable, Range)]
 getIndexRanges' comp cmd =
-    toEither . flip runReaderT (Info (snd typedTestModel) 10) $
+    toEither . flip runReaderT (Info (view _2 typedTestModel) 10) $
         getIndexRanges T.cmdUpdates (Just comp) cmd

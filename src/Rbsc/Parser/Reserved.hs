@@ -45,6 +45,7 @@ reservedWords =
     , "module"
     , "coordinator"
     , "self"
+    , "player"
     , "min"
     , "minf"
     , "max"
