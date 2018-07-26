@@ -19,6 +19,8 @@ module Rbsc.Data.Type
       -- * Symbol table
     , SymbolTable
     , HasSymbolTable(..)
+    , isGlobalSymbol
+    , isLocalSymbol
 
       -- * Range table
     , RangeTable
@@ -47,12 +49,13 @@ module Rbsc.Data.Type
 
 import Control.Lens
 
-import Data.Constraint           (Dict (..))
-import Data.Foldable             (toList)
-import Data.Map.Strict           (Map)
-import Data.Set                  (Set)
-import Data.Text.Prettyprint.Doc
-import Data.Type.Equality        ((:~:) (..))
+import           Data.Constraint           (Dict (..))
+import           Data.Foldable             (toList)
+import           Data.Map.Strict           (Map)
+import qualified Data.Map.Strict           as Map
+import           Data.Set                  (Set)
+import           Data.Text.Prettyprint.Doc
+import           Data.Type.Equality        ((:~:) (..))
 
 
 import Rbsc.Data.Action
@@ -131,6 +134,19 @@ type SymbolTable = Map ScopedName (Some Type)
 
 class HasSymbolTable a where
     symbolTable :: Lens' a SymbolTable
+
+
+-- | Returns @True@ if the 'SymbolTable' contains a global symbol with
+-- the given name.
+isGlobalSymbol :: SymbolTable -> Name -> Bool
+isGlobalSymbol symTable name = Map.member (ScopedName Global name) symTable
+
+
+-- | Returns @True@ if the 'SymbolTable' contains a local symbol with the
+-- given name.
+isLocalSymbol :: SymbolTable -> TypeName -> Name -> Bool
+isLocalSymbol symTable typeName name =
+    Map.member (ScopedName (Local typeName) name) symTable
 
 
 -- | The range table holds the range of each integer variable in the model.

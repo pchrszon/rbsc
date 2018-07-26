@@ -59,7 +59,7 @@ trnsVarDecl mComp (varName, mInit) =
             for (zip qnames mInits') $ \(qname, mInit') -> do
                 ident <- trnsQualified qname
                 mInit'' <-
-                    _Just (trnsLSomeExpr mCompName <=< reduceLSomeExpr) mInit'
+                    _Just (trnsLSomeExpr mComp <=< reduceLSomeExpr) mInit'
                 return (Prism.Declaration ident baseTy' mInit'')
 
         Nothing -> error $
@@ -72,8 +72,6 @@ trnsVarDecl mComp (varName, mInit) =
     scName = case mComp of
         Just (typeName, _) -> ScopedName (Local typeName) varName
         Nothing            -> ScopedName Global varName
-
-    mCompName = fmap snd mComp
 
     baseType ::
        (MonadReader r m, HasRangeTable r) => Type t -> m Prism.DeclarationType

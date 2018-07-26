@@ -207,17 +207,17 @@ variables mComp (Some e) =
         return $ case e' of
             Identifier name ty
                 | Just comp <- mComp
-                , has (at (ScopedName (Local (view compTypeName comp)) name)._Just) symTable ->
+                , isLocalSymbol symTable (view compTypeName comp) name ->
                     Just (TypedVariable
                         (Variable name (LocalVar
                             (view compTypeName comp)
                             (view compName comp)))
                         (Some ty))
-                | has (at (ScopedName Global name)._Just) symTable &&
-                  has (at name._Nothing) consts ->
+                | isGlobalSymbol symTable name &&
+                  not (isConstant consts name) ->
                     Just (TypedVariable (Variable name GlobalVar) (Some ty))
             Member (Identifier cName (TyComponent (toList -> [tyName']))) name ty
-                | has (at (ScopedName (Local tyName') name)._Just) symTable ->
+                | isLocalSymbol symTable tyName' name ->
                     Just (TypedVariable
                         (Variable name (LocalVar tyName' cName))
                         (Some ty))

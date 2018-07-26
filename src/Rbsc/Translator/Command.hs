@@ -34,7 +34,7 @@ import Rbsc.Translator.Internal
 trnsCommand
     :: Bool -> TypeName -> Name -> TCommand Elem -> Translator Prism.Command
 trnsCommand isRole typeName comp Command{..} = do
-    grd'  <- trnsLSomeExpr (Just comp) cmdGuard
+    grd'  <- trnsLSomeExpr (Just (typeName, comp)) cmdGuard
     upds' <- traverse (trnsUpdate typeName comp . getElem) cmdUpdates
 
     case cmdAction of
@@ -68,7 +68,7 @@ trnsActionExpr (Loc e rgn) = case e of
 
 trnsUpdate :: TypeName -> Name -> TUpdate Elem -> Translator Prism.Update
 trnsUpdate typeName comp Update{..} = Prism.Update <$>
-    _Just (trnsLSomeExpr (Just comp)) updProb <*>
+    _Just (trnsLSomeExpr (Just (typeName, comp))) updProb <*>
     (concat <$> traverse (trnsAssignment typeName comp . getElem) updAssignments)
 
 
@@ -92,7 +92,7 @@ trnsAssignment typeName comp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty
 
     for (zip qnames es') $ \(qname, e') -> do
         ident <- trnsQualified qname
-        e''   <- trnsLSomeExpr (Just comp) =<< reduceLSomeExpr e'
+        e''   <- trnsLSomeExpr (Just (typeName, comp)) =<< reduceLSomeExpr e'
         return (ident, e'')
 
 

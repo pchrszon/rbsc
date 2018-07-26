@@ -19,6 +19,7 @@ module Rbsc.Syntax.Typed.Expr
 
     , Constants
     , HasConstants(..)
+    , isConstant
 
     , instantiate
     , instantiateExprs
@@ -38,10 +39,11 @@ import Control.Applicative
 import Control.Lens
 import Control.Monad.Reader
 
-import Data.List.NonEmpty (NonEmpty)
-import Data.Map.Strict    (Map)
-import Data.Set           (Set)
-import Data.Monoid
+import           Data.List.NonEmpty (NonEmpty)
+import           Data.Map.Strict    (Map)
+import qualified Data.Map.Strict    as Map
+import           Data.Monoid
+import           Data.Set           (Set)
 
 
 import Rbsc.Data.Action
@@ -143,6 +145,11 @@ type Constants = Map Name SomeExpr
 
 class HasConstants a where
     constants :: Lens' a Constants
+
+
+-- | Returns @True@ if there is a constant with the given name.
+isConstant :: Constants -> Name -> Bool
+isConstant consts name = Map.member name consts
 
 
 -- | Instantiate all variables bound by the outermost binder.
