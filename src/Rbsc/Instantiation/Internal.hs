@@ -166,10 +166,6 @@ buildSystem model = do
 
     emptySystem = System Map.empty Map.empty Map.empty
 
-    isRoleType compTys tyName = has (at tyName._Just._RoleType) compTys
-    isCompartmentType compTys tyName =
-        has (at tyName._Just._CompartmentType) compTys
-
     canPlayRole compTys playerTyName roleTyName =
         case Map.lookup roleTyName compTys of
             Just (RoleType roleTyNames) -> playerTyName `Set.member` roleTyNames

@@ -16,6 +16,9 @@ module Rbsc.Data.ComponentType
     , ComponentTypes
     , HasComponentTypes(..)
 
+    , isRoleType
+    , isCompartmentType
+
     , ComponentTypeSet(..)
     , normalizeTypeSet
     ) where
@@ -62,6 +65,15 @@ type ComponentTypes = Map TypeName ComponentType
 
 class HasComponentTypes a where
     componentTypes :: Lens' a ComponentTypes
+
+
+isRoleType :: ComponentTypes -> TypeName -> Bool
+isRoleType compTys tyName = has (at tyName._Just._RoleType) compTys
+
+
+isCompartmentType :: ComponentTypes -> TypeName -> Bool
+isCompartmentType compTys tyName =
+    has (at tyName._Just._CompartmentType) compTys
 
 
 -- | A set of component types.

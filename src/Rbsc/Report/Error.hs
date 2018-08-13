@@ -65,6 +65,7 @@ data LocErrorDesc
     | NotAFunction !Text
     | WrongNumberOfArguments !Int !Int
     | NotARole
+    | CannotBePlayed !Text !TypeName
     | NotACompartment
     | InvalidBinding !TypeName !TypeName
     | RoleAlreadyBound !Region
@@ -229,6 +230,13 @@ locReport rgn = \case
             [ errorPart rgn . Just $
                 "only roles can be bound to players and\n" <>
                 "be contained in compartments"
+            ]
+
+    CannotBePlayed ty tyName ->
+        errorReport "component is not a role"
+            [ errorPart rgn . Just $
+                "component has type: " <> ty <>
+                "\nbut " <> Text.pack (show tyName) <> " is not a role type"
             ]
 
     NotACompartment ->

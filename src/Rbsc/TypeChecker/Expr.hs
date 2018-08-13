@@ -19,6 +19,7 @@ import Control.Applicative
 import Control.Lens
 import Control.Monad.Reader
 
+import           Data.Foldable
 import           Data.Function
 import           Data.List          (nubBy)
 import           Data.List.NonEmpty (NonEmpty (..), fromList)
@@ -395,7 +396,7 @@ hasType e expected = fst <$> hasType' e expected
 
 hasType' :: Loc U.Expr -> Type t -> TypeChecker (T.Expr t, Type t)
 hasType' e expected = do
-    SomeExpr e' actual <- cast expected =<< tcExpr e
+    SomeExpr e' actual <- cast (getLoc e) expected =<< tcExpr e
     Refl <- expect expected (getLoc e) actual
     checkComponentType expected (getLoc e) actual
     return (e', actual)
@@ -413,25 +414,31 @@ binaryCast l r = (l, r)
 
 -- | @cast expected e@ inserts 'Cast's if a dynamic cast to type @expected@
 -- is possible. Otherwise, the original expression is returned.
-cast :: Type t -> SomeExpr -> TypeChecker SomeExpr
-cast TyDouble (SomeExpr e TyInt) = T.Cast e `withType` TyDouble
-cast (TyArray tIndices TyDouble) (SomeExpr (T.LitArray es) (TyArray vIndices TyInt))
+cast :: Region -> Type t -> SomeExpr -> TypeChecker SomeExpr
+cast _ TyDouble (SomeExpr e TyInt) = T.Cast e `withType` TyDouble
+cast _ (TyArray tIndices TyDouble) (SomeExpr (T.LitArray es) (TyArray vIndices TyInt))
     | arrayLength tIndices == arrayLength vIndices =
         T.LitArray (fmap T.Cast es) `withType` TyArray vIndices TyDouble
-cast arrTy@(TyArray tIndices ty) e@(SomeExpr e' elemTy) =
+cast _ arrTy@(TyArray tIndices ty) e@(SomeExpr e' elemTy) =
     case typeEq ty elemTy of
         Just Refl -> case dictShow ty of
             Dict ->
                 T.LitArray (fromList (replicate (arrayLength tIndices) e'))
                 `withType` arrTy
         Nothing -> return e
-cast TyBool e@(SomeExpr e' (TyComponent _)) = do
-    -- TODO: check if it is a role component
+cast rgn TyBool e@(SomeExpr e' ty@(TyComponent tySet)) = do
     ctx <- view context
     case ctx of
-        ConstraintContext -> T.IsPlayed e' `withType` TyBool
+        ConstraintContext -> do
+            compTys <- view componentTypes
+
+            for_ (toList tySet) $ \tyName ->
+                unless (isRoleType compTys tyName) $
+                    throw rgn (CannotBePlayed (renderPretty ty) tyName)
+
+            T.IsPlayed e' `withType` TyBool
         _ -> return e
-cast _ e = return e
+cast _ _ e = return e
 
 
 -- | If @expected@ and @actual@ are 'TyComponent',

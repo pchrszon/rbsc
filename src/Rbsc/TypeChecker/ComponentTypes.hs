@@ -34,13 +34,14 @@ validateComponentTypes types model
 
     validateCompartmentTypes = concatMap $
         \(CompartmentTypeDef _ multiRoleLists) ->
-            concatMap (mapMaybe isRoleType) multiRoleLists
+            concatMap (mapMaybe checkIfRoleType) multiRoleLists
 
     exists (Loc tyName rgn)
         | Map.member tyName types = Nothing
         | otherwise = Just (locError rgn UndefinedType)
 
-    isRoleType (MultiRole (Loc tyName rgn) _) = case Map.lookup tyName types of
-        Just (RoleType _) -> Nothing
-        Just _            -> Just (locError rgn NonRoleInCompartment)
-        Nothing           -> Just (locError rgn UndefinedType)
+    checkIfRoleType (MultiRole (Loc tyName rgn) _) =
+        case Map.lookup tyName types of
+            Just (RoleType _) -> Nothing
+            Just _            -> Just (locError rgn NonRoleInCompartment)
+            Nothing           -> Just (locError rgn UndefinedType)
