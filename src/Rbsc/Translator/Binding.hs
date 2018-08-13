@@ -11,6 +11,7 @@ module Rbsc.Translator.Binding
     , playersOfRole
     , generateBindingInfo
 
+    , requiredActionsOfRole
     , overrideActionsOfRoles
     ) where
 
@@ -70,6 +71,19 @@ generateBindingInfo sys as = do
 
     invert = Map.unionsWith Set.union . fmap (\(Binding role ps) ->
         Map.unions (fmap (`Map.singleton` Set.singleton role) ps))
+
+
+-- | The required actions of a role. Required actions are actions where the
+-- role and its player synchronize or actions that are overridden by the
+-- role.
+requiredActionsOfRole :: BindingInfo -> Alphabets -> RoleName -> Alphabet -> Set Action
+requiredActionsOfRole bi as roleName alph =
+    stripLocAndKind alph `Set.intersection` playerAlphabets
+  where
+    playerAlphabets = stripLocAndKind
+        (Set.unions (fmap getAlphabet (toList (playersOfRole bi roleName))))
+
+    getAlphabet compName = Map.findWithDefault Set.empty compName as
 
 
 -- | Get the set of actions that are overridden in the given component.

@@ -22,8 +22,6 @@ import Rbsc.Data.ComponentType
 import Rbsc.Data.Name
 import Rbsc.Data.System
 
-import Rbsc.Report.Region
-
 import Rbsc.Syntax.Typed
 
 import Rbsc.Translator.Alphabet
@@ -79,6 +77,7 @@ trnsModule bi as alph oas isRole typeName compName (NamedModuleBody moduleName b
     return (Prism.Module ident vars' (concat [cmds', override, nonblocking]))
 
 
+-- TODO: only generate self-loops for actions in own module alphabet
 genOverrideSelfLoops
     :: MonadState TranslatorState m
     => BindingInfo
@@ -94,6 +93,7 @@ genOverrideSelfLoops bi oas =
         return (selfLoops acts Prism.ActionOpen)
 
 
+-- TODO: only generate self-loops for actions in own module alphabet
 genNonblockingSelfLoops
     :: MonadState TranslatorState m
     => BindingInfo
@@ -102,23 +102,15 @@ genNonblockingSelfLoops
     -> Alphabet
     -> m [Prism.Command]
 genNonblockingSelfLoops bi as roleName alph =
-    traverse genCommand (filter isShared (toList (stripLocAndKind alph)))
+    traverse genCommand (filter isRequired (toList (stripLocAndKind alph)))
   where
     genCommand act = do
         act' <- trnsQualified (trnsAction act)
         return (selfLoops [act'] Prism.ActionOpen)
 
-    isShared = (`Set.member` sharedActions)
+    isRequired = (`Set.member` required)
 
-    sharedActions = stripLocAndKind alph `Set.intersection` playerAlphabets
-
-    playerAlphabets = stripLocAndKind
-        (Set.unions (fmap getAlphabet (toList (playersOfRole bi roleName))))
-
-    getAlphabet compName = Map.findWithDefault Set.empty compName as
-
-    stripLocAndKind = Set.map (unLoc . fst)
-
+    required = requiredActionsOfRole bi as roleName alph
 
 
 selfLoops :: [Prism.Ident] -> Prism.ActionType -> Prism.Command

@@ -9,6 +9,7 @@
 module Rbsc.Translator.Alphabet
     ( Alphabet
     , alphabet
+    , stripLocAndKind
 
     , Alphabets
     , alphabets
@@ -57,6 +58,11 @@ alphabet = fmap (Set.fromList . catMaybes) . traverse action . bodyCommands
             return (Just (Loc act rgn, cmdActionKind))
         Just (Loc _ rgn) -> throw rgn NotConstant
         Nothing -> return Nothing
+
+
+-- | Strip location information and the 'ActionKind's from an 'Alphabet'.
+stripLocAndKind :: Alphabet -> Set Action
+stripLocAndKind = Set.map (unLoc . fst)
 
 
 -- | Mapping of component names to their alphabet.

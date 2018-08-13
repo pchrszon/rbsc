@@ -426,6 +426,7 @@ cast arrTy@(TyArray tIndices ty) e@(SomeExpr e' elemTy) =
                 `withType` arrTy
         Nothing -> return e
 cast TyBool e@(SomeExpr e' (TyComponent _)) = do
+    -- TODO: check if it is a role component
     ctx <- view context
     case ctx of
         ConstraintContext -> T.IsPlayed e' `withType` TyBool
