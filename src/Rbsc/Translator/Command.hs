@@ -2,9 +2,14 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE MultiWayIf #-}
 
 
-module Rbsc.Translator.Command where
+module Rbsc.Translator.Command
+    ( trnsCommand
+    , trnsActionExpr
+    , trnsUpdates
+    ) where
 
 
 import Control.Lens
@@ -35,7 +40,7 @@ trnsCommand
     :: Bool -> TypeName -> Name -> TCommand Elem -> Translator Prism.Command
 trnsCommand isRole typeName comp Command{..} = do
     grd'  <- trnsLSomeExpr (Just (typeName, comp)) cmdGuard
-    upds' <- traverse (trnsUpdate typeName comp . getElem) cmdUpdates
+    upds' <- trnsUpdates (Just (typeName, comp)) cmdUpdates
 
     case cmdAction of
         Just act -> do
@@ -66,23 +71,33 @@ trnsActionExpr (Loc e rgn) = case e of
     _                                 -> throw rgn NotConstant
 
 
-trnsUpdate :: TypeName -> Name -> TUpdate Elem -> Translator Prism.Update
-trnsUpdate typeName comp Update{..} = Prism.Update <$>
-    _Just (trnsLSomeExpr (Just (typeName, comp))) updProb <*>
-    (concat <$> traverse (trnsAssignment typeName comp . getElem) updAssignments)
+trnsUpdates
+    :: Maybe (TypeName, Name)
+    -> [TElem (TUpdate Elem)]
+    -> Translator [Prism.Update]
+trnsUpdates mComp = traverse (trnsUpdate mComp . getElem)
+
+
+trnsUpdate :: Maybe (TypeName, Name) -> TUpdate Elem -> Translator Prism.Update
+trnsUpdate mComp Update{..} = Prism.Update <$>
+    _Just (trnsLSomeExpr mComp) updProb <*>
+    (concat <$> traverse (trnsAssignment mComp . getElem) updAssignments)
 
 
 trnsAssignment
-    :: TypeName -> Name -> TAssignment -> Translator [(Prism.Ident, Prism.Expr)]
-trnsAssignment typeName comp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = do
+    :: Maybe (TypeName, Name)
+    -> TAssignment
+    -> Translator [(Prism.Ident, Prism.Expr)]
+trnsAssignment mComp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = do
     symTable <- view symbolTable
-    let (baseName, varTy) =
-            case view (at (ScopedName (Local typeName) name)) symTable of
-                Just ty' -> (QlMember (QlName comp) name, ty')
-                Nothing -> case view (at (ScopedName Global name)) symTable of
-                    Just ty' -> (QlName name, ty')
-                    Nothing -> error $
-                        "trnsAssignment: " ++ show name ++ "not in symbol table"
+    let (baseName, varTy) = if
+            | Just (typeName, comp) <- mComp
+            , Just ty' <- view (at (ScopedName (Local typeName) name)) symTable ->
+                (QlMember (QlName comp) name, ty')
+            | Just ty' <- view (at (ScopedName Global name)) symTable ->
+                (QlName name, ty')
+            | otherwise -> error $
+                "trnsAssignment: " ++ show name ++ "not in symbol table"
 
     Some varTy' <- return varTy
     indexedBaseName <- trnsIndices baseName varTy' idxs
@@ -92,7 +107,7 @@ trnsAssignment typeName comp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty
 
     for (zip qnames es') $ \(qname, e') -> do
         ident <- trnsQualified qname
-        e''   <- trnsLSomeExpr (Just (typeName, comp)) =<< reduceLSomeExpr e'
+        e''   <- trnsLSomeExpr mComp =<< reduceLSomeExpr e'
         return (ident, e'')
 
 

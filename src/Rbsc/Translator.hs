@@ -32,6 +32,8 @@ import           Rbsc.Syntax.Typed
 import qualified Rbsc.Syntax.Untyped as U
 
 import Rbsc.Translator.Alphabet
+import Rbsc.Translator.Binding
+import Rbsc.Translator.Coordinator
 import Rbsc.Translator.Instantiation
 import Rbsc.Translator.Internal
 import Rbsc.Translator.Module
@@ -55,12 +57,17 @@ translateModels depth model = do
 translateModel :: Model -> System -> Info -> Result Prism.Model
 translateModel model sys info = do
     modules <- runReaderT (instantiateComponents model sys) info
+    coordinators <- runReaderT
+        (traverse instantiateCoordinator (modelCoordinators model)) info
+
     as <- alphabets modules
+    bi <- generateBindingInfo sys as
 
     runTranslator info $ do
-        globals' <- trnsGlobalVars (modelGlobals model)
-        modules' <- trnsModules sys as modules
-        desync   <- genDesyncModule as
+        globals'      <- trnsGlobalVars (modelGlobals model)
+        modules'      <- trnsModules sys bi as modules
+        coordinators' <- trnsCoordinators bi as coordinators
+        desync        <- genDesyncModule as
 
         return Prism.Model
             { Prism.modelType       = Prism.MDP
@@ -68,7 +75,7 @@ translateModel model sys info = do
             , Prism.modelLabels     = []
             , Prism.modelConstants  = []
             , Prism.modelGlobalVars = fmap Prism.GlobalVar globals'
-            , Prism.modelModules    = modules' ++ [desync]
+            , Prism.modelModules    = concat [modules', coordinators', [desync]]
             , Prism.modelInitStates = Nothing
             }
 

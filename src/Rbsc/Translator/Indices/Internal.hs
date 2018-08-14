@@ -3,7 +3,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedLists       #-}
 {-# LANGUAGE ViewPatterns          #-}
-{-# LANGUAGE PatternGuards #-}
 
 
 -- | Internal functions for the Indices module.

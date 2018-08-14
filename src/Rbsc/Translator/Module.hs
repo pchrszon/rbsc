@@ -33,13 +33,12 @@ import Rbsc.Translator.Variable
 
 trnsModules
     :: System
+    -> BindingInfo
     -> Alphabets
     -> Map Name [TNamedModuleBody Elem]
     -> Translator [Prism.Module]
-trnsModules sys as bodiess = do
+trnsModules sys bi as bodiess = do
     compTys <- view componentTypes
-
-    bi <- lift (lift (generateBindingInfo sys as))
     let oas = overrideActions as
 
     fmap concat . for (Map.assocs bodiess) $ \(name, bodies) ->
