@@ -101,12 +101,13 @@ genNonblockingSelfLoops
     -> RoleName
     -> Alphabet
     -> m [Prism.Command]
-genNonblockingSelfLoops bi as roleName alph =
-    traverse genCommand (filter isRequired (toList (stripLocAndKind alph)))
+genNonblockingSelfLoops bi as roleName alph = traverse
+    genCommand
+    (filter isRequired (toList (stripLocAndKind alph)))
   where
     genCommand act = do
         act' <- trnsQualified (trnsAction act)
-        return (selfLoops [act'] Prism.ActionOpen)
+        return (selfLoops [act', notPlayedActionIdent roleName] Prism.ActionOpen)
 
     isRequired = (`Set.member` required)
 

@@ -15,6 +15,8 @@ module Rbsc.Translator.Internal
     , trnsQualified
     , trnsAction
     , overrideActionIdent
+    , playedActionIdent
+    , notPlayedActionIdent
     , indexedNames
     , indexedExprs
     , addIndex
@@ -101,8 +103,16 @@ trnsAction = \case
     IndexedAction act idx -> QlIndex (trnsAction act) idx
 
 
-overrideActionIdent :: RoleName -> Prism.Ident
-overrideActionIdent roleName = "override_" <> roleName
+overrideActionIdent :: RoleName -> Name
+overrideActionIdent roleName = "ovr_" <> roleName
+
+
+playedActionIdent :: RoleName -> Name
+playedActionIdent = id
+
+
+notPlayedActionIdent :: RoleName -> Name
+notPlayedActionIdent roleName = "not_" <> roleName
 
 
 indexedNames :: Qualified -> Type t -> [Qualified]

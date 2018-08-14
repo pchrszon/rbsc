@@ -49,7 +49,7 @@ trnsCommand isRole typeName comp Command{..} = do
   where
     roleAct
         | isRole = do
-            act <- trnsQualified (QlName comp)
+            act <- trnsQualified (QlName (playedActionIdent comp))
             return (Just act)
         | otherwise = return Nothing
 
