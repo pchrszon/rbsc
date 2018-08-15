@@ -48,21 +48,6 @@ import Rbsc.Translator.Variable
 import Rbsc.Util.NameGen
 
 
--- TODO:
--- * (1) Get required actions for each role component (refactor from Translator.Module)
--- * (2) Get set of all role components appearing inside a role constraint
--- * (3) Generate set of (action, role-annot) pairs for each role component
--- * (4) Compose actions of all role components (with their role annotations)
--- * (5) Get set of satisfying evaluations of the role constraint
--- * (6) Match each of the composed actions with the set of evaluations
---     example:
---          eval:  {a = true, b = false, c = true}
---          annot: {a, not b}
---          -> match
---          annot: {a, b}
---          -> no match
-
-
 trnsCoordinators
     :: BindingInfo
     -> Alphabets
@@ -85,11 +70,18 @@ trnsCoordinator roleActMap Coordinator{..} = do
     cmds' <- concat <$>
         traverse (trnsCoordCommand valuations roleActs . getElem) coordCommands
 
-    -- TODO: generate alphabet command
+    alph <- fmap (Set.fromList . catMaybes) (traverse action coordCommands)
 
-    return (Prism.Module ident vars' cmds')
+    let alph'   = Set.toList alph ++ playAlphabet
+        alphCmd = Prism.Command alph' Prism.ActionOpen (Prism.LitBool True) []
+
+    return (Prism.Module ident vars' (cmds' ++ [alphCmd]))
   where
     valuations = allValuatations constrainedRoles
+
+    playAlphabet = concatMap genPlayActs (Set.toList constrainedRoles)
+    genPlayActs roleName =
+        [playedActionIdent roleName, notPlayedActionIdent roleName]
 
     roleActs  = foldr compose Set.empty roleActss
     roleActss = fmap getRoleActs (Set.toList constrainedRoles)
@@ -99,39 +91,44 @@ trnsCoordinator roleActMap Coordinator{..} = do
 
     getRoleActs roleName = Map.findWithDefault Set.empty roleName roleActMap
 
+    action :: TElem (TCoordCommand Elem) -> Translator (Maybe Prism.Ident)
+    action (Elem CoordCommand{..}) = case coordAction of
+        Just (Loc (SomeExpr (Literal act _) TyAction) _) -> do
+            act' <- trnsQualified (trnsAction act)
+            return (Just act')
+        Just (Loc _ rgn) -> throw rgn NotConstant
+        Nothing -> return Nothing
 
 
-trnsCoordCommand :: [Valuation] -> Set RoleAction -> TCoordCommand Elem -> Translator [Prism.Command]
-trnsCoordCommand valuations roleActs CoordCommand{..} = do
-    grd'  <- trnsLSomeExpr Nothing coordGuard
-    upds' <- trnsUpdates Nothing coordUpdates
+trnsCoordCommand
+    :: [Valuation]
+    -> Set RoleAction
+    -> TCoordCommand Elem
+    -> Translator [Prism.Command]
+trnsCoordCommand valuations roleActs CoordCommand {..} = do
+    grd'      <- trnsLSomeExpr Nothing coordGuard
+    upds'     <- trnsUpdates Nothing coordUpdates
 
-    -- For each possible role action:
-    -- if the constraint allows the role action, add it to constrActs.
-    constrActs <- case coordConstraint of
+    multiActs <- case coordConstraint of
         Just (Loc (SomeExpr c TyBool) rgn) -> do
             sat <- satisfyingValuations valuations (Loc c rgn)
-            return . flip mapMaybe (Set.toList roleActs) $ \roleAct ->
-                if isAllowed sat roleAct
-                    then Just roleAct
-                    else Nothing
+            let constrActs = filter (isAllowed sat) (Set.toList roleActs)
+            constrActs' <- case coordAction of
+                Just (Loc (SomeExpr (Literal act _) TyAction) _) ->
+                    -- If an action is given, only keep the role actions
+                    -- with the matching action.
+                    return (filter ((act ==) . fst) constrActs)
+                Just (Loc _ rgn') -> throw rgn' NotConstant
+                Nothing           -> return constrActs
+            traverse toMultiAction constrActs'
         Just _  -> error "trnsCoordCommand: type error"
-        Nothing -> return []
+        Nothing -> case coordAction of
+            Just act -> do
+                act' <- trnsActionExpr act
+                return [[act']]
+            Nothing -> return [[]]
 
-    -- If an action is given, only keep the role actions with the matching
-    -- action.
-    constrActs' <- case coordAction of
-        Just (Loc (SomeExpr (Literal act _) TyAction) _)
-            -- unconstrained action
-            | isNothing coordConstraint -> return [(act, [])]
-            -- constraining action
-            | otherwise -> return (filter ((act ==) . fst) constrActs)
-        Just (Loc _ rgn) -> throw rgn NotConstant
-        Nothing -> return constrActs
-
-    constrActs'' <- traverse toMultiAction constrActs'
-
-    return (fmap (mkCommand grd' upds') constrActs'')
+    return (fmap (mkCommand grd' upds') multiActs)
   where
     mkCommand grd upds acts
         | null acts = Prism.Command [] Prism.ActionClosed grd upds
