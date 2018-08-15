@@ -83,6 +83,7 @@ data Expr t where
     LitFunction :: TypedFunction t -> Expr (Fn t)
     Self        :: Expr Component
     Player      :: Region -> Expr Component
+    ArrayIndex  :: Region -> Expr Int
     Identifier  :: Name -> Type t -> Expr t
     Cast        :: Expr Int -> Expr Double
     ActionArray :: Expr Action -> Expr (Array Action)
@@ -250,6 +251,7 @@ plateExpr f = \case
     LitFunction g      -> pure (LitFunction g)
     Self               -> pure Self
     Player rgn         -> pure (Player rgn)
+    ArrayIndex rgn     -> pure (ArrayIndex rgn)
     Identifier name ty -> pure (Identifier name ty)
     Cast e             -> Cast <$> f e
     ActionArray e      -> ActionArray <$> f e

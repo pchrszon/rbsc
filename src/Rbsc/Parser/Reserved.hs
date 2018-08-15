@@ -46,6 +46,7 @@ reservedWords =
     , "coordinator"
     , "self"
     , "player"
+    , "index"
     , "min"
     , "minf"
     , "max"

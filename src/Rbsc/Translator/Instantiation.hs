@@ -184,6 +184,7 @@ substituteKeywords sys comp ModuleBody {..} = do
     subst e = case e of
         Self -> return (Literal comp
             (TyComponent (Set.singleton (view compTypeName comp))))
+
         Player rgn -> case view compBoundTo comp of
             Just playerName -> do
                 let playerComp = toComponent playerName
@@ -191,6 +192,11 @@ substituteKeywords sys comp ModuleBody {..} = do
                 return (Literal playerComp ty)
             Nothing ->
                 throw rgn (UndefinedPlayer (componentName (view compName comp)))
+
+        ArrayIndex rgn -> case view compName comp of
+            ComponentName _ (Just idx) -> return (Literal idx TyInt)
+            ComponentName name _ -> throw rgn (NonIndexedComponent name)
+
         _ -> return e
 
     toComponent name = case view (instances.at name) sys of

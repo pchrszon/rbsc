@@ -61,6 +61,7 @@ data LocErrorDesc
     | SelfOutsideImpl
     | PlayerOutsideImpl
     | PlayerOutsideRole
+    | IndexOutsideImpl
     | NotAnArray !Text
     | NotAFunction !Text
     | WrongNumberOfArguments !Int !Int
@@ -84,6 +85,7 @@ data LocErrorDesc
     -- translation errors
     | TranslationNotSupported !Text
     | UndefinedPlayer !Name
+    | NonIndexedComponent !Name
     deriving (Eq, Show)
 
 
@@ -203,6 +205,12 @@ locReport rgn = \case
             [ errorPart rgn . Just $
                 "the player keyword can only be used inside of role " <>
                 "implementations"
+            ]
+
+    IndexOutsideImpl ->
+        errorReport "index is undefined in this context"
+            [ errorPart rgn . Just $
+                "the index keyword can only be used inside impl or module blocks"
             ]
 
     NotAnArray actual ->
@@ -330,6 +338,12 @@ locReport rgn = \case
         errorReport "undefined player"
             [ errorPart rgn . Just $
                 "player is undefined for unbound role " <> name
+            ]
+
+    NonIndexedComponent name ->
+        errorReport "component is not an array element"
+            [ errorPart rgn . Just $
+                "component " <> name <> " does not have an index"
             ]
 
 

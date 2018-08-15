@@ -97,6 +97,11 @@ tcExpr (Loc e rgn) = case e of
                     T.Player rgn `withType` TyComponent tySet
                 _ -> throw rgn PlayerOutsideRole
 
+    U.ArrayIndex ->
+        view scope >>= \case
+            Global  -> throw rgn IndexOutsideImpl
+            Local _ -> T.ArrayIndex rgn `withType` TyInt
+
     U.Identifier name ->
         lookupBoundVar name >>= \case
             Just (i, Some ty) ->

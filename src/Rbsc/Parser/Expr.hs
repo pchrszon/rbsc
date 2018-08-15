@@ -79,6 +79,7 @@ atom = choice
     , lengthFunction
     , self
     , player
+    , arrayIndex
     , ident
     ]
 
@@ -184,6 +185,10 @@ self = Loc Self <$> reserved "self"
 
 player :: Parser LExpr
 player = Loc Player <$> reserved "player"
+
+
+arrayIndex :: Parser LExpr
+arrayIndex = Loc ArrayIndex <$> reserved "index"
 
 
 ident :: Parser LExpr

@@ -37,6 +37,7 @@ data Expr
     | LitArray (NonEmpty LExpr)
     | Self
     | Player
+    | ArrayIndex
     | Identifier !Name
     | Not LExpr
     | Negate LExpr
@@ -79,6 +80,7 @@ instance Plated LExpr where
         LitArray es -> LitArray <$> traverse f es
         Self -> pure Self
         Player -> pure Player
+        ArrayIndex -> pure ArrayIndex
         Identifier name -> pure (Identifier name)
         Not e' -> Not <$> f e'
         Negate e' -> Negate <$> f e'
