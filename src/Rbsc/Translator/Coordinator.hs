@@ -49,15 +49,20 @@ import Rbsc.Util.NameGen
 
 
 trnsCoordinators
-    :: BindingInfo
+    :: ComponentTypes
+    -> System
+    -> BindingInfo
     -> Alphabets
     -> [TCoordinator Elem]
     -> Translator [Prism.Module]
-trnsCoordinators bi as = traverse (trnsCoordinator roleActMap)
+trnsCoordinators compTys sys bi as = traverse (trnsCoordinator roleActMap)
   where
-    roleActMap = roleActions reqActss as
-    reqActss   = requiredActions bi as
-    -- TODO: (optional) filter alphabet for roles only
+    roleActMap  = roleActions reqActss roleAs
+    reqActss    = Map.mapWithKey getRequired roleAs
+    getRequired = requiredActionsOfRole bi as
+    roleAs      = Map.restrictKeys as roleCompNames
+    roleCompNames =
+        Map.keysSet (Map.filter (isRoleType compTys) (view instances sys))
 
 
 trnsCoordinator
@@ -135,11 +140,6 @@ trnsCoordCommand valuations roleActs CoordCommand {..} = do
         | otherwise = Prism.Command acts Prism.ActionOpen grd upds
 
 
-roleComponentNames :: ComponentTypes -> System -> Set RoleName
-roleComponentNames compTys =
-    Map.keysSet . Map.filter (isRoleType compTys) . view instances
-
-
 toMultiAction :: RoleAction -> Translator [Prism.Ident]
 toMultiAction (act, annot) = do
     act' <- trnsQualified (trnsAction act)
@@ -177,7 +177,8 @@ data RoleAnnot
 type RoleAction = (Action, [RoleAnnot])
 
 
-roleActions :: RequiredActions -> Alphabets -> Map RoleName (Set RoleAction)
+roleActions
+    :: Map RoleName (Set Action) -> Alphabets -> Map RoleName (Set RoleAction)
 roleActions reqActss = Map.mapWithKey $ \name alph ->
     roleActionsOfRole (Map.findWithDefault Set.empty name reqActss) name alph
 
@@ -205,15 +206,6 @@ compose x y = fromMap (Map.unionWith combine (toMap x) (toMap y))
             . concatMap (\(act, annots) -> fmap ((,) act) annots)
             . Map.assocs
     toMap = Map.fromListWith (++) . fmap (over _2 (: [])) . Set.toList
-
-
-type RequiredActions = Map RoleName (Set Action)
-
-
-requiredActions :: BindingInfo -> Alphabets -> RequiredActions
-requiredActions bi as = Map.mapWithKey getRequired as
-  where
-    getRequired = requiredActionsOfRole bi as
 
 
 type Valuation = Map RoleName Bool

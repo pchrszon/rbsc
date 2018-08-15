@@ -7,6 +7,7 @@ module Rbsc.Translator
     ) where
 
 
+import Control.Lens
 import Control.Monad.Reader
 
 import           Data.Foldable
@@ -20,6 +21,7 @@ import qualified Language.Prism as Prism
 import Rbsc.Config
 
 import Rbsc.Data.Action
+import Rbsc.Data.ComponentType
 import Rbsc.Data.Info
 import Rbsc.Data.System
 
@@ -56,18 +58,20 @@ translateModels depth model = do
 
 translateModel :: Model -> System -> Info -> Result Prism.Model
 translateModel model sys info = do
-    modules <- runReaderT (instantiateComponents model sys) info
+    modules      <- runReaderT (instantiateComponents model sys) info
     coordinators <- runReaderT
-        (traverse instantiateCoordinator (modelCoordinators model)) info
+        (traverse instantiateCoordinator (modelCoordinators model))
+        info
 
     as <- alphabets modules
     bi <- generateBindingInfo sys as
 
     runTranslator info $ do
-        globals'      <- trnsGlobalVars (modelGlobals model)
-        modules'      <- trnsModules sys bi as modules
-        coordinators' <- trnsCoordinators bi as coordinators
-        desync        <- genDesyncModule as
+        globals' <- trnsGlobalVars (modelGlobals model)
+        modules' <- trnsModules sys bi as modules
+        coordinators' <-
+            trnsCoordinators (view componentTypes info) sys bi as coordinators
+        desync <- genDesyncModule as
 
         return Prism.Model
             { Prism.modelType       = Prism.MDP
