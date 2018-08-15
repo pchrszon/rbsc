@@ -34,17 +34,20 @@ trnsGlobalVars :: TInits -> Translator [Prism.Declaration]
 trnsGlobalVars = trnsVarDecls Nothing
 
 
-trnsLocalVars :: TypeName -> Name -> TInits -> Translator [Prism.Declaration]
+trnsLocalVars
+    :: TypeName -> ComponentName -> TInits -> Translator [Prism.Declaration]
 trnsLocalVars typeName compName = trnsVarDecls (Just (typeName, compName))
 
 
 trnsVarDecls
-    :: Maybe (TypeName, Name) -> TInits -> Translator [Prism.Declaration]
+    :: Maybe (TypeName, ComponentName)
+    -> TInits
+    -> Translator [Prism.Declaration]
 trnsVarDecls mComp = fmap concat . traverse (trnsVarDecl mComp)
 
 
 trnsVarDecl
-    :: Maybe (TypeName, Name)
+    :: Maybe (TypeName, ComponentName)
     -> (Name, Maybe LSomeExpr)
     -> Translator [Prism.Declaration]
 trnsVarDecl mComp (varName, mInit) =
@@ -66,8 +69,9 @@ trnsVarDecl mComp (varName, mInit) =
             "trnsVarDecl: " ++ show scName ++ "not in symbol table"
   where
     baseName = case mComp of
-        Just (_, compName) -> QlMember (QlName compName) varName
-        Nothing            -> QlName varName
+        Just (_, compName) ->
+            QlMember (QlName (trnsComponentName compName)) varName
+        Nothing -> QlName varName
 
     scName = case mComp of
         Just (typeName, _) -> ScopedName (Local typeName) varName

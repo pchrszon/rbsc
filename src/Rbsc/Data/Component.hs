@@ -18,10 +18,10 @@ import Rbsc.Data.Name
 
 -- | A component instance (either a natural, a role or a compartment).
 data Component = Component
-    { _compName        :: !Name
+    { _compName        :: !ComponentName
     , _compTypeName    :: !TypeName
-    , _compBoundTo     :: Maybe Name
-    , _compContainedIn :: Maybe Name
+    , _compBoundTo     :: Maybe ComponentName
+    , _compContainedIn :: Maybe ComponentName
     } deriving (Eq, Show)
 
 

@@ -19,7 +19,7 @@ import Rbsc.Report.Region
 -- | An action used for synchronization.
 data Action
     = Action !Name
-    | LocalAction !Name !Name
+    | LocalAction !ComponentName !Name
     | IndexedAction Action !Int
     deriving (Eq, Ord, Show)
 

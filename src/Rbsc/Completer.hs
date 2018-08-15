@@ -102,7 +102,7 @@ completeSystem sys = do
 
 
 -- | Complete the given instance.
-completeInstance :: ComponentTypes -> Name -> TypeName -> Completer ()
+completeInstance :: ComponentTypes -> ComponentName -> TypeName -> Completer ()
 completeInstance types name tyName = unlessVisited tyName $
     case Map.lookup tyName types of
         Just NaturalType -> return ()
@@ -115,7 +115,8 @@ completeInstance types name tyName = unlessVisited tyName $
 
 
 -- | Complete a role by binding it to a player if necessary.
-completeRoleInstance :: ComponentTypes -> Name -> Set TypeName -> Completer ()
+completeRoleInstance
+    :: ComponentTypes -> ComponentName -> Set TypeName -> Completer ()
 completeRoleInstance types name playerTyNames =
     use (system.boundTo.at name) >>= \case
         Just _ -> return () -- the role is already bound
@@ -128,7 +129,7 @@ completeRoleInstance types name playerTyNames =
 -- | Complete a compartment instance by adding a role instance for each
 -- required role type.
 completeCompartmentInstance ::
-       ComponentTypes -> Name -> [[RoleRef]] -> Completer ()
+       ComponentTypes -> ComponentName -> [[RoleRef]] -> Completer ()
 completeCompartmentInstance types name roleRefLists = do
     sys <- use system
 
@@ -150,7 +151,7 @@ completeCompartmentInstance types name roleRefLists = do
 
 
 -- | Get an instance of the given type or create a new one.
-getOrCreateInstance :: ComponentTypes -> TypeName -> Completer Name
+getOrCreateInstance :: ComponentTypes -> TypeName -> Completer ComponentName
 getOrCreateInstance types tyName = do
     create <- liftList [True, False]
     if create
@@ -160,16 +161,19 @@ getOrCreateInstance types tyName = do
 
 -- | Create a new instance of the given type and add it to the system. The
 -- returned instance is already complete.
-createInstance :: ComponentTypes -> TypeName -> Completer Name
+createInstance :: ComponentTypes -> TypeName -> Completer ComponentName
 createInstance types tyName = do
     name <- newNameFrom (getTypeName tyName)
-    completeInstance types name tyName
-    system.instances.at name .= Just tyName
-    return name
+    let cName = ComponentName name Nothing
+
+    completeInstance types cName tyName
+    system.instances.at cName .= Just tyName
+
+    return cName
 
 
 -- | Get an existing instance for the given type name.
-getInstance :: TypeName -> Completer Name
+getInstance :: TypeName -> Completer ComponentName
 getInstance tyName = liftList =<< use (system.to (instancesOfType tyName))
 
 
@@ -212,7 +216,7 @@ missingRoles contained sys roleRefLists = nub $ do
 
 
 -- | Get the first cycle induced by the 'boundTo' relation if it exists.
-getCycle :: System -> Maybe [Name]
+getCycle :: System -> Maybe [ComponentName]
 getCycle sys =
     getFirst (mconcat (fmap (go []) (view (instances.to Map.keys) sys)))
   where

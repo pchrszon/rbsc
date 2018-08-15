@@ -72,11 +72,11 @@ spec = do
             `shouldBe`
             Right System
                 { _instances =
-                    [ ("n[0]", "N")
-                    , ("n[1]", "N")
+                    [ (ComponentName "n" (Just 0), "N")
+                    , (ComponentName "n" (Just 1), "N")
                     , ("r", "R")
                     ]
-                , _boundTo = [("r", "n[1]")]
+                , _boundTo = [("r", ComponentName "n" (Just 1))]
                 , _containedIn = []
                 }
 
@@ -97,14 +97,14 @@ spec = do
             `shouldBe`
             Right System
                 { _instances =
-                    [ ("n[0]", "N")
-                    , ("n[1]", "N")
-                    , ("r[0]", "R")
-                    , ("r[1]", "R")
+                    [ (ComponentName "n" (Just 0), "N")
+                    , (ComponentName "n" (Just 1), "N")
+                    , (ComponentName "r" (Just 0), "R")
+                    , (ComponentName "r" (Just 1), "R")
                     ]
                 , _boundTo =
-                    [ ("r[0]", "n[0]")
-                    , ("r[1]", "n[1]")
+                    [ (ComponentName "r" (Just 0), ComponentName "n" (Just 0))
+                    , (ComponentName "r" (Just 1), ComponentName "n" (Just 1))
                     ]
                 , _containedIn = []
                 }
@@ -221,12 +221,22 @@ spec = do
                 |]
             `shouldBe`
             Right
-                [ ("n", [ Component "n[0]" "N" Nothing Nothing
-                        , Component "n[1]" "N" Nothing Nothing
-                        ])
-                , ("r", [ Component "r[0]" "R" (Just "n[0]") Nothing
-                        , Component "r[1]" "R" (Just "n[1]") Nothing
-                        ])
+                [ ("n",
+                    [ Component (ComponentName "n" (Just 0)) "N" Nothing Nothing
+                    , Component (ComponentName "n" (Just 1)) "N" Nothing Nothing
+                    ])
+                , ("r",
+                    [ Component
+                        (ComponentName "r" (Just 0))
+                        "R"
+                        (Just (ComponentName "n" (Just 0)))
+                        Nothing
+                    , Component
+                        (ComponentName "r" (Just 1))
+                        "R"
+                        (Just (ComponentName "n" (Just 1)))
+                        Nothing
+                    ])
                 ]
 
 

@@ -28,7 +28,7 @@ visualizeSystem sys =
         sep (fmap (visualizeBoundTo sys) (view (boundTo.to assocs) sys))
 
 
-visualizeInstance :: System -> (Name, TypeName) -> Doc ann
+visualizeInstance :: System -> (ComponentName, TypeName) -> Doc ann
 visualizeInstance sys (name, tyName) = case containedRoles name sys of
     []  | isJust (view (containedIn.at name) sys) -> emptyDoc
         | otherwise ->
@@ -53,7 +53,7 @@ visualizeInstance sys (name, tyName) = case containedRoles name sys of
         colon <+> maybe emptyDoc pretty (view (instances . at roleName) sys)
 
 
-visualizeBoundTo :: System -> (RoleName, Name) -> Doc ann
+visualizeBoundTo :: System -> (RoleName, ComponentName) -> Doc ann
 visualizeBoundTo sys (roleName, playerName) =
     port roleName <+> "->" <+> port playerName <> semi
   where
@@ -64,5 +64,5 @@ visualizeBoundTo sys (roleName, playerName) =
             Nothing -> ident name
 
 
-ident :: Pretty a => a -> Doc ann
+ident :: ComponentName -> Doc ann
 ident = dquotes . pretty

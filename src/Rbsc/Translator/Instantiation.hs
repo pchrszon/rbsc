@@ -45,7 +45,7 @@ instantiateComponents ::
        (MonadEval r m, HasSymbolTable r, HasRangeTable r)
     => Model
     -> System
-    -> m (Map Name [TNamedModuleBody Elem])
+    -> m (Map ComponentName [TNamedModuleBody Elem])
 instantiateComponents m sys =
     fmap Map.fromList (traverse inst (toComponents sys))
   where
@@ -189,7 +189,8 @@ substituteKeywords sys comp ModuleBody {..} = do
                 let playerComp = toComponent playerName
                     ty = TyComponent (Set.singleton (_compTypeName playerComp))
                 return (Literal playerComp ty)
-            Nothing -> throw rgn (UndefinedPlayer (view compName comp))
+            Nothing ->
+                throw rgn (UndefinedPlayer (componentName (view compName comp)))
         _ -> return e
 
     toComponent name = case view (instances.at name) sys of

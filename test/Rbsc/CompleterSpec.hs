@@ -48,7 +48,7 @@ rolesAreBound types sys =
     Map.keysSet (view boundTo sys)
 
 
-isRole :: ComponentTypes -> System -> Name -> Bool
+isRole :: ComponentTypes -> System -> ComponentName -> Bool
 isRole types sys name = case view (instances.at name) sys of
     Just tyName -> case Map.lookup tyName types of
         Just (RoleType _) -> True
@@ -89,7 +89,7 @@ instance Arbitrary Model where
         return (Model (emptyModelInfo & componentTypes .~ types) sys)
 
 
-genInstances :: ComponentTypes -> Gen (Map Name TypeName)
+genInstances :: ComponentTypes -> Gen (Map ComponentName TypeName)
 genInstances =
     fmap (Map.fromList . fmap mkInstance) . nonEmptySublistOf . Map.keys
   where
@@ -97,8 +97,8 @@ genInstances =
 
 
 genBindings :: ComponentTypes
-            -> Map Name TypeName
-            -> Gen (Map RoleName Name)
+            -> Map ComponentName TypeName
+            -> Gen (Map RoleName ComponentName)
 genBindings types is = do
     is' <- sublistOf (Map.assocs is)
     Map.unions <$> traverse (uncurry genBinding) is'
@@ -166,8 +166,8 @@ mkTypeName :: Text -> Integer -> TypeName
 mkTypeName n i = TypeName (appendIndex n i)
 
 
-mkInstanceName :: TypeName -> Name
-mkInstanceName = toLower . getTypeName
+mkInstanceName :: TypeName -> ComponentName
+mkInstanceName = flip ComponentName Nothing . toLower . getTypeName
 
 
 nonEmptySublistOf :: [a] -> Gen [a]

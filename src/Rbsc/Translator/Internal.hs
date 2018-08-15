@@ -17,6 +17,7 @@ module Rbsc.Translator.Internal
     , overrideActionIdent
     , playedActionIdent
     , notPlayedActionIdent
+    , trnsComponentName
     , indexedNames
     , indexedExprs
     , addIndex
@@ -29,7 +30,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 
 import Data.Map.Strict     as Map
-import Data.Text           (pack, replace)
+import Data.Text           (pack)
 import qualified Data.Set as Set
 
 
@@ -89,30 +90,34 @@ trnsQualified qname = use (tsIdents.at qname) >>= \case
         return ident'
   where
     mkIdent = \case
-        QlName name         -> removeBrackets name
+        QlName name         -> name
         QlMember inner name -> mkIdent inner <> "_" <> name
         QlIndex inner idx   -> mkIdent inner <> "_" <> pack (show idx)
-
-    removeBrackets = replace "[" "_" . replace "]" ""
 
 
 trnsAction :: Action -> Qualified
 trnsAction = \case
     Action name           -> QlName name
-    LocalAction comp name -> QlMember (QlName comp) name
+    LocalAction comp name -> QlMember (QlName (trnsComponentName comp)) name
     IndexedAction act idx -> QlIndex (trnsAction act) idx
 
 
 overrideActionIdent :: RoleName -> Name
-overrideActionIdent roleName = "ovr_" <> roleName
+overrideActionIdent roleName = "ovr_" <> trnsComponentName roleName
 
 
 playedActionIdent :: RoleName -> Name
-playedActionIdent = id
+playedActionIdent = trnsComponentName
 
 
 notPlayedActionIdent :: RoleName -> Name
-notPlayedActionIdent roleName = "not_" <> roleName
+notPlayedActionIdent roleName = "not_" <> trnsComponentName roleName
+
+
+trnsComponentName :: ComponentName -> Name
+trnsComponentName (ComponentName name mIdx) = case mIdx of
+    Just idx -> name <> "_" <> pack (show idx)
+    Nothing  -> name
 
 
 indexedNames :: Qualified -> Type t -> [Qualified]

@@ -31,7 +31,6 @@ import           Data.Maybe
 import qualified Data.Set        as Set
 
 import Data.Foldable
-import Data.Text        (pack)
 import Data.Traversable
 
 
@@ -54,7 +53,7 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 data ArrayInfo = ArrayInfo
     { arrName       :: !Name
     , _arrTyName    :: !TypeName
-    , _arrItemNames :: Array Name
+    , _arrItemNames :: Array ComponentName
     }
 
 
@@ -72,7 +71,7 @@ pattern TyComponent' :: TypeName -> Type Component
 pattern TyComponent' tyName <- TyComponent (toList -> [tyName])
 
 
-pattern LitComponent :: Name -> TypeName -> Expr Component
+pattern LitComponent :: ComponentName -> TypeName -> Expr Component
 pattern LitComponent name tyName <- (componentLiteral -> Just (name, tyName))
 
 
@@ -114,13 +113,13 @@ buildSystem model = do
     -- insertDefinition :: Monad m => Loc (Expr Bool) -> StateT Result m ()
     insertDefinition e = case unLoc e of
         HasType (Identifier name _) tyName ->
-            system.instances.at name .= Just tyName
+            system.instances.at (ComponentName name Nothing) .= Just tyName
 
         HasType (Index (Identifier name _) idx) tyName -> do
             -- upper bound is already checked in TypeChecker.ModelInfo
             idx' <- eval idx
             arr <- for [0 .. idx' - 1] $ \i -> do
-                let name' = indexedName name i
+                let name' = ComponentName name (Just i)
                 system.instances.at name' .= Just tyName
                 return name'
             modifying componentArrays (ArrayInfo name tyName (fromList arr) :)
@@ -173,22 +172,18 @@ buildSystem model = do
 
 
 -- | If an expression is an identifier or an indexed indentifier with type
--- 'TyComponent', return the component 'Name' and its 'TypeName'. In case
--- of an indexed identifier, the index is added to the component's name.
-componentLiteral :: Expr Component -> Maybe (Name, TypeName)
+-- 'TyComponent', return the 'ComponentName' and its 'TypeName'.
+componentLiteral :: Expr Component -> Maybe (ComponentName, TypeName)
 componentLiteral = \case
-    Identifier name (TyComponent' tyName) -> Just (name, tyName)
+    Identifier name (TyComponent' tyName) ->
+        Just (ComponentName name Nothing, tyName)
+
     Index
         (Identifier name (TyArray _ (TyComponent' tyName)))
         (Loc (Literal idx _) _) ->
-            Just (indexedName name idx, tyName)
+            Just (ComponentName name (Just idx), tyName)
+
     _ -> Nothing
-
-
--- indexedName is guaranteed to be unused, because brackets
--- are not allowed in identifier names
-indexedName :: Name -> Int -> Name
-indexedName name i = name <> "[" <> pack (show i) <> "]"
 
 
 -- | Updates a 'ModelInfo' by adding constants for all the 'Component's
@@ -202,16 +197,17 @@ updateModelInfo info arrayInfos sys =
     (arrays, instances') = generateArrays sys arrayInfos
 
 
-generateConstants :: System -> Map Name TypeName -> Constants
-generateConstants sys = Map.mapWithKey generateConstant
+generateConstants :: System -> Map ComponentName TypeName -> Constants
+generateConstants sys = Map.fromList . fmap generateConstant . Map.assocs
   where
-    generateConstant name tyName =
+    generateConstant (name, tyName) =
         let comp = componentForName sys tyName name
             ty   = TyComponent (Set.singleton tyName)
-        in SomeExpr (Literal comp ty) ty
+        in (componentName name, SomeExpr (Literal comp ty) ty)
 
 
-generateArrays :: System -> [ArrayInfo] -> (Constants, Map Name TypeName)
+generateArrays
+    :: System -> [ArrayInfo] -> (Constants, Map ComponentName TypeName)
 generateArrays sys arrayInfos =
     (Map.fromList (fmap generateArray arrayInfos), instances')
   where
@@ -221,10 +217,11 @@ generateArrays sys arrayInfos =
             e   = SomeExpr (Literal arr ty) ty
         in (name, e)
 
-    instances' = foldr Map.delete (view instances sys) (fmap arrName arrayInfos)
+    instances' = foldr Map.delete (view instances sys) itemNames
+    itemNames = concatMap (toList . _arrItemNames) arrayInfos
 
 
-componentForName :: System -> TypeName -> Name -> Component
+componentForName :: System -> TypeName -> ComponentName -> Component
 componentForName sys tyName name =
     let mBoundTo = view (boundTo.at name) sys
         mContainedIn = view (containedIn.at name) sys
@@ -259,11 +256,12 @@ checkCompartmentUpperBounds sys = do
             _ -> return ()
 
 
-checkCompartment :: MonadError Error m => System -> Name -> [[RoleRef]] -> m ()
+checkCompartment
+    :: MonadError Error m => System -> ComponentName -> [[RoleRef]] -> m ()
 checkCompartment sys name roleRefLists
     | any Map.null overfulls = return ()
     | otherwise = case sortedOverfulls of
-        (os:_) -> throwNoLoc (TooManyRoles name (Map.assocs os))
+        (os:_) -> throwNoLoc (TooManyRoles (componentName name) (Map.assocs os))
         _      -> return ()
   where
     sortedOverfulls = sortOn numAdditional overfulls
@@ -272,7 +270,7 @@ checkCompartment sys name roleRefLists
     numAdditional = Map.foldr (+) 0
 
 
-getOverfullTypes :: System -> Name -> [RoleRef] -> Map TypeName Int
+getOverfullTypes :: System -> ComponentName -> [RoleRef] -> Map TypeName Int
 getOverfullTypes sys name roleRefs =
     Map.filter (> 0) (Map.unionWith (-) numContained numMaxRequired')
   where

@@ -1,14 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+
 -- | Instance names and type names.
 module Rbsc.Data.Name
     ( Name
     , RoleName
     , TypeName(..)
+    , ComponentName(..)
+    , componentName
     , Qualified(..)
     ) where
 
 
 import Data.String
-import Data.Text                 (Text)
+import Data.Text                 (Text, pack)
 import Data.Text.Prettyprint.Doc
 
 
@@ -16,8 +21,25 @@ import Data.Text.Prettyprint.Doc
 type Name = Text
 
 
--- | A 'Name' that is intended to be a role instance name.
-type RoleName = Name
+data ComponentName = ComponentName !Name (Maybe Int) deriving (Eq, Ord, Show)
+
+instance Pretty ComponentName where
+    pretty (ComponentName name mIdx) = case mIdx of
+        Just idx -> pretty name <> brackets (pretty idx)
+        Nothing  -> pretty name
+
+instance IsString ComponentName where
+    fromString s = ComponentName (fromString s) Nothing
+
+
+componentName :: ComponentName -> Name
+componentName (ComponentName name mIdx) = case mIdx of
+    Just idx -> name <> "[" <> pack (show idx) <> "]"
+    Nothing  -> name
+
+
+-- | A 'ComponentName' that is intended to be a role instance name.
+type RoleName = ComponentName
 
 
 -- | The name of a user-defined component type, role type or compartment type.

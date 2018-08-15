@@ -40,17 +40,17 @@ import Rbsc.Util (renderPretty)
 
 
 data BindingInfo = BindingInfo
-    { _rolesOfComponent :: Map Name (Set RoleName)
-    , _playersOfRole    :: Map RoleName (Set Name)
+    { _rolesOfComponent :: Map ComponentName (Set RoleName)
+    , _playersOfRole    :: Map RoleName (Set ComponentName)
     }
 
 
-rolesOfComponent :: BindingInfo -> Name -> Set RoleName
+rolesOfComponent :: BindingInfo -> ComponentName -> Set RoleName
 rolesOfComponent bi compName =
     Map.findWithDefault Set.empty compName (_rolesOfComponent bi)
 
 
-playersOfRole :: BindingInfo -> RoleName -> Set Name
+playersOfRole :: BindingInfo -> RoleName -> Set ComponentName
 playersOfRole bi roleName =
     Map.findWithDefault Set.empty roleName (_playersOfRole bi)
 
@@ -76,7 +76,8 @@ generateBindingInfo sys as = do
 -- | The required actions of a role. Required actions are actions where the
 -- role and its player synchronize or actions that are overridden by the
 -- role.
-requiredActionsOfRole :: BindingInfo -> Alphabets -> RoleName -> Alphabet -> Set Action
+requiredActionsOfRole
+    :: BindingInfo -> Alphabets -> RoleName -> Alphabet -> Set Action
 requiredActionsOfRole bi as roleName alph =
     stripLocAndKind alph `Set.intersection` playerAlphabets
   where
@@ -88,7 +89,7 @@ requiredActionsOfRole bi as roleName alph =
 
 -- | Get the set of actions that are overridden in the given component.
 overrideActionsOfRoles ::
-       BindingInfo -> OverrideActions -> Name -> Set (RoleName, Action)
+       BindingInfo -> OverrideActions -> ComponentName -> Set (RoleName, Action)
 overrideActionsOfRoles bi oas compName =
     Set.unions . flip fmap (toList roles) $ \role ->
         Set.map ((,) role) (Map.findWithDefault Set.empty role oas)
@@ -98,7 +99,7 @@ overrideActionsOfRoles bi oas compName =
 
 data Binding = Binding
     { _bindRole    :: !RoleName
-    , _bindPlayers :: [Name]
+    , _bindPlayers :: [ComponentName]
     } deriving (Show)
 
 
@@ -111,7 +112,7 @@ globalBindings sys as =
     plays = buildPlaysRelation sys
 
 
-localBindings :: System -> PlaysRelation -> Name -> [Binding]
+localBindings :: System -> PlaysRelation -> ComponentName -> [Binding]
 localBindings sys plays core =
     concatMap (go (core : containedPlayers)) (getRoles core)
   where
@@ -126,7 +127,7 @@ localBindings sys plays core =
 -- | The @PlaysRelation@ is the inverse of the @boundto@ relation. In
 -- a given key-value-pair, the key represents the player, and the value
 -- a list of roles played by this player.
-type PlaysRelation = Map Name (Set Name)
+type PlaysRelation = Map ComponentName (Set ComponentName)
 
 
 buildPlaysRelation :: System -> PlaysRelation
@@ -138,14 +139,14 @@ buildPlaysRelation = foldr insertRole Map.empty . Map.assocs . view boundTo
 
 -- | Gets the set of all core components in the system.  A core component is a
 -- component that is not bound to another component.
-coreComponents :: System -> Set Name
+coreComponents :: System -> Set ComponentName
 coreComponents sys = Set.filter isCore (Map.keysSet (view instances sys))
   where
     isCore name = has (boundTo.at name._Nothing) sys
 
 
 -- | Transitively get all roles bound to the given core component.
-rolesOfCore :: PlaysRelation -> Name -> Set RoleName
+rolesOfCore :: PlaysRelation -> ComponentName -> Set RoleName
 rolesOfCore plays core =
     Set.unions (fmap (`flatten` Set.empty) (Set.toList (getRoles core)))
   where
@@ -162,7 +163,8 @@ mkCompatPair x y
     | otherwise = CompatPair y x
 
 
-checkCompatibilities :: System -> PlaysRelation -> Alphabets -> Name -> Result ()
+checkCompatibilities
+    :: System -> PlaysRelation -> Alphabets -> ComponentName -> Result ()
 checkCompatibilities sys plays as core = do
     let roleNames = rolesOfCore plays core
         errors = concatMap checkCompatPair (compatPairs sys plays roleNames)
@@ -175,8 +177,13 @@ checkCompatibilities sys plays as core = do
             rAlphabet = Map.findWithDefault Set.empty r as
         in fmap (incompatError l r) (incompatibilities lAlphabet rAlphabet)
 
-    incompatError first second (act, firstRgn, secondRgn) = locError firstRgn
-        (IncompatibleRoles first secondRgn second core (renderPretty act))
+    incompatError first second (act, firstRgn, secondRgn) = locError firstRgn $
+        IncompatibleRoles
+            (componentName first)
+            secondRgn
+            (componentName second)
+            (componentName core)
+            (renderPretty act)
 
 
 -- | Given a set of roles, get the set of all pairs of roles that must be
@@ -203,7 +210,7 @@ incompatibilities l r = Set.toList (incompat l r `Set.union` incompat r l)
     getLocs (Loc act lRgn) (Loc _ rRgn, _) = (act, lRgn, rRgn)
 
 
-players :: System -> Name -> Set Name
+players :: System -> ComponentName -> Set ComponentName
 players sys = go
   where
     go name = Set.insert name $ case view (boundTo.at name) sys of

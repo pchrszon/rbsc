@@ -37,7 +37,11 @@ import Rbsc.Translator.Internal
 
 
 trnsCommand
-    :: Bool -> TypeName -> Name -> TCommand Elem -> Translator Prism.Command
+    :: Bool
+    -> TypeName
+    -> ComponentName
+    -> TCommand Elem
+    -> Translator Prism.Command
 trnsCommand isRole typeName comp Command{..} = do
     grd'  <- trnsLSomeExpr (Just (typeName, comp)) cmdGuard
     upds' <- trnsUpdates (Just (typeName, comp)) cmdUpdates
@@ -72,20 +76,23 @@ trnsActionExpr (Loc e rgn) = case e of
 
 
 trnsUpdates
-    :: Maybe (TypeName, Name)
+    :: Maybe (TypeName, ComponentName)
     -> [TElem (TUpdate Elem)]
     -> Translator [Prism.Update]
 trnsUpdates mComp = traverse (trnsUpdate mComp . getElem)
 
 
-trnsUpdate :: Maybe (TypeName, Name) -> TUpdate Elem -> Translator Prism.Update
+trnsUpdate
+    :: Maybe (TypeName, ComponentName)
+    -> TUpdate Elem
+    -> Translator Prism.Update
 trnsUpdate mComp Update{..} = Prism.Update <$>
     _Just (trnsLSomeExpr mComp) updProb <*>
     (concat <$> traverse (trnsAssignment mComp . getElem) updAssignments)
 
 
 trnsAssignment
-    :: Maybe (TypeName, Name)
+    :: Maybe (TypeName, ComponentName)
     -> TAssignment
     -> Translator [(Prism.Ident, Prism.Expr)]
 trnsAssignment mComp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = do
@@ -93,7 +100,7 @@ trnsAssignment mComp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = 
     let (baseName, varTy) = if
             | Just (typeName, comp) <- mComp
             , Just ty' <- view (at (ScopedName (Local typeName) name)) symTable ->
-                (QlMember (QlName comp) name, ty')
+                (QlMember (QlName (trnsComponentName comp)) name, ty')
             | Just ty' <- view (at (ScopedName Global name)) symTable ->
                 (QlName name, ty')
             | otherwise -> error $
@@ -111,7 +118,8 @@ trnsAssignment mComp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = 
         return (ident, e'')
 
 
-trnsIndices :: MonadError Error m => Qualified -> Type t -> [LSomeExpr] -> m Qualified
+trnsIndices
+    :: MonadError Error m => Qualified -> Type t -> [LSomeExpr] -> m Qualified
 trnsIndices qname (TyArray (lower, upper) innerTy) (Loc (SomeExpr idx TyInt) rgn : idxs) =
     case idx of
         Literal i _

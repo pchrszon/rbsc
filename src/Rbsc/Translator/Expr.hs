@@ -35,11 +35,16 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 import Rbsc.Translator.Internal
 
 
-trnsLSomeExpr :: Maybe (TypeName, Name) -> LSomeExpr -> Translator Prism.Expr
+trnsLSomeExpr
+    :: Maybe (TypeName, ComponentName) -> LSomeExpr -> Translator Prism.Expr
 trnsLSomeExpr mComp (Loc (SomeExpr e _) rgn) = trnsExpr mComp rgn e
 
 
-trnsExpr :: Maybe (TypeName, Name) -> Region -> Expr t -> Translator Prism.Expr
+trnsExpr
+    :: Maybe (TypeName, ComponentName)
+    -> Region
+    -> Expr t
+    -> Translator Prism.Expr
 trnsExpr mComp rgn = go
   where
     go :: Expr t -> Translator Prism.Expr
@@ -95,11 +100,12 @@ trnsExpr mComp rgn = go
     trnsIdent symTable = \case
         Identifier name _ -> case mComp of
             Just (typeName, compName') | isLocalSymbol symTable typeName name ->
-                Just (QlMember (QlName compName') name)
+                Just (QlMember (QlName (trnsComponentName compName')) name)
             _ -> Just (QlName name)
 
         Member (Literal comp (TyComponent _)) name _ ->
-            Just (QlMember (QlName (view compName comp)) name)
+            let name' = trnsComponentName (view compName comp)
+            in Just (QlMember (QlName name') name)
 
         Index (trnsIdent symTable -> Just qname) (Loc (Literal i _) _) ->
             Just (QlIndex qname i)
@@ -116,7 +122,7 @@ trnsExpr mComp rgn = go
 
 
 trnsEq
-    :: Maybe (TypeName, Name)
+    :: Maybe (TypeName, ComponentName)
     -> Region
     -> EqOp
     -> Type t

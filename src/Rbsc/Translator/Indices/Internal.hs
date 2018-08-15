@@ -210,7 +210,7 @@ variables mComp (Some e) =
                     Just (TypedVariable
                         (Variable name (LocalVar
                             (view compTypeName comp)
-                            (view compName comp)))
+                            (componentName (view compName comp))))
                         (Some ty))
                 | isGlobalSymbol symTable name &&
                   not (isConstant consts name) ->

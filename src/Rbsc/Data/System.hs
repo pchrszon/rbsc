@@ -34,9 +34,9 @@ import Rbsc.Util
 -- A system instance may be incomplete, i.e., roles may be unbound and
 -- compartments may be missing certain role instances.
 data System = System
-    { _instances   :: Map Name TypeName
-    , _boundTo     :: Map RoleName Name
-    , _containedIn :: Map RoleName Name
+    { _instances   :: Map ComponentName TypeName
+    , _boundTo     :: Map RoleName ComponentName
+    , _containedIn :: Map RoleName ComponentName
     } deriving (Eq, Show)
 
 makeLenses ''System
@@ -50,30 +50,30 @@ instance Pretty System where
         containmentDocs =
             fmap prettyContained (view (containedIn.to assocs) sys)
 
-prettyInstance :: (Name, TypeName) -> Doc ann
+prettyInstance :: (ComponentName, TypeName) -> Doc ann
 prettyInstance (name, tyName) = pretty name <+> colon <+> pretty tyName
 
-prettyBinding :: (RoleName, Name) -> Doc ann
+prettyBinding :: (RoleName, ComponentName) -> Doc ann
 prettyBinding (roleName, playerName) =
     pretty roleName <+> "boundto" <+> pretty playerName
 
-prettyContained :: (RoleName, Name) -> Doc ann
+prettyContained :: (RoleName, ComponentName) -> Doc ann
 prettyContained (roleName, compartmentName) =
     pretty roleName <+> "in" <+> pretty compartmentName
 
 
 -- | Get all instances that have the given type.
-instancesOfType :: TypeName -> System -> [Name]
+instancesOfType :: TypeName -> System -> [ComponentName]
 instancesOfType tyName = inverseLookup tyName . view instances
 
 
 -- | Get all roles that are bound to a given player.
-boundRoles :: Name -> System -> [RoleName]
+boundRoles :: ComponentName -> System -> [RoleName]
 boundRoles name = inverseLookup name . view boundTo
 
 
 -- | Get all roles contained in a given compartment.
-containedRoles :: Name -> System -> [RoleName]
+containedRoles :: ComponentName -> System -> [RoleName]
 containedRoles name = inverseLookup name . view containedIn
 
 

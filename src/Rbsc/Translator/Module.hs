@@ -35,7 +35,7 @@ trnsModules
     :: System
     -> BindingInfo
     -> Alphabets
-    -> Map Name [TNamedModuleBody Elem]
+    -> Map ComponentName [TNamedModuleBody Elem]
     -> Translator [Prism.Module]
 trnsModules sys bi as bodiess = do
     compTys <- view componentTypes
@@ -57,11 +57,11 @@ trnsModule
     -> OverrideActions
     -> Bool
     -> TypeName
-    -> Name
+    -> ComponentName
     -> TNamedModuleBody Elem
     -> Translator Prism.Module
 trnsModule bi as alph oas isRole typeName compName (NamedModuleBody moduleName body) = do
-    ident <- trnsQualified (QlMember (QlName compName) moduleName)
+    ident <- trnsQualified (QlMember (QlName (trnsComponentName compName)) moduleName)
     vars' <- trnsLocalVars typeName compName (bodyVars body)
 
     cmds' <- traverse
@@ -81,7 +81,7 @@ genOverrideSelfLoops
     :: MonadState TranslatorState m
     => BindingInfo
     -> OverrideActions
-    -> Name
+    -> ComponentName
     -> m [Prism.Command]
 genOverrideSelfLoops bi oas =
     traverse genCommand . toList . overrideActionsOfRoles bi oas

@@ -66,18 +66,20 @@ stripLocAndKind = Set.map (unLoc . fst)
 
 
 -- | Mapping of component names to their alphabet.
-type Alphabets = Map Name Alphabet
+type Alphabets = Map ComponentName Alphabet
 
 
 -- | Given a map of component implementations, get the action 'Alphabet' of
 -- each component.
-alphabets ::
-       MonadError Error m => Map Name [TNamedModuleBody Elem] -> m Alphabets
+alphabets
+    :: MonadError Error m
+    => Map ComponentName [TNamedModuleBody Elem]
+    -> m Alphabets
 alphabets = traverse (fmap Set.unions . traverse (alphabet . _namedBody))
 
 
 -- | The override actions of a component.
-type OverrideActions = Map Name (Set Action)
+type OverrideActions = Map ComponentName (Set Action)
 
 
 -- | Get the override actions of all components from the given 'Alphabets'.
