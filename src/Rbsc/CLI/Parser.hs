@@ -38,9 +38,9 @@ parseOptions = execParser opts
 
 options :: Parser Options
 options = Options
-    <$> optional (strArgument
+    <$> strArgument
         ( metavar "MODEL"
-       <> help helpModelFile ))
+       <> help helpModelFile )
     <*> optional (strOption
         ( metavar "FILE"
        <> short 'o'
@@ -48,30 +48,36 @@ options = Options
     <*> optional (strOption
         ( metavar "FILE"
        <> long "export-systems"
+       <> hidden
        <> help helpExportSystems ))
     <*> optional (strOption
         ( metavar "FILE"
        <> long "export-diagrams"
+       <> hidden
        <> help helpExportDiagrams ))
     <*> (RecursionDepth <$> option auto
         ( metavar "INT"
        <> long "recursion-depth"
        <> value 100
        <> showDefault
+       <> hidden
        <> help helpRecursionDepth ))
     <*> flag True False
         ( long "no-color"
+       <> hidden
        <> help helpNoColor )
     <*> flag True False
         ( long "no-warn"
+       <> hidden
        <> help helpNoWarnings )
     <*> flag NonVerbose Verbose
         ( short 'v'
        <> long "verbose"
+       <> hidden
        <> help helpVerbose )
 
 
-helpModelFile      = "The model file"
+helpModelFile      = "The model file (pass - to read from stdin)"
 helpOutputFile     = "The output file(s)"
 helpExportSystems  = "Export the full system block"
 helpExportDiagrams = "Export the component diagram as Graphviz dot"

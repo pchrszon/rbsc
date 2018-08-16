@@ -11,7 +11,7 @@ import Rbsc.Config
 -- | The command line options.
 data Options = Options
     { -- | The input file.
-      optInput          :: Maybe FilePath
+      optInput          :: FilePath
 
       -- | The output path. If multiple systems are generated, an index is
       -- added between the file name and the file extension.

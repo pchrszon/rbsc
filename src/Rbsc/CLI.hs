@@ -123,8 +123,8 @@ handleResults results = do
 
 readModel :: App (FilePath, Text)
 readModel = asks optInput >>= \case
-    Just path -> (,) path <$> liftIO (Text.readFile path)
-    Nothing   -> (,) "<stdin>" <$> liftIO Text.getContents
+    "-"  -> (,) "<stdin>" <$> liftIO Text.getContents
+    path -> (,) path <$> liftIO (Text.readFile path)
 
 
 translate :: RecursionDepth -> Result Model -> Result [(System, Prism.Model)]
