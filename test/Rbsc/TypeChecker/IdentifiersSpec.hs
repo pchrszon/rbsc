@@ -44,7 +44,7 @@ spec = describe "identifierDefs" $ do
                 global x : bool;
 
                 system {
-                    c : Comp
+                    c : Comp;
                 }
 
                 impl N {
@@ -94,7 +94,7 @@ spec = describe "identifierDefs" $ do
                 const n : int = 5;
 
                 system {
-                    n : Comp
+                    n : Comp;
                 }
             |]
         `shouldThrowError`

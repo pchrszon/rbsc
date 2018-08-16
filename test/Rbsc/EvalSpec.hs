@@ -49,36 +49,36 @@ spec = do
             Right 4
 
         it "evaluates quantified expressions over components" $
-            eval' TyBool [expr| forall x: R. x boundto n |]
+            eval' TyBool [expr| forall x : R. x boundto n |]
             `shouldBe`
             Right True
 
         it "evaluates quantified expressions over integers" $
-            eval' TyBool [expr| forall i: [0..2]. i < 3 |]
+            eval' TyBool [expr| forall i : [0..2]. i < 3 |]
             `shouldBe`
             Right True
 
         it "evaluates sum expressions" $
-            eval' TyInt [expr| sum i: [1..3]. i |]
+            eval' TyInt [expr| sum i : [1..3]. i |]
             `shouldBe`
             Right 6
 
         it "evaluates nested quantified expressions" $
             eval' TyBool
                 [expr|
-                    forall x: component, r1: role, r2: role.
+                    forall x : component, r1 : role, r2 : role.
                         r1 boundto x & r2 boundto x => r1 = r2
                 |]
             `shouldBe`
             Right True
 
         it "evaluates functions containing quantified expressions over components" $
-            eval' TyBool [expr| n playerIn c |]
+            eval' TyBool [expr| n playerin c |]
             `shouldBe`
             Right True
 
         it "evaluates functions containing quantified expressions over integers" $
-            eval' TyBool [expr| hasZero(square, -2, 2) |]
+            eval' TyBool [expr| has_zero(square, -2, 2) |]
             `shouldBe`
             Right True
 
@@ -156,30 +156,30 @@ testModel =
         role type R(N);
         compartment type C(R);
 
-        const x: int = 1;
+        const x : int = 1;
 
-        global y: [0..1];
+        global y : [0..1];
 
-        global z: [0..1];
+        global z : [0..1];
 
-        global arr: array [0 .. 2] of bool;
+        global arr : array [0 .. 2] of bool;
 
-        function f(i: int) : int = f(i);
+        function f(i : int) : int = f(i);
 
-        function square(x: int) : int = x * x;
+        function square(x : int) : int = x * x;
 
-        function hasZero(f: int -> int, from: int, to: int) : bool =
+        function has_zero(f : int -> int, from: int, to: int) : bool =
             exists x: [from .. to]. f(x) = 0;
 
-        function playerIn(p: component, c: compartment) : bool =
+        function playerin(p : component, c : compartment) : bool =
             exists r: role. r in c & r boundto p;
 
         system {
-            n : N,
-            r : R,
-            c : C,
-            r boundto n,
-            r in c
+            n : N;
+            r : R;
+            c : C;
+            r boundto n;
+            r in c;
         }
     |]
 

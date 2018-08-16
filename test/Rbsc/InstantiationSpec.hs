@@ -63,11 +63,11 @@ spec = do
                 [model|
                     natural type N;
                     role type R(N);
-                    system
-                        { n[2]: N
-                        , r: R
-                        , r boundto n[1]
-                        }
+                    system {
+                        n[2] : N;
+                        r : R;
+                        r boundto n[1];
+                    }
                 |]
             `shouldBe`
             Right System
@@ -88,11 +88,11 @@ spec = do
 
                     const SIZE = 2;
 
-                    system
-                        { n[SIZE]: N
-                        , r[SIZE]: R
-                        , forall i: [0 .. SIZE - 1]. r[i] boundto n[i]
-                        }
+                    system {
+                        n[SIZE] : N;
+                        r[SIZE] : R;
+                        forall i : [0 .. SIZE - 1]. r[i] boundto n[i];
+                    }
                 |]
             `shouldBe`
             Right System
@@ -114,11 +114,11 @@ spec = do
                 [model|
                     natural type N;
                     natural type M;
-                    system
-                        { n: N
-                        , m: M
-                        , n boundto m
-                        }
+                    system {
+                        n : N;
+                        m : M;
+                        n boundto m;
+                    }
                 |]
             `shouldThrowError`
             _NotARole
@@ -129,11 +129,11 @@ spec = do
                     natural type N;
                     natural type M;
                     role type R(N);
-                    system
-                        { m: M
-                        , r: R
-                        , r boundto m
-                        }
+                    system {
+                        m : M;
+                        r : R;
+                        r boundto m;
+                    }
                 |]
             `shouldThrowError`
             _InvalidBinding
@@ -143,13 +143,13 @@ spec = do
                 [model|
                     natural type N;
                     role type R(N);
-                    system
-                        { n: N
-                        , m: N
-                        , r: R
-                        , r boundto n
-                        , r boundto m
-                        }
+                    system {
+                        n : N;
+                        m : N;
+                        r : R;
+                        r boundto n;
+                        r boundto m;
+                    }
                 |]
             `shouldThrowError`
             _RoleAlreadyBound
@@ -159,11 +159,11 @@ spec = do
                 [model|
                     natural type N;
                     role type R(N);
-                    system
-                        { n: N
-                        , r: R
-                        , r in n
-                        }
+                    system {
+                        n : N;
+                        r : R;
+                        r in n;
+                    }
                 |]
             `shouldThrowError`
             _NotACompartment
@@ -172,7 +172,7 @@ spec = do
             buildSystem'
                 [model|
                     natural type N;
-                    system { n[-1]: N }
+                    system { n[-1] : N; }
                 |]
             `shouldThrowError`
             _InvalidUpperBound
@@ -186,12 +186,12 @@ spec = do
                     role type R(N);
                     compartment type C(R);
 
-                    system
-                        { r[2]: R
-                        , c: C
-                        , r[0] in c
-                        , r[1] in c
-                        }
+                    system {
+                        r[2] : R;
+                        c : C;
+                        r[0] in c;
+                        r[1] in c;
+                    }
                 |]
             `shouldBe`
             Left [NoLocError (TooManyRoles "c" [("R", 1)])]
@@ -213,11 +213,11 @@ spec = do
                     natural type N;
                     role type R(N);
 
-                    system
-                        { n[2]: N
-                        , r[2]: R
-                        , forall i: [0 .. 1]. r[i] boundto n[i]
-                        }
+                    system {
+                        n[2] : N;
+                        r[2] : R;
+                        forall i : [0 .. 1]. r[i] boundto n[i];
+                    }
                 |]
             `shouldBe`
             Right
@@ -247,13 +247,13 @@ simpleModel =
         role type R(N);
         compartment type C(R);
 
-        system
-            { n: N
-            , r: R
-            , c: C
-            , r boundto n
-            , r in c
-            }
+        system {
+            n : N;
+            r : R;
+            c : C;
+            r boundto n;
+            r in c;
+        }
     |]
 
 

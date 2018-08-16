@@ -52,7 +52,7 @@ testModel =
     [model|
         natural type N;
 
-        system { n: N }
+        system { n: N; }
 
         global x : [0 .. 1];
 

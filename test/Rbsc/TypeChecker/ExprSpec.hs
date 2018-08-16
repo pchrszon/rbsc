@@ -57,7 +57,7 @@ spec = describe "typeCheck" $ do
         _UndefinedMember
 
     it "reports conflicting local variable types" $
-        typeCheck TyInt [expr| forall c: {N, K}. c.x > 0 |]
+        typeCheck TyInt [expr| forall c : {N, K}. c.x > 0 |]
         `shouldThrowError`
         _ConflictingMemberTypes
 
@@ -98,7 +98,7 @@ testModel =
         natural type N;
         natural type K;
 
-        system { n: N, k: K }
+        system { n : N; k : K; }
 
         impl N {
             x : bool;
