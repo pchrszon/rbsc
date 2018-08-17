@@ -118,7 +118,7 @@ insertFunctions =
 
 
 insertGlobals :: [UVarDecl] -> Builder ()
-insertGlobals = traverse_ (insert Global <$> declName <*> DefGlobal)
+insertGlobals = traverse_ (insertVarDecl Global DefGlobal)
 
 
 insertComponentTypes ::
@@ -146,7 +146,23 @@ insertLocalVars = traverse_ insertVarsForType . Map.assocs
     insertVarsForType (tyName, bodies) =
         for_ bodies $ \(NamedModuleBody _ body) ->
             for_ (bodyVars body) $
-                insert (Local tyName) <$> declName <*> DefLocal tyName
+                insertVarDecl (Local tyName) (DefLocal tyName)
+
+
+insertVarDecl :: Scope -> (UVarDecl -> IdentifierDef) -> UVarDecl -> Builder ()
+insertVarDecl sc c decl = do
+    insert sc (declName decl) (c decl)
+    insertVarType (declType decl)
+
+
+insertVarType :: UVarType -> Builder ()
+insertVarType = \case
+    VarTyEnum names ->
+        insertConstants (fmap mkConstant (zip names [0 ..]))
+    _ -> return ()
+  where
+    mkConstant (name, i) =
+        Constant name (Just TyInt) (LitInt i `withLocOf` name)
 
 
 insertCoordinatorVars :: [UCoordinator] -> Builder ()

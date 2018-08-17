@@ -37,18 +37,21 @@ spec = describe "sortDefinitions" $ do
                 function playerIn(p : component, c : compartment) : bool =
                     exists r : role. r in c & r boundto p;
                 const k = arr(n)[0];
+                const p = LOC;
                 impl N {
-                    x : bool;
+                    x : enum { LOC };
                 }
             |]
         `shouldBe`
         Right
-            [ "n"
+            [ "LOC"
+            , "n"
             , "sig_arr"
             , "sig_f"
             , "arr"
             , "f"
             , "k"
+            , "p"
             , "N_x"
             , "N"
             , "sig_playerIn"

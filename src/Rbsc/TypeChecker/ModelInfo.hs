@@ -214,11 +214,14 @@ fromSyntaxType = \case
 
 fromSyntaxVarType :: UVarType -> Builder (Some Type, Maybe (Int, Int))
 fromSyntaxVarType = \case
-    U.VarTyBool -> return (Some TyBool, Nothing)
+    U.VarTyBool ->
+        return (Some TyBool, Nothing)
     U.VarTyInt (lower, upper) -> do
         (lowerVal, _) <- evalIntExpr lower
         (upperVal, _) <- evalIntExpr upper
         return (Some TyInt, Just (lowerVal, upperVal))
+    U.VarTyEnum names ->
+        return (Some TyInt, Just (0, length names - 1))
     U.VarTyArray (lower, upper) vTy -> do
         (lowerVal, _) <- evalIntExpr lower
         (upperVal, _) <- evalIntExpr upper

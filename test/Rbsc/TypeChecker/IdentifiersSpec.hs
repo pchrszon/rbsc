@@ -48,7 +48,7 @@ spec = describe "identifierDefs" $ do
                 }
 
                 impl N {
-                    x : bool;
+                    x : enum { FIRST, SECOND };
                 }
 
                 impl K {
@@ -75,6 +75,10 @@ spec = describe "identifierDefs" $ do
                     (dummyLoc (Identifier "x"))))
             , (ScopedName Global "x", DefGlobal
                 (VarDecl (dummyLoc "x") VarTyBool Nothing))
+            , (ScopedName Global "FIRST", DefConstant
+                (Constant (dummyLoc "FIRST") (Just TyInt) (dummyLoc (LitInt 0))))
+            , (ScopedName Global "SECOND", DefConstant (Constant
+                (dummyLoc "SECOND") (Just TyInt) (dummyLoc (LitInt 1))))
             , (ScopedName Global "c", DefComponent
                 (ComponentDef
                     (dummyLoc "c")

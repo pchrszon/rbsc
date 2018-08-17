@@ -21,5 +21,6 @@ varType :: Parser UVarType
 varType = label "type" . choice $
     [ VarTyBool  <$  reserved "bool"
     , VarTyInt   <$> range
+    , VarTyEnum  <$> (reserved "enum" *> braces (identifier `sepBy1` comma))
     , VarTyArray <$> (reserved "array" *> range) <*> (reserved "of" *> varType)
     ]

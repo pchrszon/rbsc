@@ -17,6 +17,7 @@ reservedWords =
     [ "include"
     , "bool"
     , "int"
+    , "enum"
     , "double"
     , "array"
     , "of"

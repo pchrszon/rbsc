@@ -40,6 +40,7 @@ spec = describe "getModelInfo" $
                     x : [0 .. 1];
                     arr : array [0 .. 2] of [0 .. 3];
                     y : bool;
+                    l : enum { L1, L2, L3 };
                 }
             |])
         `shouldBe`
@@ -47,6 +48,7 @@ spec = describe "getModelInfo" $
             [ (ScopedName Global "g", (0, 4))
             , (ScopedName (Local "N") "x", (0, 1))
             , (ScopedName (Local "N") "arr", (0, 3))
+            , (ScopedName (Local "N") "l", (0, 2))
             ])
 
 
