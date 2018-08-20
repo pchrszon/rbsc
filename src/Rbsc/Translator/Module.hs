@@ -68,7 +68,7 @@ trnsModule bi as alph oas isRole typeName compName (NamedModuleBody moduleName b
         (trnsCommand isRole typeName compName . getElem)
         (bodyCommands body)
 
-    override <- genOverrideSelfLoops bi oas compName
+    override <- genOverrideSelfLoops bi oas isRole compName
     nonblocking <- if isRole
         then genNonblockingSelfLoops bi as compName alph
         else return []
@@ -81,15 +81,19 @@ genOverrideSelfLoops
     :: MonadState TranslatorState m
     => BindingInfo
     -> OverrideActions
+    -> Bool
     -> ComponentName
     -> m [Prism.Command]
-genOverrideSelfLoops bi oas =
-    traverse genCommand . toList . overrideActionsOfRoles bi oas
+genOverrideSelfLoops bi oas isRole compName = traverse
+    genCommand
+    (toList (overrideActionsOfRoles bi oas compName))
   where
     genCommand (roleName, act) = do
         act' <- trnsQualified (trnsAction act)
         let acts = [act', overrideActionIdent roleName]
-        return (selfLoops acts Prism.ActionOpen)
+            acts' =
+                if isRole then acts ++ [notPlayedActionIdent compName] else acts
+        return (selfLoops acts' Prism.ActionOpen)
 
 
 -- TODO: only generate self-loops for actions in own module alphabet
