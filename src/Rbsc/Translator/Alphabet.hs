@@ -36,7 +36,7 @@ import Rbsc.Data.Type
 import Rbsc.Report.Error
 import Rbsc.Report.Region
 
-import Rbsc.Syntax.Typed
+import Rbsc.Syntax.Typed hiding (Type (..))
 
 
 -- | The action alphabet of a component.

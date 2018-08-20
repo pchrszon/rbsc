@@ -72,6 +72,7 @@ atom = choice
     [ parens expr
     , litBool
     , litNumber
+    , litAction
     , litArray
     , ifThenElse
     , function
@@ -120,6 +121,13 @@ litNumber = do
     return $ case n of
         Left d  -> LitDouble <$> d
         Right i -> LitInt . fromInteger <$> i
+
+
+litAction :: Parser LExpr
+litAction = do
+    start <- reserved "action"
+    e <- expr
+    return (Loc (LitAction e) (start <> getLoc e))
 
 
 litArray :: Parser LExpr

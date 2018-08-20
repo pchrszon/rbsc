@@ -19,6 +19,7 @@ reservedWords =
     , "int"
     , "enum"
     , "double"
+    , "action"
     , "array"
     , "of"
     , "const"

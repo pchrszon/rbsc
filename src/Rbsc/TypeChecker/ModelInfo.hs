@@ -194,6 +194,7 @@ fromSyntaxType = \case
     U.TyBool   -> return (T.TyBool  , Some TyBool)
     U.TyInt    -> return (T.TyInt   , Some TyInt)
     U.TyDouble -> return (T.TyDouble, Some TyDouble)
+    U.TyAction -> return (T.TyAction, Some TyAction)
     U.TyComponent tySet -> do
         compTys <- use (modelInfo.componentTypes)
         tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))

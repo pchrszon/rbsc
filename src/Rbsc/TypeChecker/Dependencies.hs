@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE MultiWayIf        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
@@ -78,11 +79,11 @@ sortDefinitions idents = do
 
     getConstructName = \case
         DepDefinition def -> case def of
-            DefConstant _ -> "constant"
-            DefFunction _ -> "function"
-            DefGlobal _   -> "global variable"
-            DefLocal _ _  -> "local variable"
-            DefComponentType _ -> "type"
+            DefConstant _                            -> "constant"
+            DefFunction _                            -> "function"
+            DefGlobal _                              -> "global variable"
+            DefLocal _ _                             -> "local variable"
+            DefComponentType _                       -> "type"
             DefComponent (ComponentDef _ _ Nothing)  -> "component"
             DefComponent (ComponentDef _ _ (Just _)) -> "component array"
         DepFunctionSignature _ -> "function"
@@ -261,9 +262,9 @@ identsInSignature (Function _ args ty _) = do
 identsInType :: UType -> Analyzer (Set (Loc Name))
 identsInType ty = case ty of
     TyComponent tySet -> identsInComponentTypeSet tySet
-    TyArray r ty' -> Set.union <$> identsInRange r <*> identsInType ty'
-    TyFunc tyL tyR -> Set.union <$> identsInType tyL <*> identsInType tyR
-    _ -> return Set.empty
+    TyArray r ty'     -> Set.union <$> identsInRange r <*> identsInType ty'
+    TyFunc tyL tyR    -> Set.union <$> identsInType tyL <*> identsInType tyR
+    _                 -> return Set.empty
 
 
 identsInComponentTypeSet :: ComponentTypeSet -> Analyzer (Set (Loc Name))
@@ -296,22 +297,30 @@ identsInRange (lower, upper) =
 
 -- | @identsInExpr e@ returns a set of all unbound identifiers in @e@.
 identsInExpr :: LExpr -> Analyzer (Set (Loc Name))
-identsInExpr = go Set.empty
+identsInExpr = go False Set.empty
   where
-    go bound e = case unLoc e of
-        Identifier name
-            | name `Set.member` bound -> return Set.empty
-            | otherwise -> return (Set.singleton (name `withLocOf` e))
+    go inAction bound e = case unLoc e of
+        LitAction e' -> go True bound e'
+        Identifier name -> do
+            idents <- view identifiers
+            if  | name `Set.member` bound ->
+                    return Set.empty
+                | inAction && Map.notMember (ScopedName Global name) idents ->
+                    return Set.empty
+                | otherwise ->
+                    return (Set.singleton (name `withLocOf` e))
         HasType e' tyName ->
-            Set.insert (fmap getTypeName tyName) <$> go bound e'
+            Set.insert (fmap getTypeName tyName) <$> go inAction bound e'
         Quantified _ name qdTy e' -> do
             idents <- case qdTy of
                 QdTypeComponent tySet ->
                     identsInComponentTypeSet tySet
                 QdTypeInt (lower, upper) ->
-                    Set.union <$> go bound lower <*> go bound upper
-            Set.union idents <$> go (Set.insert name bound) e'
-        _ -> Set.unions <$> traverse (go bound) (children e)
+                    Set.union
+                        <$> go inAction bound lower
+                        <*> go inAction bound upper
+            Set.union idents <$> go inAction (Set.insert name bound) e'
+        _ -> Set.unions <$> traverse (go inAction bound) (children e)
 
 
 parameterSet :: Function expr -> Set Name

@@ -31,6 +31,7 @@ valueType = choice
     [ TyBool      <$  reserved "bool"
     , TyInt       <$  reserved "int"
     , TyDouble    <$  reserved "double"
+    , TyAction    <$  reserved "action"
     , TyComponent <$> componentTypeSet
     , TyArray     <$> (reserved "array" *> range) <*> (reserved "of" *> typ)
     , parens typ

@@ -17,6 +17,7 @@ data Type expr
     = TyBool
     | TyInt
     | TyDouble
+    | TyAction
     | TyComponent ComponentTypeSet
     | TyArray (expr, expr) (Type expr)
     | TyFunc (Type expr) (Type expr)

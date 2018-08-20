@@ -33,6 +33,7 @@ data Expr
     = LitBool !Bool
     | LitInt !Int
     | LitDouble !Double
+    | LitAction LExpr
     | LitFunction !FunctionName
     | LitArray (NonEmpty LExpr)
     | Self
@@ -76,6 +77,7 @@ instance Plated LExpr where
         LitBool b -> pure (LitBool b)
         LitInt i -> pure (LitInt i)
         LitDouble d -> pure (LitDouble d)
+        LitAction e' -> LitAction <$> f e'
         LitFunction name -> pure (LitFunction name)
         LitArray es -> LitArray <$> traverse f es
         Self -> pure Self

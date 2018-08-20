@@ -78,6 +78,11 @@ tcExpr (Loc e rgn) = case e of
     U.LitDouble d ->
         T.Literal d TyDouble `withType` TyDouble
 
+    U.LitAction inner ->
+        local (set context ActionContext) $ do
+            inner' <- inner `hasType` TyAction
+            inner' `withType` TyAction
+
     U.LitFunction f ->
         return (fromFunctionName f)
 
