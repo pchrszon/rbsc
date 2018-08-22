@@ -56,6 +56,8 @@ data Expr
     | Element LExpr LExpr
     | Count ComponentTypeSet LExpr
     | Length LExpr
+    | HasPlayer LExpr
+    | GetPlayer LExpr
     | Quantified !Quantifier !Name (QuantifiedType ComponentTypeSet LExpr) LExpr
     deriving (Show)
 
@@ -100,6 +102,8 @@ instance Plated LExpr where
         Element l r -> Element <$> f l <*> f r
         Count tyName e' -> Count tyName <$> f e'
         Length e' -> Length <$> f e'
+        HasPlayer e' -> HasPlayer <$> f e'
+        GetPlayer e' -> GetPlayer <$> f e'
         Quantified q varName var e' ->
             Quantified q varName <$> traverse f var <*> f e'
 

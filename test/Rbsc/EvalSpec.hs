@@ -97,6 +97,16 @@ spec = do
             `shouldBe`
             Right 3
 
+        it "evaluates the has_player function" $
+            eval' TyBool [expr| has_player(r) |]
+            `shouldBe`
+            Right True
+
+        it "evaluates the get_player function" $
+            eval' TyBool [expr| get_player(r) = n |]
+            `shouldBe`
+            Right True
+
         it "does short-circuit evaluation" $
             eval' TyInt [expr| if true | (1 / 0 > 0) then 1 else f(1) |]
             `shouldBe`

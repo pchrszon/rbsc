@@ -78,6 +78,8 @@ atom = choice
     , function
     , countFunction
     , lengthFunction
+    , getPlayerFunction
+    , hasPlayerFunction
     , self
     , player
     , arrayIndex
@@ -176,6 +178,14 @@ countFunction =
 lengthFunction :: Parser LExpr
 lengthFunction =
     specialFunction "length" (Length <$> expr)
+
+
+hasPlayerFunction :: Parser LExpr
+hasPlayerFunction = specialFunction "has_player" (HasPlayer <$> expr)
+
+
+getPlayerFunction :: Parser LExpr
+getPlayerFunction = specialFunction "get_player" (GetPlayer <$> expr)
 
 
 specialFunction :: Text -> Parser Expr -> Parser LExpr

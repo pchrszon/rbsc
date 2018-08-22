@@ -104,6 +104,8 @@ data Expr t where
     Element     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound       :: Int -> Type t -> Expr t
     Count       :: Set TypeName -> Expr Component -> Expr Int
+    HasPlayer   :: Expr Component -> Expr Bool
+    GetPlayer   :: Loc (Expr Component) -> Expr Component
     Lambda      :: Type a -> Scoped b -> Expr (Fn (a -> b))
     Quantified  :: Quantifier t -> TQuantifiedType -> Scoped t -> Expr t
 
@@ -272,6 +274,8 @@ plateExpr f = \case
     Element l r        -> Element <$> traverse f l <*> traverse f r
     Bound i ty         -> pure (Bound i ty)
     Count tySet e      -> Count tySet <$> f e
+    HasPlayer e        -> HasPlayer <$> f e
+    GetPlayer e        -> GetPlayer <$> traverse f e
     Lambda ty (Scoped body) -> Lambda ty . Scoped <$> f body
     Quantified q qdTy@(QdTypeComponent _) (Scoped body) ->
         Quantified q qdTy . Scoped <$> f body

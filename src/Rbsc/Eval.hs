@@ -286,6 +286,29 @@ toLiteral e = case e of
         comps <- componentConsts tySet <$> view riConstants
         return (Literal (genericLength (filter (isElement comp) comps)) TyInt)
 
+    HasPlayer (Literal comp _) ->
+        return (Literal (has (compBoundTo._Just) comp) TyBool)
+
+    GetPlayer (Loc (Literal comp _) rgn) ->
+        case view compBoundTo comp of
+            Just (ComponentName name (Just idx)) ->
+                view (riConstants.at name) >>= \case
+                    Just (SomeExpr (Literal arr _) (TyArray _ ty'@(TyComponent _))) ->
+                        case Array.index arr idx of
+                            Just comp' -> return (Literal comp' ty')
+                            Nothing ->
+                                error "toLiteral: component index out of bounds"
+                    _ -> error $
+                        "toLiteral: " ++ show name ++ " not in constant table"
+            Just (ComponentName name Nothing) ->
+                view (riConstants.at name) >>= \case
+                    Just (SomeExpr (Literal comp' _) ty'@(TyComponent _)) ->
+                        return (Literal comp' ty')
+                    _ -> error $
+                        "toLiteral: " ++ show name ++ " not in constant table"
+            Nothing ->
+                throw rgn (HasNoPlayer (componentName (view compName comp)))
+
     _ -> return e
 
 

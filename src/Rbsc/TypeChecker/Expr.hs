@@ -240,6 +240,24 @@ tcExpr (Loc e rgn) = case e of
                 T.Literal (arrayLength bounds) TyInt `withType` TyInt
             _ -> throw (getLoc inner) (NotAnArray (renderPretty ty))
 
+    U.HasPlayer inner -> do
+        tyComponent <- getTyComponent
+        inner' <- inner `hasType` tyComponent
+        T.HasPlayer inner' `withType` TyBool
+
+    U.GetPlayer inner -> do
+        tyComponent <- getTyComponent
+        compTys <- view componentTypes
+        (inner', ty) <- inner `hasType'` tyComponent
+        let tySet' = case ty of
+                TyComponent tySet ->
+                    Set.unions . flip fmap (toList tySet) $ \tyName ->
+                        case Map.lookup tyName compTys of
+                            Just (RoleType playerTyNames) -> playerTyNames
+                            _ -> Set.empty
+        when (Set.null tySet') (throw rgn NoPossiblePlayers)
+        T.GetPlayer (inner' `withLocOf` inner) `withType` TyComponent tySet'
+
     U.Quantified q var qdTy body -> do
         (qdTy', varTy) <- tcQuantifiedType qdTy
         Some q' <- return (typedQuantifier q)

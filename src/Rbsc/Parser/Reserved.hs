@@ -61,6 +61,8 @@ reservedWords =
     , "log"
     , "count"
     , "length"
+    , "has_player"
+    , "get_player"
     , "override"
     ]
 

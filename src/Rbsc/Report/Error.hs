@@ -67,6 +67,7 @@ data LocErrorDesc
     | WrongNumberOfArguments !Int !Int
     | NotARole
     | CannotBePlayed !Text !TypeName
+    | NoPossiblePlayers
     | NotACompartment
     | InvalidBinding !TypeName !TypeName
     | RoleAlreadyBound !Region
@@ -81,6 +82,7 @@ data LocErrorDesc
     | InvalidUpperBound !Int
     | IndexOutOfBounds (Int, Int) !Int
     | ExceededDepth
+    | HasNoPlayer !Name
 
     -- translation errors
     | TranslationNotSupported !Text
@@ -247,6 +249,12 @@ locReport rgn = \case
                 "\nbut " <> Text.pack (show tyName) <> " is not a role type"
             ]
 
+    NoPossiblePlayers ->
+        errorReport "no possible players"
+            [ errorPart rgn . Just $
+                "this component cannot play a role"
+            ]
+
     NotACompartment ->
         errorReport "component is not a compartment"
             [ errorPart rgn (Just "only compartments can contain roles")
@@ -325,6 +333,12 @@ locReport rgn = \case
         errorReport "exceeded maximum recursion depth"
             [ errorPart rgn . Just $
                 "exceeded recursion depth evaluating this expression"
+            ]
+
+    HasNoPlayer name ->
+        errorReport "component has no player"
+            [ errorPart rgn . Just $
+                "the component " <> name <> " does not have a player"
             ]
 
 
