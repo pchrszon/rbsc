@@ -94,11 +94,6 @@ tcExpr (Loc e rgn) = case e of
             Global       -> throw rgn SelfOutsideImpl
             Local tyName -> T.Self `withType` TyComponent (Set.singleton tyName)
 
-    U.ArrayIndex ->
-        view scope >>= \case
-            Global  -> throw rgn IndexOutsideImpl
-            Local _ -> T.ArrayIndex rgn `withType` TyInt
-
     U.Identifier name ->
         lookupBoundVar name >>= \case
             Just (i, Some ty) ->
@@ -249,6 +244,11 @@ tcExpr (Loc e rgn) = case e of
                             _ -> Set.empty
         when (Set.null tySet') (throw rgn NoPossiblePlayers)
         T.Player (inner' `withLocOf` inner) `withType` TyComponent tySet'
+
+    U.ComponentIndex inner -> do
+        tyComponent <- getTyComponent
+        inner' <- inner `hasType` tyComponent
+        T.ComponentIndex (inner' `withLocOf` inner) `withType` TyInt
 
     U.Quantified q var qdTy body -> do
         (qdTy', varTy) <- tcQuantifiedType qdTy

@@ -37,7 +37,6 @@ data Expr
     | LitFunction !FunctionName
     | LitArray (NonEmpty LExpr)
     | Self
-    | ArrayIndex
     | Identifier !Name
     | Not LExpr
     | Negate LExpr
@@ -57,6 +56,7 @@ data Expr
     | Length LExpr
     | HasPlayer LExpr
     | Player LExpr
+    | ComponentIndex LExpr
     | Quantified !Quantifier !Name (QuantifiedType ComponentTypeSet LExpr) LExpr
     deriving (Show)
 
@@ -82,7 +82,6 @@ instance Plated LExpr where
         LitFunction name -> pure (LitFunction name)
         LitArray es -> LitArray <$> traverse f es
         Self -> pure Self
-        ArrayIndex -> pure ArrayIndex
         Identifier name -> pure (Identifier name)
         Not e' -> Not <$> f e'
         Negate e' -> Negate <$> f e'
@@ -102,6 +101,7 @@ instance Plated LExpr where
         Length e' -> Length <$> f e'
         HasPlayer e' -> HasPlayer <$> f e'
         Player e' -> Player <$> f e'
+        ComponentIndex e' -> ComponentIndex <$> f e'
         Quantified q varName var e' ->
             Quantified q varName <$> traverse f var <*> f e'
 

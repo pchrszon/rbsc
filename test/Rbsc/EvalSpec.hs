@@ -107,6 +107,22 @@ spec = do
             `shouldBe`
             Right True
 
+        it "throws an error when calling player on a non-role" $
+            eval' TyBool
+                [expr| forall c. player(c) = n |]
+            `shouldThrowError`
+            _HasNoPlayer
+
+        it "evaluates the index function" $
+            eval' TyInt [expr| index(n_arr[1]) |]
+            `shouldBe`
+            Right 1
+
+        it "throws an error when calling index on a non-indexed component" $
+            eval' TyInt [expr| index(n) |]
+            `shouldThrowError`
+            _NonIndexedComponent
+
         it "does short-circuit evaluation" $
             eval' TyInt [expr| if true | (1 / 0 > 0) then 1 else f(1) |]
             `shouldBe`
@@ -186,6 +202,7 @@ testModel =
 
         system {
             n : N;
+            n_arr[2] : N;
             r : R;
             c : C;
             r boundto n;

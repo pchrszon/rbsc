@@ -59,7 +59,6 @@ data LocErrorDesc
     | UndefinedMember [TypeName] !Name
     | ConflictingMemberTypes !Name !TypeName !Text !TypeName !Text
     | SelfOutsideImpl
-    | IndexOutsideImpl
     | NotAnArray !Text
     | NotAFunction !Text
     | WrongNumberOfArguments !Int !Int
@@ -81,10 +80,10 @@ data LocErrorDesc
     | IndexOutOfBounds (Int, Int) !Int
     | ExceededDepth
     | HasNoPlayer !Name
+    | NonIndexedComponent !Name
 
     -- translation errors
     | TranslationNotSupported !Text
-    | NonIndexedComponent !Name
     deriving (Eq, Show)
 
 
@@ -191,12 +190,6 @@ locReport rgn = \case
         errorReport "self is undefined in this context"
             [ errorPart rgn . Just $
                 "the self keyword can only be used in impl or module blocks"
-            ]
-
-    IndexOutsideImpl ->
-        errorReport "index is undefined in this context"
-            [ errorPart rgn . Just $
-                "the index keyword can only be used inside impl or module blocks"
             ]
 
     NotAnArray actual ->
@@ -325,17 +318,17 @@ locReport rgn = \case
                 "the component " <> name <> " does not have a player"
             ]
 
+    NonIndexedComponent name ->
+        errorReport "component is not an array element"
+            [ errorPart rgn . Just $
+                "component " <> name <> " does not have an index"
+            ]
+
 
     TranslationNotSupported node ->
         errorReport "translation not supported"
             [ errorPart rgn . Just $
                 "could not translate " <> node
-            ]
-
-    NonIndexedComponent name ->
-        errorReport "component is not an array element"
-            [ errorPart rgn . Just $
-                "component " <> name <> " does not have an index"
             ]
 
 

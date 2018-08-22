@@ -80,8 +80,8 @@ atom = choice
     , lengthFunction
     , hasPlayerFunction
     , playerFunction
+    , indexFunction
     , self
-    , arrayIndex
     , ident
     ]
 
@@ -187,6 +187,10 @@ playerFunction :: Parser LExpr
 playerFunction = specialFunction "player" (Player <$> expr)
 
 
+indexFunction :: Parser LExpr
+indexFunction = specialFunction "index" (ComponentIndex <$> expr)
+
+
 specialFunction :: Text -> Parser Expr -> Parser LExpr
 specialFunction name p = do
     start <- reserved name
@@ -198,10 +202,6 @@ specialFunction name p = do
 
 self :: Parser LExpr
 self = Loc Self <$> reserved "self"
-
-
-arrayIndex :: Parser LExpr
-arrayIndex = Loc ArrayIndex <$> reserved "index"
 
 
 ident :: Parser LExpr

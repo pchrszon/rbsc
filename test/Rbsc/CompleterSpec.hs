@@ -29,7 +29,7 @@ import Rbsc.Util
 
 
 spec :: Spec
-spec = describe "completeSystem" $ do
+spec = describe "completeSystem" $ parallel $ do
     prop "binds all roles" $ \(Model info sys) ->
         allOf
             (traverse._Right)

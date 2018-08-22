@@ -78,35 +78,35 @@ instance HasExprs (Loc SomeExpr) where
 
 -- | Typed abstract syntax of expressions.
 data Expr t where
-    Literal     :: Show t => t -> Type t -> Expr t
-    LitArray    :: Show t => NonEmpty (Expr t) -> Expr (Array t)
-    LitFunction :: TypedFunction t -> Expr (Fn t)
-    Self        :: Expr Component
-    ArrayIndex  :: Region -> Expr Int
-    Identifier  :: Name -> Type t -> Expr t
-    Cast        :: Expr Int -> Expr Double
-    ActionArray :: Expr Action -> Expr (Array Action)
-    IsPlayed    :: Expr Component -> Expr Bool
-    Not         :: Expr Bool -> Expr Bool
-    Negate      :: Num t => Expr t -> Expr t
-    ArithOp     :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
-    Divide      :: Region -> Expr Double -> Expr Double -> Expr Double
-    EqOp        :: Eq t => EqOp -> Type t -> Expr t -> Expr t -> Expr Bool
-    RelOp       :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool
-    LogicOp     :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
-    Member      :: Expr Component -> Name -> Type t -> Expr t
-    Index       :: Show t => Expr (Array t) -> Loc (Expr Int) -> Expr t
-    Apply       :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
-    IfThenElse  :: Expr Bool -> Expr t -> Expr t -> Expr t
-    HasType     :: Expr Component -> TypeName -> Expr Bool
-    BoundTo     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
-    Element     :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
-    Bound       :: Int -> Type t -> Expr t
-    Count       :: Set TypeName -> Expr Component -> Expr Int
-    HasPlayer   :: Expr Component -> Expr Bool
-    Player      :: Loc (Expr Component) -> Expr Component
-    Lambda      :: Type a -> Scoped b -> Expr (Fn (a -> b))
-    Quantified  :: Quantifier t -> TQuantifiedType -> Scoped t -> Expr t
+    Literal        :: Show t => t -> Type t -> Expr t
+    LitArray       :: Show t => NonEmpty (Expr t) -> Expr (Array t)
+    LitFunction    :: TypedFunction t -> Expr (Fn t)
+    Self           :: Expr Component
+    Identifier     :: Name -> Type t -> Expr t
+    Cast           :: Expr Int -> Expr Double
+    ActionArray    :: Expr Action -> Expr (Array Action)
+    IsPlayed       :: Expr Component -> Expr Bool
+    Not            :: Expr Bool -> Expr Bool
+    Negate         :: Num t => Expr t -> Expr t
+    ArithOp        :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
+    Divide         :: Region -> Expr Double -> Expr Double -> Expr Double
+    EqOp           :: Eq t => EqOp -> Type t -> Expr t -> Expr t -> Expr Bool
+    RelOp          :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool
+    LogicOp        :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
+    Member         :: Expr Component -> Name -> Type t -> Expr t
+    Index          :: Show t => Expr (Array t) -> Loc (Expr Int) -> Expr t
+    Apply          :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
+    IfThenElse     :: Expr Bool -> Expr t -> Expr t -> Expr t
+    HasType        :: Expr Component -> TypeName -> Expr Bool
+    BoundTo        :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
+    Element        :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
+    Bound          :: Int -> Type t -> Expr t
+    Count          :: Set TypeName -> Expr Component -> Expr Int
+    HasPlayer      :: Expr Component -> Expr Bool
+    Player         :: Loc (Expr Component) -> Expr Component
+    ComponentIndex :: Loc (Expr Component) -> Expr Int
+    Lambda         :: Type a -> Scoped b -> Expr (Fn (a -> b))
+    Quantified     :: Quantifier t -> TQuantifiedType -> Scoped t -> Expr t
 
 deriving instance Show (Expr t)
 
@@ -251,7 +251,6 @@ plateExpr f = \case
     LitArray es        -> LitArray <$> traverse f es
     LitFunction g      -> pure (LitFunction g)
     Self               -> pure Self
-    ArrayIndex rgn     -> pure (ArrayIndex rgn)
     Identifier name ty -> pure (Identifier name ty)
     Cast e             -> Cast <$> f e
     ActionArray e      -> ActionArray <$> f e
@@ -274,6 +273,7 @@ plateExpr f = \case
     Count tySet e      -> Count tySet <$> f e
     HasPlayer e        -> HasPlayer <$> f e
     Player e           -> Player <$> traverse f e
+    ComponentIndex e   -> ComponentIndex <$> traverse f e
     Lambda ty (Scoped body) -> Lambda ty . Scoped <$> f body
     Quantified q qdTy@(QdTypeComponent _) (Scoped body) ->
         Quantified q qdTy . Scoped <$> f body

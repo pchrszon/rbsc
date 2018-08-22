@@ -99,7 +99,7 @@ instantiateModuleBody ::
     -> TNamedModuleBody ElemMulti
     -> m (TNamedModuleBody Elem)
 instantiateModuleBody comp (NamedModuleBody name body) = do
-    body' <- substituteKeywords comp body
+    body' <- substituteSelf comp body
     NamedModuleBody name <$> unrollModuleBody body'
 
 
@@ -166,13 +166,13 @@ unrollElemMulti = \case
         unrollElemMultis bodies'
 
 
--- | Replace the 'Self' and 'Player' keywords with concrete instances.
-substituteKeywords
+-- | Replace the 'Self' keyword with a concrete instance.
+substituteSelf
     :: MonadError Error m
     => Component
     -> TModuleBody ElemMulti
     -> m (TModuleBody ElemMulti)
-substituteKeywords comp ModuleBody{..} = do
+substituteSelf comp ModuleBody{..} = do
     vars <- (traverse._2._Just) (transformExprsM subst) bodyVars
     cmds <- traverse (transformExprsM subst) bodyCommands
     return (ModuleBody vars cmds)
@@ -181,9 +181,5 @@ substituteKeywords comp ModuleBody{..} = do
     subst e = case e of
         Self -> return (Literal comp
             (TyComponent (Set.singleton (view compTypeName comp))))
-
-        ArrayIndex rgn -> case view compName comp of
-            ComponentName _ (Just idx) -> return (Literal idx TyInt)
-            ComponentName name _ -> throw rgn (NonIndexedComponent name)
 
         _ -> return e

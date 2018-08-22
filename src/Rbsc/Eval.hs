@@ -309,6 +309,12 @@ toLiteral e = case e of
             Nothing ->
                 throw rgn (HasNoPlayer (componentName (view compName comp)))
 
+    ComponentIndex (Loc (Literal comp _) rgn) ->
+        case view compName comp of
+            ComponentName _ (Just idx) -> return (Literal idx TyInt)
+            ComponentName name Nothing ->
+                throw rgn (NonIndexedComponent name)
+
     _ -> return e
 
 
