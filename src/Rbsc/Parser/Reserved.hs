@@ -62,7 +62,7 @@ reservedWords =
     , "count"
     , "length"
     , "has_player"
-    , "get_player"
+    , "player"
     , "override"
     ]
 

@@ -17,7 +17,6 @@ import Rbsc.Config
 import Rbsc.Data.Component
 import Rbsc.Data.Info
 import Rbsc.Data.ModelInfo
-import Rbsc.Data.System
 
 import Rbsc.Instantiation
 
@@ -81,19 +80,18 @@ testModuleBody =
             toEither . flip runReaderT (Info (view _2 typedTestModel) 10) $
                 instantiateComponent
                     (view _1 typedTestModel)
-                    (view _3 typedTestModel)
                     testComponent
     in r
 
 
-typedTestModel :: (T.Model, ModelInfo, System)
+typedTestModel :: (T.Model, ModelInfo)
 typedTestModel =
-    let Right (model', [(sys, info')]) =
+    let Right (model', [(_, info')]) =
             toEither . flip runReaderT (10 :: RecursionDepth) $ do
                 (m', info) <- typeCheck testModel
                 insts <- generateInstances m' info
                 return (m', insts)
-    in (model', info', sys)
+    in (model', info')
 
 
 getIndexRanges' ::

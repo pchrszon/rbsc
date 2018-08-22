@@ -78,10 +78,9 @@ atom = choice
     , function
     , countFunction
     , lengthFunction
-    , getPlayerFunction
     , hasPlayerFunction
+    , playerFunction
     , self
-    , player
     , arrayIndex
     , ident
     ]
@@ -184,8 +183,8 @@ hasPlayerFunction :: Parser LExpr
 hasPlayerFunction = specialFunction "has_player" (HasPlayer <$> expr)
 
 
-getPlayerFunction :: Parser LExpr
-getPlayerFunction = specialFunction "get_player" (GetPlayer <$> expr)
+playerFunction :: Parser LExpr
+playerFunction = specialFunction "player" (Player <$> expr)
 
 
 specialFunction :: Text -> Parser Expr -> Parser LExpr
@@ -199,10 +198,6 @@ specialFunction name p = do
 
 self :: Parser LExpr
 self = Loc Self <$> reserved "self"
-
-
-player :: Parser LExpr
-player = Loc Player <$> reserved "player"
 
 
 arrayIndex :: Parser LExpr

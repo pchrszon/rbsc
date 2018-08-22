@@ -50,7 +50,7 @@ instantiateComponents m sys =
     fmap Map.fromList (traverse inst (toComponents sys))
   where
     inst comp = do
-        bodies <- instantiateComponent m sys comp
+        bodies <- instantiateComponent m comp
         bodies' <- for bodies $ \(NamedModuleBody name body) -> do
             body' <-
                 reduceModuleBody =<< removeVariableIndicesInModule comp body
@@ -85,23 +85,21 @@ reduceCoordinator Coordinator {..} = do
 instantiateComponent
     :: MonadEval r m
     => Model
-    -> System
     -> Component
     -> m [TNamedModuleBody Elem]
-instantiateComponent m sys comp =
-    traverse (instantiateModuleBody sys comp) bodies
+instantiateComponent m comp =
+    traverse (instantiateModuleBody comp) bodies
   where
     bodies = fromMaybe [] (Map.lookup (view compTypeName comp) (modelImpls m))
 
 
 instantiateModuleBody ::
        MonadEval r m
-    => System
-    -> Component
+    => Component
     -> TNamedModuleBody ElemMulti
     -> m (TNamedModuleBody Elem)
-instantiateModuleBody sys comp (NamedModuleBody name body) = do
-    body' <- substituteKeywords sys comp body
+instantiateModuleBody comp (NamedModuleBody name body) = do
+    body' <- substituteKeywords comp body
     NamedModuleBody name <$> unrollModuleBody body'
 
 
@@ -171,11 +169,10 @@ unrollElemMulti = \case
 -- | Replace the 'Self' and 'Player' keywords with concrete instances.
 substituteKeywords
     :: MonadError Error m
-    => System
-    -> Component
+    => Component
     -> TModuleBody ElemMulti
     -> m (TModuleBody ElemMulti)
-substituteKeywords sys comp ModuleBody {..} = do
+substituteKeywords comp ModuleBody{..} = do
     vars <- (traverse._2._Just) (transformExprsM subst) bodyVars
     cmds <- traverse (transformExprsM subst) bodyCommands
     return (ModuleBody vars cmds)
@@ -185,26 +182,8 @@ substituteKeywords sys comp ModuleBody {..} = do
         Self -> return (Literal comp
             (TyComponent (Set.singleton (view compTypeName comp))))
 
-        Player rgn -> case view compBoundTo comp of
-            Just playerName -> do
-                let playerComp = toComponent playerName
-                    ty = TyComponent (Set.singleton (_compTypeName playerComp))
-                return (Literal playerComp ty)
-            Nothing ->
-                throw rgn (UndefinedPlayer (componentName (view compName comp)))
-
         ArrayIndex rgn -> case view compName comp of
             ComponentName _ (Just idx) -> return (Literal idx TyInt)
             ComponentName name _ -> throw rgn (NonIndexedComponent name)
 
         _ -> return e
-
-    toComponent name = case view (instances.at name) sys of
-        Just tyName -> Component
-            { _compName        = name
-            , _compTypeName    = tyName
-            , _compBoundTo     = view (boundTo.at name) sys
-            , _compContainedIn = view (containedIn.at name) sys
-            }
-        Nothing -> error $
-            "substituteKeywords: undefined component " ++ show name

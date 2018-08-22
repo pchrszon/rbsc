@@ -82,7 +82,6 @@ data Expr t where
     LitArray    :: Show t => NonEmpty (Expr t) -> Expr (Array t)
     LitFunction :: TypedFunction t -> Expr (Fn t)
     Self        :: Expr Component
-    Player      :: Region -> Expr Component
     ArrayIndex  :: Region -> Expr Int
     Identifier  :: Name -> Type t -> Expr t
     Cast        :: Expr Int -> Expr Double
@@ -105,7 +104,7 @@ data Expr t where
     Bound       :: Int -> Type t -> Expr t
     Count       :: Set TypeName -> Expr Component -> Expr Int
     HasPlayer   :: Expr Component -> Expr Bool
-    GetPlayer   :: Loc (Expr Component) -> Expr Component
+    Player      :: Loc (Expr Component) -> Expr Component
     Lambda      :: Type a -> Scoped b -> Expr (Fn (a -> b))
     Quantified  :: Quantifier t -> TQuantifiedType -> Scoped t -> Expr t
 
@@ -252,7 +251,6 @@ plateExpr f = \case
     LitArray es        -> LitArray <$> traverse f es
     LitFunction g      -> pure (LitFunction g)
     Self               -> pure Self
-    Player rgn         -> pure (Player rgn)
     ArrayIndex rgn     -> pure (ArrayIndex rgn)
     Identifier name ty -> pure (Identifier name ty)
     Cast e             -> Cast <$> f e
@@ -275,7 +273,7 @@ plateExpr f = \case
     Bound i ty         -> pure (Bound i ty)
     Count tySet e      -> Count tySet <$> f e
     HasPlayer e        -> HasPlayer <$> f e
-    GetPlayer e        -> GetPlayer <$> traverse f e
+    Player e           -> Player <$> traverse f e
     Lambda ty (Scoped body) -> Lambda ty . Scoped <$> f body
     Quantified q qdTy@(QdTypeComponent _) (Scoped body) ->
         Quantified q qdTy . Scoped <$> f body

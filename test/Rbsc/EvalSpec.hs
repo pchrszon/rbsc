@@ -102,8 +102,8 @@ spec = do
             `shouldBe`
             Right True
 
-        it "evaluates the get_player function" $
-            eval' TyBool [expr| get_player(r) = n |]
+        it "evaluates the player function" $
+            eval' TyBool [expr| player(r) = n |]
             `shouldBe`
             Right True
 

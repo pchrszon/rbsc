@@ -94,14 +94,6 @@ tcExpr (Loc e rgn) = case e of
             Global       -> throw rgn SelfOutsideImpl
             Local tyName -> T.Self `withType` TyComponent (Set.singleton tyName)
 
-    U.Player ->
-        view scope >>= \case
-            Global -> throw rgn PlayerOutsideImpl
-            Local tyName -> view (componentTypes.at tyName) >>= \case
-                Just (RoleType tySet) ->
-                    T.Player rgn `withType` TyComponent tySet
-                _ -> throw rgn PlayerOutsideRole
-
     U.ArrayIndex ->
         view scope >>= \case
             Global  -> throw rgn IndexOutsideImpl
@@ -245,7 +237,7 @@ tcExpr (Loc e rgn) = case e of
         inner' <- inner `hasType` tyComponent
         T.HasPlayer inner' `withType` TyBool
 
-    U.GetPlayer inner -> do
+    U.Player inner -> do
         tyComponent <- getTyComponent
         compTys <- view componentTypes
         (inner', ty) <- inner `hasType'` tyComponent
@@ -256,7 +248,7 @@ tcExpr (Loc e rgn) = case e of
                             Just (RoleType playerTyNames) -> playerTyNames
                             _ -> Set.empty
         when (Set.null tySet') (throw rgn NoPossiblePlayers)
-        T.GetPlayer (inner' `withLocOf` inner) `withType` TyComponent tySet'
+        T.Player (inner' `withLocOf` inner) `withType` TyComponent tySet'
 
     U.Quantified q var qdTy body -> do
         (qdTy', varTy) <- tcQuantifiedType qdTy

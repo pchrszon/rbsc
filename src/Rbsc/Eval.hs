@@ -289,7 +289,7 @@ toLiteral e = case e of
     HasPlayer (Literal comp _) ->
         return (Literal (has (compBoundTo._Just) comp) TyBool)
 
-    GetPlayer (Loc (Literal comp _) rgn) ->
+    Player (Loc (Literal comp _) rgn) ->
         case view compBoundTo comp of
             Just (ComponentName name (Just idx)) ->
                 view (riConstants.at name) >>= \case
