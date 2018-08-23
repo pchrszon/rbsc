@@ -34,16 +34,19 @@ import Rbsc.TypeChecker.Internal
 import Rbsc.TypeChecker.ModelInfo
 
 
-typeCheck ::
-       (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
+typeCheck
+    :: (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
     => U.Model
     -> t Result (T.Model, ModelInfo)
 typeCheck model = do
     (info, consts') <- getModelInfo model
     let compTys  = view MI.componentTypes info
         symTable = view MI.symbolTable info
+        consts   = view MI.constants info
+    depth  <- view recursionDepth
 
-    model' <- lift (runTypeChecker (tcModel model consts') compTys symTable)
+    model' <- lift
+        (runTypeChecker (tcModel model consts') compTys symTable consts depth)
     return (model', info)
 
 

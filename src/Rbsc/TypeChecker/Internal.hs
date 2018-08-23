@@ -45,10 +45,12 @@ import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
 
-import           Data.List                 (find)
-import qualified Data.Map.Strict           as Map
-import           Data.Text                 (Text)
+import           Data.List       (find)
+import qualified Data.Map.Strict as Map
+import           Data.Text       (Text)
 
+
+import Rbsc.Config
 
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name
@@ -60,7 +62,7 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed.Expr (SomeExpr (..))
+import           Rbsc.Syntax.Typed.Expr (Constants, HasConstants, SomeExpr (..))
 import qualified Rbsc.Syntax.Typed.Expr as T
 
 import Rbsc.Util (renderPretty)
@@ -81,6 +83,8 @@ data TcContext
 data TcInfo = TcInfo
     { _tciComponentTypes :: !ComponentTypes     -- ^ 'ComponentType' defined in the model
     , _tciSymbolTable    :: !SymbolTable        -- ^ the 'SymbolTable'
+    , _tciConstants      :: !Constants          -- ^ the defined constants
+    , _tciRecursionDepth :: !RecursionDepth     -- ^ the maximum recursion depth
     , _boundVars         :: [(Name, Some Type)] -- ^ list of variables bound by a quantifier or lambda
     , _scope             :: !Scope              -- ^ the current scope
     , _context           :: !TcContext          -- ^ the current type checking context
@@ -94,11 +98,23 @@ instance HasComponentTypes TcInfo where
 instance HasSymbolTable TcInfo where
     symbolTable = tciSymbolTable
 
+instance HasConstants TcInfo where
+    constants = tciConstants
+
+instance HasRecursionDepth TcInfo where
+    recursionDepth = tciRecursionDepth
+
 
 -- | Run a type checker action.
-runTypeChecker :: TypeChecker a -> ComponentTypes -> SymbolTable -> Result a
-runTypeChecker m types symTable =
-    runReaderT m (TcInfo types symTable [] Global NoContext)
+runTypeChecker
+    :: TypeChecker a
+    -> ComponentTypes
+    -> SymbolTable
+    -> Constants
+    -> RecursionDepth
+    -> Result a
+runTypeChecker m types symTable consts depth =
+    runReaderT m (TcInfo types symTable consts depth [] Global NoContext)
 
 
 -- | Looks up the type of a given identifier in the symbol table. First,
@@ -117,7 +133,7 @@ getIdentifierType name rgn = do
     -- actions.
     let varTyAction = case ctx of
             ActionContext -> Just (Some TyAction)
-            _ -> Nothing
+            _             -> Nothing
 
     case varTyLocal <|> varTyGlobal <|> varTyAction of
         Just ty -> return ty

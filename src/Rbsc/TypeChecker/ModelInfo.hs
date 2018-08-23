@@ -262,7 +262,9 @@ runTypeChecker :: TC.TypeChecker a -> Builder a
 runTypeChecker m = do
     compTys  <- use (modelInfo.componentTypes)
     symTable <- use (modelInfo.symbolTable)
-    lift (TC.runTypeChecker m compTys symTable)
+    consts   <- use (modelInfo.constants)
+    depth    <- use recursionDepth
+    lift (TC.runTypeChecker m compTys symTable consts depth)
 
 
 insertSymbol :: Scope -> Name -> Some Type -> Builder ()

@@ -150,6 +150,11 @@ reduceInternal cs depth (Loc e rgn) =
         -- top-down.
         Lambda _ _ -> return e'
 
+        GenArray gen l u -> do
+            -- Non-emptiness of [l .. u] is checked in 'tcExpr'.
+            let es = NonEmpty.fromList (fmap toIntExpr [l .. u])
+            go (LitArray (fmap (instantiate (Scoped gen)) es))
+
         Quantified q (QdTypeComponent tySet) sc -> do
             comps <- componentConsts tySet <$> view riConstants
             go (quantifier q (fmap (instantiate sc) comps))
@@ -159,9 +164,7 @@ reduceInternal cs depth (Loc e rgn) =
             upper' <- go upper
             case (lower', upper') of
                 (Literal l _, Literal u _) -> do
-                    let es = fmap
-                                (\i -> SomeExpr (Literal i TyInt) TyInt)
-                                [l .. u]
+                    let es = fmap toIntExpr [l .. u]
                     go (quantifier q (fmap (instantiate sc) es))
                 _ -> return (Quantified q
                         (QdTypeInt (Loc lower' rgnL, Loc upper' rgnU)) sc)
@@ -376,3 +379,7 @@ isElement comp = \case
     SomeExpr (Literal role _) (TyComponent _) ->
         view compContainedIn role == Just (view compName comp)
     _ -> False
+
+
+toIntExpr :: Int -> SomeExpr
+toIntExpr i = SomeExpr (Literal i TyInt) TyInt

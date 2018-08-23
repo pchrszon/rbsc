@@ -116,6 +116,8 @@ typeCheck ty e = toEither $ do
             (tcExpr e)
             (view componentTypes modelInfo)
             (view symbolTable modelInfo)
+            (view constants modelInfo)
+            10
     show <$> extract ty (getLoc e) te
 
 

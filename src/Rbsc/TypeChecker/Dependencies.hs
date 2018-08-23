@@ -301,6 +301,11 @@ identsInExpr = go False Set.empty
   where
     go inAction bound e = case unLoc e of
         LitAction e' -> go True bound e'
+        GenArray e' name lower upper -> do
+            idents <- go inAction (Set.insert name bound) e'
+            identsLower <- go inAction bound lower
+            identsUpper <- go inAction bound upper
+            return (Set.unions [idents, identsLower, identsUpper])
         Identifier name -> do
             idents <- view identifiers
             if  | name `Set.member` bound ->

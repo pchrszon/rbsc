@@ -72,6 +72,7 @@ data LocErrorDesc
     | InvalidCardinalities !Int !Int
     | InvalidOverrideAction
     | IncompatibleRoles !Name !Region !Name !Name !Text
+    | EmptyGenArray !Int !Int
 
     -- evaluation errors
     | DivisionByZero
@@ -279,6 +280,14 @@ locReport rgn = \case
                 core <> " are incompatible")
             [ errorPart rgn . Just $ "the overriding action " <> act <> " ..."
             , errorPart secondRgn (Just "... is also used here")
+            ]
+
+    EmptyGenArray l u ->
+        errorReport "empty array"
+            [ errorPart rgn . Just $
+                "this array is empty" <>
+                "\nits bounds are [" <> pack (show l) <> ".." <>
+                pack (show u) <> "]"
             ]
 
 

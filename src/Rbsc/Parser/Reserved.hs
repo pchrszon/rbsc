@@ -72,4 +72,4 @@ reservedWords =
 -- This list is necessary to check whether a parsed operator is not
 -- a prefix of another legal operator.
 opLetter :: String
-opLetter = "=>."
+opLetter = "=>.|"

@@ -36,6 +36,7 @@ data Expr
     | LitAction LExpr
     | LitFunction !FunctionName
     | LitArray (NonEmpty LExpr)
+    | GenArray LExpr !Name LExpr LExpr
     | Self
     | Identifier !Name
     | Not LExpr
@@ -81,6 +82,7 @@ instance Plated LExpr where
         LitAction e' -> LitAction <$> f e'
         LitFunction name -> pure (LitFunction name)
         LitArray es -> LitArray <$> traverse f es
+        GenArray e' var l u -> GenArray <$> f e' <*> pure var <*> f l <*> f u
         Self -> pure Self
         Identifier name -> pure (Identifier name)
         Not e' -> Not <$> f e'

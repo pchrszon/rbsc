@@ -223,35 +223,45 @@ testModelInfo =
 eval' :: Type t -> Loc U.Expr -> Either [Error] t
 eval' ty e = do
     e' <- toEither
-            (runTypeChecker
-                 (tcExpr e)
-                 (view componentTypes testModelInfo)
-                 (view symbolTable testModelInfo) >>=
-             extract ty (getLoc e))
-    over _Left (: [])
-        (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
+        (   runTypeChecker (tcExpr e)
+                           (view componentTypes testModelInfo)
+                           (view symbolTable testModelInfo)
+                           (view constants testModelInfo)
+                           10
+        >>= extract ty (getLoc e)
+        )
+    over _Left
+         (: [])
+         (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
 
 
 evalAct :: Loc U.Expr -> Either [Error] Action
 evalAct e = do
-    e' <-
-        toEither (runTypeChecker
-            (tcAction e)
-            (view componentTypes testModelInfo)
-            (view symbolTable testModelInfo) >>=
-            extract TyAction (getLoc e))
-    over _Left (: [])
-        (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
+    e' <- toEither
+        (   runTypeChecker (tcAction e)
+                           (view componentTypes testModelInfo)
+                           (view symbolTable testModelInfo)
+                           (view constants testModelInfo)
+                           10
+        >>= extract TyAction (getLoc e)
+        )
+    over _Left
+         (: [])
+         (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
 
 
 reduce' :: Type t -> Loc U.Expr -> Either [Error] String
 reduce' ty e = do
-    e' <-
-        toEither (runTypeChecker
-            (tcExpr e)
-            (view componentTypes testModelInfo)
-            (view symbolTable testModelInfo) >>=
-            extract ty (getLoc e))
-    e'' <- over _Left (: [])
+    e' <- toEither
+        (   runTypeChecker (tcExpr e)
+                           (view componentTypes testModelInfo)
+                           (view symbolTable testModelInfo)
+                           (view constants testModelInfo)
+                           10
+        >>= extract ty (getLoc e)
+        )
+    e'' <- over
+        _Left
+        (: [])
         (runReaderT (reduce (e' `withLocOf` e)) (Info testModelInfo 10))
     return (show e'')

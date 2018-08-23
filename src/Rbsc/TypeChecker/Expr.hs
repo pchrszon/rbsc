@@ -36,6 +36,8 @@ import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
 
+import Rbsc.Eval
+
 import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region, withLocOf)
 import Rbsc.Report.Result
@@ -86,8 +88,26 @@ tcExpr (Loc e rgn) = case e of
     U.LitFunction f ->
         return (fromFunctionName f)
 
-    U.LitArray es ->
-        tcArray es
+    U.LitArray (inner :| inners) -> do
+        SomeExpr inner' ty <- tcExpr inner
+        Dict <- pure (dictShow ty)
+        inners' <- traverse (`hasType` ty) inners
+        let arrayTy = TyArray (0, length inners) ty
+        return (SomeExpr (T.LitArray (inner' :| inners')) arrayTy)
+
+    U.GenArray inner var lower upper -> do
+        SomeExpr inner' ty <- local (over boundVars ((var, Some TyInt) :)) $
+            tcExpr inner
+        Dict <- pure (dictShow ty)
+
+        lower' <- lower `hasType` TyInt
+        upper' <- upper `hasType` TyInt
+        l <- eval (lower' `withLocOf` lower)
+        u <- eval (upper' `withLocOf` upper)
+
+        when (u < l) (throw rgn (EmptyGenArray l u))
+
+        return (SomeExpr (T.GenArray inner' l u) (TyArray (l, u) ty))
 
     U.Self ->
         view scope >>= \case
@@ -297,14 +317,6 @@ fromFunctionName = \case
         SomeExpr (T.LitFunction Mod) (TyInt --> TyInt --> TyInt)
     FuncLog ->
         SomeExpr (T.LitFunction Log) (TyDouble --> TyDouble --> TyDouble)
-
-
-tcArray :: NonEmpty (Loc U.Expr) -> TypeChecker SomeExpr
-tcArray (e :| es) = do
-    SomeExpr e' ty <- tcExpr e
-    Dict <- pure (dictShow ty)
-    es' <- traverse (`hasType` ty) es
-    return (SomeExpr (T.LitArray (e' :| es')) (TyArray (0, length es) ty))
 
 
 checkCallArity :: Region -> SomeExpr -> [args] -> TypeChecker ()

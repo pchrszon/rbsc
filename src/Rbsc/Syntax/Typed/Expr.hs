@@ -8,9 +8,7 @@
 
 -- | Typed expressions.
 module Rbsc.Syntax.Typed.Expr
-    ( HasExprs(..)
-
-    , Expr(..)
+    ( Expr(..)
     , Scoped(..)
     , Quantifier(..)
     , TQuantifiedType
@@ -20,6 +18,8 @@ module Rbsc.Syntax.Typed.Expr
     , Constants
     , HasConstants(..)
     , isConstant
+
+    , HasExprs(..)
 
     , instantiate
     , instantiateExprs
@@ -60,27 +60,12 @@ import Rbsc.Syntax.Operators
 import Rbsc.Syntax.Quantification
 
 
--- | Any syntax tree node @n@ that 'HasExprs' provides a traversal of all
--- 'Expr's contained in that node and its subtree.
-class HasExprs a where
-    exprs ::
-           Applicative f
-        => (forall t. Loc (Expr t) -> f (Loc (Expr t)))
-        -> a
-        -> f a
-
-
-instance HasExprs (Loc SomeExpr) where
-    exprs f (Loc (SomeExpr e ty) rgn) = fromLocExpr <$> f (Loc e rgn)
-      where
-        fromLocExpr (Loc e' rgn') = Loc (SomeExpr e' ty) rgn'
-
-
 -- | Typed abstract syntax of expressions.
 data Expr t where
     Literal        :: Show t => t -> Type t -> Expr t
-    LitArray       :: Show t => NonEmpty (Expr t) -> Expr (Array t)
     LitFunction    :: TypedFunction t -> Expr (Fn t)
+    LitArray       :: Show t => NonEmpty (Expr t) -> Expr (Array t)
+    GenArray       :: Show t => Expr t -> Int -> Int -> Expr (Array t)
     Self           :: Expr Component
     Identifier     :: Name -> Type t -> Expr t
     Cast           :: Expr Int -> Expr Double
@@ -154,6 +139,22 @@ class HasConstants a where
 -- | Returns @True@ if there is a constant with the given name.
 isConstant :: Constants -> Name -> Bool
 isConstant consts name = Map.member name consts
+
+
+-- | Any syntax tree node @n@ that 'HasExprs' provides a traversal of all
+-- 'Expr's contained in that node and its subtree.
+class HasExprs a where
+    exprs ::
+           Applicative f
+        => (forall t. Loc (Expr t) -> f (Loc (Expr t)))
+        -> a
+        -> f a
+
+
+instance HasExprs (Loc SomeExpr) where
+    exprs f (Loc (SomeExpr e ty) rgn) = fromLocExpr <$> f (Loc e rgn)
+      where
+        fromLocExpr (Loc e' rgn') = Loc (SomeExpr e' ty) rgn'
 
 
 -- | Instantiate all variables bound by the outermost binder.
@@ -248,8 +249,9 @@ plateExpr ::
        Applicative m => (forall a. Expr a -> m (Expr a)) -> Expr t -> m (Expr t)
 plateExpr f = \case
     Literal x ty       -> pure (Literal x ty)
-    LitArray es        -> LitArray <$> traverse f es
     LitFunction g      -> pure (LitFunction g)
+    LitArray es        -> LitArray <$> traverse f es
+    GenArray e l u     -> GenArray <$> f e <*> pure l <*> pure u
     Self               -> pure Self
     Identifier name ty -> pure (Identifier name ty)
     Cast e             -> Cast <$> f e

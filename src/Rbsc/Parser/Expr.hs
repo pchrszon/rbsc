@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 
@@ -134,10 +135,18 @@ litAction = do
 litArray :: Parser LExpr
 litArray = do
     start <- symbol "["
-    e  <- expr
-    es <- many (comma *> expr)
-    end <- symbol "]"
-    return (Loc (LitArray (e :| es)) (start <> end))
+    e <- expr
+    optional (operator "||") >>= \case
+        Just _ -> do
+            var <- unLoc <$> identifier
+            _ <- colon
+            (lower, upper) <- range
+            end <- symbol "]"
+            return (Loc (GenArray e var lower upper) (start <> end))
+        Nothing -> do
+            es <- many (comma *> expr)
+            end <- symbol "]"
+            return (Loc (LitArray (e :| es)) (start <> end))
 
 
 ifThenElse :: Parser LExpr
