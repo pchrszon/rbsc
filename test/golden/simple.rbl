@@ -1,0 +1,11 @@
+natural type N;
+
+impl N {
+    x : bool init false;
+
+    [a] true -> (x' = !x);
+}
+
+system {
+    n : N;
+}

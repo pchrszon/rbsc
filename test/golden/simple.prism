@@ -1,0 +1,11 @@
+mdp
+
+module n_impl
+    n_x : bool init false;
+
+    ]a[ true -> (n_x' = !n_x);
+endmodule
+
+module Desync
+    ]a[ true -> true;
+endmodule
