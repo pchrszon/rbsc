@@ -1,0 +1,22 @@
+// Test translation of variables used as array index.
+
+natural type N;
+
+impl N {
+    i : [0 .. 2] init 0;
+    arr : array 3 of bool;
+
+    // indexing action array
+    [a[i]] true -> true;
+
+    // indexing variable array (expression)
+    [] arr[i] -> true;
+
+    // indexing variable array (assignment)
+    [] true -> (arr[i]' = true);
+
+    // combined
+    [a[i]] arr[i] -> (arr[i]' = false);
+}
+
+system { n : N; }
