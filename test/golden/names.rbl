@@ -1,0 +1,15 @@
+// Test if name clashes are resolved.
+// Both 'n_x' and 'n.x' are translated to the same name 'n_x'. The translator
+// should generate unique names for both variables.
+
+natural type N;
+
+global n_x : bool init false;
+
+impl N {
+    x : bool init false;
+
+    [] x = n_x -> true;
+}
+
+system { n : N; }
