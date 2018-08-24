@@ -180,7 +180,7 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
         len' <- fst <$> evalIntExpr len
         if len' > 0
             then
-                let tyArray = TyArray (0, len' - 1) tyComponent
+                let tyArray = TyArray len' tyComponent
                 in insertSymbol Global name (Some tyArray)
             else throw (getLoc len) (InvalidUpperBound len')
     -- add single component
@@ -199,13 +199,12 @@ fromSyntaxType = \case
         compTys <- use (modelInfo.componentTypes)
         tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
         return (T.TyComponent tySet, Some (TyComponent tySet'))
-    U.TyArray (lower, upper) sTy -> do
-        (lowerVal, lower') <- evalIntExpr lower
-        (upperVal, upper') <- evalIntExpr upper
+    U.TyArray size sTy -> do
+        (sizeVal, size') <- evalIntExpr size
         (sTy', Some ty) <- fromSyntaxType sTy
         return
-            ( T.TyArray (lower', upper') sTy'
-            , Some (TyArray (lowerVal, upperVal) ty)
+            ( T.TyArray size' sTy'
+            , Some (TyArray sizeVal ty)
             )
     U.TyFunc sTyL sTyR -> do
         (sTyL', Some tyL) <- fromSyntaxType sTyL
@@ -223,11 +222,10 @@ fromSyntaxVarType = \case
         return (Some TyInt, Just (lowerVal, upperVal))
     U.VarTyEnum names ->
         return (Some TyInt, Just (0, length names - 1))
-    U.VarTyArray (lower, upper) vTy -> do
-        (lowerVal, _) <- evalIntExpr lower
-        (upperVal, _) <- evalIntExpr upper
+    U.VarTyArray size vTy -> do
+        (sizeVal, _) <- evalIntExpr size
         (Some ty, mRange) <- fromSyntaxVarType vTy
-        return (Some (TyArray (lowerVal, upperVal) ty), mRange)
+        return (Some (TyArray sizeVal ty), mRange)
 
 
 type Builder a = StateT BuilderState Result a

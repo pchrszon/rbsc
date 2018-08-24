@@ -1,0 +1,13 @@
+const SIZE = 4;
+
+function square(x : int) : int = x * x;
+
+const squares = [ square(x) || x : [1 .. SIZE] ];
+
+natural type N;
+
+impl N {
+    x : array SIZE of [1 .. square(SIZE)] init squares;
+}
+
+system { n : N; }

@@ -14,7 +14,6 @@ module Rbsc.Data.Type
       Type(..)
     , Fn(..)
     , (-->)
-    , arrayLength
 
       -- * Symbol table
     , SymbolTable
@@ -73,7 +72,7 @@ data Type t where
     TyDouble    :: Type Double
     TyAction    :: Type Action
     TyComponent :: Set TypeName -> Type Component
-    TyArray     :: (Int, Int) -> Type t -> Type (Array t)
+    TyArray     :: Int -> Type t -> Type (Array t)
     TyFunc      :: Type a -> Type b -> Type (Fn (a -> b))
 
 deriving instance Eq (Type t)
@@ -87,9 +86,7 @@ instance Pretty (Type t) where
         TyAction -> "action"
         TyComponent tySet ->
             braces (sep (punctuate comma (fmap pretty (toList tySet))))
-        TyArray (idxStart, idxEnd) t ->
-            "array" <+> brackets (pretty idxStart <> ".." <> pretty idxEnd) <+>
-            "of" <+> pretty t
+        TyArray s t -> "array" <+> pretty s <+> "of" <+> pretty t
         TyFunc a b -> parens (pretty a <+> "->" <+> pretty b)
 
 
@@ -107,12 +104,6 @@ infixr 9 -->
 -- | Infix operator for 'TyFunc'.
 (-->) :: Type a -> Type b -> Type (Fn (a -> b))
 (-->) = TyFunc
-
-
--- | @arrayLength (indexStart, indexEnd)@ computes the length of an array
--- with the given first and last element indices (@indexEnd@ is inclusive).
-arrayLength :: (Int, Int) -> Int
-arrayLength (idxStart, idxEnd) = idxEnd - idxStart + 1
 
 
 deriving instance Show (Some Type)
@@ -173,9 +164,9 @@ typeEq TyInt       TyInt    = Just Refl
 typeEq TyDouble    TyDouble = Just Refl
 typeEq TyAction    TyAction = Just Refl
 typeEq (TyComponent _) (TyComponent _) = Just Refl
-typeEq (TyArray sIndices s) (TyArray tIndices t) = do
+typeEq (TyArray sSize s) (TyArray tSize t) = do
     Refl <- typeEq s t
-    if arrayLength sIndices == arrayLength tIndices
+    if sSize == tSize
         then Just Refl
         else Nothing
 typeEq (TyFunc a b) (TyFunc c d) = do

@@ -32,7 +32,7 @@ spec = describe "sortDefinitions" $ do
             [model|
                 natural type N;
                 const n = 2;
-                function arr(i : int) : array [0..n] of int = f(i);
+                function arr(i : int) : array n of int = f(i);
                 function f(i : int) : int = i + n;
                 function playerIn(p : component, c : compartment) : bool =
                     exists r : role. r in c & r boundto p;

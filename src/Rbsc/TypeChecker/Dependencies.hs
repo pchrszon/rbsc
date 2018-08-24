@@ -262,7 +262,7 @@ identsInSignature (Function _ args ty _) = do
 identsInType :: UType -> Analyzer (Set (Loc Name))
 identsInType ty = case ty of
     TyComponent tySet -> identsInComponentTypeSet tySet
-    TyArray r ty'     -> Set.union <$> identsInRange r <*> identsInType ty'
+    TyArray s ty'     -> Set.union <$> identsInExpr s <*> identsInType ty'
     TyFunc tyL tyR    -> Set.union <$> identsInType tyL <*> identsInType tyR
     _                 -> return Set.empty
 
@@ -286,13 +286,8 @@ identsInVarType :: UVarType -> Analyzer (Set (Loc Name))
 identsInVarType = \case
     VarTyInt (lower, upper) ->
         Set.union <$> identsInExpr lower <*> identsInExpr upper
-    VarTyArray r ty' -> Set.union <$> identsInRange r <*> identsInVarType ty'
+    VarTyArray s ty' -> Set.union <$> identsInExpr s <*> identsInVarType ty'
     _ -> return Set.empty
-
-
-identsInRange :: (LExpr, LExpr) -> Analyzer (Set (Loc Name))
-identsInRange (lower, upper) =
-    Set.union <$> identsInExpr lower <*> identsInExpr upper
 
 
 -- | @identsInExpr e@ returns a set of all unbound identifiers in @e@.

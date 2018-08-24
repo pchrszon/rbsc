@@ -78,7 +78,7 @@ data LocErrorDesc
     | DivisionByZero
     | NotConstant
     | InvalidUpperBound !Int
-    | IndexOutOfBounds (Int, Int) !Int
+    | IndexOutOfBounds !Int !Int
     | ExceededDepth
     | HasNoPlayer !Name
     | NonIndexedComponent !Name
@@ -307,11 +307,10 @@ locReport rgn = \case
                 Text.pack (show len)
             ]
 
-    IndexOutOfBounds (lower, upper) idx ->
+    IndexOutOfBounds size idx ->
         errorReport "index out of bounds"
             [ errorPart rgn . Just $
-                "array has bounds [" <> pack (show lower) <> " .. " <>
-                pack (show upper) <> "] but the index is " <>
+                "array has size " <> pack (show size) <> " but the index is " <>
                 pack (show idx)
             ]
 

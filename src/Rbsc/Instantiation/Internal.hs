@@ -213,7 +213,7 @@ generateArrays sys arrayInfos =
   where
     generateArray (ArrayInfo name tyName componentNames) =
         let arr = fmap (componentForName sys tyName) componentNames
-            ty  = TyArray (bounds arr) (TyComponent (Set.singleton tyName))
+            ty  = TyArray (size arr) (TyComponent (Set.singleton tyName))
             e   = SomeExpr (Literal arr ty) ty
         in (name, e)
 

@@ -1,0 +1,11 @@
+const arr = [0, 1, 2];
+
+natural type N;
+
+impl N {
+    xs : array 3 of [0 .. 2];
+
+    [] xs = arr -> true;
+}
+
+system { n : N; }

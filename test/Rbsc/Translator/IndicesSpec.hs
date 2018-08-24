@@ -56,7 +56,7 @@ testModel =
         global x : [0 .. 1];
 
         impl N {
-            arr : array [0 .. 1] of bool;
+            arr : array 2 of bool;
             y : [0 .. 1];
             z : [0 .. 1];
             b : bool;

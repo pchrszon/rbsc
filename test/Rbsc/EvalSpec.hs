@@ -188,7 +188,7 @@ testModel =
 
         global z : [0..1];
 
-        global arr : array [0 .. 2] of bool;
+        global arr : array 3 of bool;
 
         function f(i : int) : int = f(i);
 

@@ -92,7 +92,7 @@ tcExpr (Loc e rgn) = case e of
         SomeExpr inner' ty <- tcExpr inner
         Dict <- pure (dictShow ty)
         inners' <- traverse (`hasType` ty) inners
-        let arrayTy = TyArray (0, length inners) ty
+        let arrayTy = TyArray (length inners + 1) ty
         return (SomeExpr (T.LitArray (inner' :| inners')) arrayTy)
 
     U.GenArray inner var lower upper -> do
@@ -107,7 +107,7 @@ tcExpr (Loc e rgn) = case e of
 
         when (u < l) (throw rgn (EmptyGenArray l u))
 
-        return (SomeExpr (T.GenArray inner' l u) (TyArray (l, u) ty))
+        return (SomeExpr (T.GenArray inner' l u) (TyArray (u - l + 1) ty))
 
     U.Self ->
         view scope >>= \case
@@ -243,8 +243,8 @@ tcExpr (Loc e rgn) = case e of
     U.Length inner -> do
         SomeExpr _ ty <- tcExpr inner
         case ty of
-            TyArray bounds _ ->
-                T.Literal (arrayLength bounds) TyInt `withType` TyInt
+            TyArray size _ ->
+                T.Literal size TyInt `withType` TyInt
             _ -> throw (getLoc inner) (NotAnArray (renderPretty ty))
 
     U.HasPlayer inner -> do
@@ -261,7 +261,7 @@ tcExpr (Loc e rgn) = case e of
                     Set.unions . flip fmap (toList tySet) $ \tyName ->
                         case Map.lookup tyName compTys of
                             Just (RoleType playerTyNames) -> playerTyNames
-                            _ -> Set.empty
+                            _                             -> Set.empty
         when (Set.null tySet') (throw rgn NoPossiblePlayers)
         T.Player (inner' `withLocOf` inner) `withType` TyComponent tySet'
 
@@ -448,14 +448,14 @@ binaryCast l r = (l, r)
 -- is possible. Otherwise, the original expression is returned.
 cast :: Region -> Type t -> SomeExpr -> TypeChecker SomeExpr
 cast _ TyDouble (SomeExpr e TyInt) = T.Cast e `withType` TyDouble
-cast _ (TyArray tIndices TyDouble) (SomeExpr (T.LitArray es) (TyArray vIndices TyInt))
-    | arrayLength tIndices == arrayLength vIndices =
-        T.LitArray (fmap T.Cast es) `withType` TyArray vIndices TyDouble
-cast _ arrTy@(TyArray tIndices ty) e@(SomeExpr e' elemTy) =
+cast _ (TyArray tSize TyDouble) (SomeExpr (T.LitArray es) (TyArray vSize TyInt))
+    | tSize == vSize =
+        T.LitArray (fmap T.Cast es) `withType` TyArray vSize TyDouble
+cast _ arrTy@(TyArray tSize ty) e@(SomeExpr e' elemTy) =
     case typeEq ty elemTy of
         Just Refl -> case dictShow ty of
             Dict ->
-                T.LitArray (fromList (replicate (arrayLength tIndices) e'))
+                T.LitArray (fromList (replicate tSize e'))
                 `withType` arrTy
         Nothing -> return e
 cast rgn TyBool e@(SomeExpr e' ty@(TyComponent tySet)) = do

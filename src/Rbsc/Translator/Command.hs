@@ -120,12 +120,12 @@ trnsAssignment mComp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = 
 
 trnsIndices
     :: MonadError Error m => Qualified -> Type t -> [LSomeExpr] -> m Qualified
-trnsIndices qname (TyArray (lower, upper) innerTy) (Loc (SomeExpr idx TyInt) rgn : idxs) =
+trnsIndices qname (TyArray size innerTy) (Loc (SomeExpr idx TyInt) rgn : idxs) =
     case idx of
         Literal i _
-            | lower <= i && i <= upper ->
+            | 0 <= i && i < size ->
                 trnsIndices (QlIndex qname i) innerTy idxs
-            | otherwise -> throw rgn (IndexOutOfBounds (lower, upper) i)
+            | otherwise -> throw rgn (IndexOutOfBounds size i)
         _ -> throw rgn NotConstant
 trnsIndices qname _ [] = return qname
 trnsIndices _     _ _  = error "trnsIndices: type error"

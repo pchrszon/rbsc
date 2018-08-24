@@ -38,7 +38,7 @@ spec = describe "getModelInfo" $
 
                 impl N {
                     x : [0 .. 1];
-                    arr : array [0 .. 2] of [0 .. 3];
+                    arr : array 2 of [0 .. 3];
                     y : bool;
                     l : enum { L1, L2, L3 };
                 }

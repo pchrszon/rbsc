@@ -263,11 +263,11 @@ toLiteral e = case e of
     Index (Literal arr (TyArray _ innerTy)) (LitIndex i rgn) ->
         case Array.index arr i of
             Just x  -> return (Literal x innerTy)
-            Nothing -> throw rgn (IndexOutOfBounds (Array.bounds arr) i)
+            Nothing -> throw rgn (IndexOutOfBounds (Array.size arr) i)
 
     Index (LitArray arr) (LitIndex i rgn)
         | i >= NonEmpty.length arr ->
-            throw rgn (IndexOutOfBounds (0, NonEmpty.length arr - 1) i)
+            throw rgn (IndexOutOfBounds (NonEmpty.length arr) i)
         | otherwise -> return (arr NonEmpty.!! i)
 
     Index (ActionArray (Literal act _)) (LitIndex i _) ->
@@ -328,10 +328,10 @@ pattern LitIndex i rgn <- Loc (Literal (fromIntegral -> i) _) rgn
 -- | Transforms an array into an array value if the array only consists of
 -- literals.
 toArray :: NonEmpty (Expr t) -> Maybe (Array t, Type (Array t))
-toArray xs@(lit :| xs') = case lit of
+toArray xs@(lit :| _) = case lit of
     Literal _ ty -> (,)
         <$> fmap Array.fromList (traverse f (NonEmpty.toList xs))
-        <*> pure (TyArray (0, length xs') ty)
+        <*> pure (TyArray (NonEmpty.length xs) ty)
     _ -> Nothing
   where
     f (Literal x _) = Just x

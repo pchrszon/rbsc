@@ -29,9 +29,10 @@ import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.State
 
-import Data.Map.Strict     as Map
-import Data.Text           (pack)
-import qualified Data.Set as Set
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+import qualified Data.Set        as Set
+import           Data.Text       (pack)
 
 
 import qualified Language.Prism as Prism
@@ -125,8 +126,8 @@ indexedNames qname = go id
   where
     go :: (Qualified -> Qualified) -> Type t -> [Qualified]
     go f = \case
-        TyArray (lower, upper) innerTy ->
-            flip concatMap [lower .. upper] $ \i ->
+        TyArray size innerTy ->
+            flip concatMap [0 .. size - 1] $ \i ->
                 go ((`QlIndex` i) . f) innerTy
         _ -> [f qname]
 
@@ -136,8 +137,8 @@ indexedExprs e = go id
   where
     go :: (LSomeExpr -> LSomeExpr) -> Type t -> [LSomeExpr]
     go f = \case
-        TyArray (lower, upper) innerTy ->
-            flip concatMap [lower .. upper] $ \i ->
+        TyArray size innerTy ->
+            flip concatMap [0 .. size - 1] $ \i ->
                 go (addIndex i . f) innerTy
         _ -> [f e]
 

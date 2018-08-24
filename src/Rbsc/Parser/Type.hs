@@ -33,6 +33,6 @@ valueType = choice
     , TyDouble    <$  reserved "double"
     , TyAction    <$  reserved "action"
     , TyComponent <$> componentTypeSet
-    , TyArray     <$> (reserved "array" *> range) <*> (reserved "of" *> typ)
+    , TyArray     <$> (reserved "array" *> expr) <*> (reserved "of" *> typ)
     , parens typ
     ]

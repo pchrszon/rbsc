@@ -133,8 +133,8 @@ trnsEq mComp rgn eOp = go
   where
     go :: Type t -> Expr t -> Expr t -> Translator Prism.Expr
     go ty l r = case ty of
-        TyArray (lower, upper) innerTy -> do
-            es' <- for [lower .. upper] $ \i ->
+        TyArray size innerTy -> do
+            es' <- for [0 .. size - 1] $ \i ->
                     go innerTy (idx innerTy l i) (idx innerTy r i)
             return (foldr1 conn es')
         _ -> do

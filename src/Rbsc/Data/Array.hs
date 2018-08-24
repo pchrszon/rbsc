@@ -8,7 +8,7 @@
 module Rbsc.Data.Array
     ( Array
     , fromList
-    , bounds
+    , size
     , index
     ) where
 
@@ -17,23 +17,23 @@ import GHC.Exts (IsList (..))
 
 
 -- | An array.
-data Array a = Array (Int, Int) [a]
+data Array a = Array Int [a]
     deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 
 instance IsList (Array a) where
     type Item (Array a) = a
 
-    fromList xs = Array (0, length xs - 1) xs
+    fromList xs = Array (length xs) xs
     toList (Array _ xs) = xs
 
 
-bounds :: Array a -> (Int, Int)
-bounds (Array b _) = b
+size :: Array a -> Int
+size (Array s _) = s
 
 
 -- | Safe indexing into an array.
 index :: Array a -> Int -> Maybe a
-index (Array (lower, upper) arr) i
-    | i < lower || i > upper = Nothing
-    | otherwise = Just (arr !! (i - lower))
+index (Array s arr) i
+    | i < 0 || i >= s = Nothing
+    | otherwise = Just (arr !! i)

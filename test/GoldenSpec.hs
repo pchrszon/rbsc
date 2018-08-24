@@ -28,14 +28,18 @@ import Rbsc.Report.Result
 import Rbsc.Translator
 
 
+goldenDir :: FilePath
+goldenDir = "test/golden/"
+
+
 spec :: Spec
 spec = do
-    paths <- runIO (findByExtension "rbl" "test/golden")
+    paths <- runIO (findByExtension "rbl" goldenDir)
     traverse_ mkGoldenTest paths
 
 
 mkGoldenTest :: FilePath -> Spec
-mkGoldenTest path = specify (takeBaseName path) $
+mkGoldenTest path = specify specName $
     translateFile path >>= \case
         Left errors -> expectationFailure $
             intercalate "\n\n" (fmap (show . pretty . toReport) errors)
@@ -57,6 +61,8 @@ mkGoldenTest path = specify (takeBaseName path) $
                         "Golden file did not exist and has been created"
         Right models ->
             expectationFailure $ "got " ++ show (length models) ++ " systems"
+  where
+    specName = dropExtensions (drop (length goldenDir) path)
 
 
 translateFile :: FilePath -> IO (Either [Error] [Text])

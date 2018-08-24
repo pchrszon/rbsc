@@ -14,5 +14,5 @@ data VarType expr
     = VarTyBool
     | VarTyInt (expr, expr)
     | VarTyEnum [Loc Name]
-    | VarTyArray (expr, expr) (VarType expr)
+    | VarTyArray expr (VarType expr)
     deriving (Show)
