@@ -21,11 +21,11 @@ import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
 
+import           Data.Foldable
 import           Data.List          (genericLength)
 import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map.Strict    as Map
-import           Data.Maybe         (mapMaybe)
 import           Data.Set           (Set)
 import qualified Data.Set           as Set
 
@@ -366,12 +366,18 @@ quantifier q = foldr qOp neutralElement
 -- | Get a list of all constants that have a component type contained in
 -- the given set.
 componentConsts :: Set TypeName -> Constants -> [SomeExpr]
-componentConsts tySet = mapMaybe f . Map.elems
+componentConsts tySet = concatMap f . Map.elems
   where
+    f :: SomeExpr -> [SomeExpr]
     f = \case
         e@(SomeExpr _ (TyComponent ty))
-            | ty `Set.isSubsetOf` tySet -> Just e
-        _ -> Nothing
+            | ty `Set.isSubsetOf` tySet -> [e]
+        SomeExpr (Literal arr (TyArray _ (TyComponent ty))) _
+            | ty `Set.isSubsetOf` tySet ->
+               fmap (toSomeExpr (TyComponent ty)) (toList arr)
+        _ -> []
+
+    toSomeExpr ty comp = SomeExpr (Literal comp ty) ty
 
 
 isElement :: Component -> SomeExpr -> Bool

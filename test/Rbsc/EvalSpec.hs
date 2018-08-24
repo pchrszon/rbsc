@@ -49,7 +49,7 @@ spec = do
             Right 4
 
         it "evaluates quantified expressions over components" $
-            eval' TyBool [expr| forall x : R. x boundto n |]
+            eval' TyBool [expr| exists x : R. x boundto n |]
             `shouldBe`
             Right True
 
