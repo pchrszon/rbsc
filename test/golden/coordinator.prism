@@ -1,0 +1,43 @@
+mdp
+
+module n_impl
+    n_s : [0..1] init 0;
+
+    ]a[ n_s = 0 -> (n_s' = 1);
+endmodule
+
+module r_0_impl
+    r_0_s : [0..2] init 0;
+
+    ]a, r_0[ r_0_s = 0 -> (r_0_s' = 1);
+    ]r_0_b, r_0[ r_0_s = 1 -> (r_0_s' = 2);
+    ]a, not_r_0[ true -> true;
+endmodule
+
+module r_1_impl
+    r_1_s : [0..2] init 0;
+
+    ]a, r_1[ r_1_s = 0 -> (r_1_s' = 1);
+    ]r_1_b, r_1[ r_1_s = 1 -> (r_1_s' = 2);
+    ]a, not_r_1[ true -> true;
+endmodule
+
+module coordinator
+    s : bool init false;
+
+    [] !s & n_s = 0 & r_0_s = 0 & r_1_s = 0 -> (s' = true);
+    ]a[ true -> true;
+    ]a, r_0, r_1[ !s -> true;
+    ]a, r_0, not_r_1[ !s -> true;
+    ]a, not_r_0, r_1[ !s -> true;
+    ]r_0_b, r_0[ !s -> true;
+    ]r_1_b, r_1[ !s -> true;
+    ]a, r_0, r_1[ s -> true;
+    ]a, r_0, not_r_0, r_1, not_r_1[ true -> true;
+endmodule
+
+module Desync
+    ]a[ true -> true;
+    ]r_0_b[ true -> true;
+    ]r_1_b[ true -> true;
+endmodule
