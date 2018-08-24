@@ -14,6 +14,7 @@ category: Language
 
 dependencies:
   - base >=4.7 && <5
+  - array
   - constraints
   - containers
   - directory

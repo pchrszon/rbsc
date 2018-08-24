@@ -13,27 +13,31 @@ module Rbsc.Data.Array
     ) where
 
 
+import qualified Data.Array as Array
+
 import GHC.Exts (IsList (..))
 
 
 -- | An array.
-data Array a = Array Int [a]
+newtype Array a = Array (Array.Array Int a)
     deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 
 instance IsList (Array a) where
     type Item (Array a) = a
 
-    fromList xs = Array (length xs) xs
-    toList (Array _ xs) = xs
+    fromList xs = Array (Array.listArray (0, length xs - 1) xs)
+    toList (Array arr) = Array.elems arr
 
 
 size :: Array a -> Int
-size (Array s _) = s
+size (Array arr) = let (_, upper) = Array.bounds arr in upper + 1
 
 
 -- | Safe indexing into an array.
 index :: Array a -> Int -> Maybe a
-index (Array s arr) i
-    | i < 0 || i >= s = Nothing
-    | otherwise = Just (arr !! i)
+index (Array arr) i
+    | i < lower || i > upper = Nothing
+    | otherwise = Just (arr Array.! i)
+  where
+    (lower, upper) = Array.bounds arr
