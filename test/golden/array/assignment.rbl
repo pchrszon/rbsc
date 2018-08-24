@@ -1,4 +1,4 @@
-const arr = [0, 1, 2];
+const arr : array 3 of int = [0, 1, 2];
 
 natural type N;
 

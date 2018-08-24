@@ -107,6 +107,11 @@ spec = do
             `shouldBe`
             Right True
 
+        it "evaluates the player function for indexed players" $
+            eval' TyBool [expr| player(r_arr[1]) = n_arr[1] |]
+            `shouldBe`
+            Right True
+
         it "throws an error when calling player on a non-role" $
             eval' TyBool
                 [expr| forall c. player(c) = n |]
@@ -204,8 +209,10 @@ testModel =
             n : N;
             n_arr[2] : N;
             r : R;
+            r_arr[2] : R;
             c : C;
             r boundto n;
+            forall i : [0 .. 1]. r_arr[i] boundto n_arr[i];
             r in c;
         }
     |]
