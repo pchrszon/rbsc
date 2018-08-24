@@ -1,0 +1,11 @@
+mdp
+
+module outer_impl
+    ]inner_a, outer[ true -> true;
+    ]n_a, outer[ true -> true;
+endmodule
+
+module Desync
+    ]inner_a[ true -> true;
+    ]n_a[ true -> true;
+endmodule

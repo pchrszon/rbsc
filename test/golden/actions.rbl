@@ -1,0 +1,32 @@
+const act = action c;
+
+const acts = [action a, action b];
+
+function from_to(from : int, to : int) : action = action msg[from][to];
+
+natural type N;
+
+impl N {
+    // no action
+    [] true -> true;
+
+    // global action
+    [a] true -> true;
+
+    // local action
+    [self.a] true -> true;
+
+    // indexed action
+    [self.a[0]] true -> true;
+
+    // action from constant
+    [act] true -> true;
+
+    // action from constant array
+    [acts[1]] true -> true;
+
+    // action returned from function
+    [from_to(1, 2)] true -> true;
+}
+
+system { n : N; }

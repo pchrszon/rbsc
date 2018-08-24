@@ -1,0 +1,29 @@
+natural type N;
+
+role type Inner(N);
+
+role type Outer(Inner);
+
+impl Outer {
+    // get player
+    [player(self).a] true -> true;
+
+    // get core component
+    [core(self).a] true -> true;
+}
+
+
+system {
+    n : N;
+    inner : Inner;
+    outer : Outer;
+
+    inner boundto n;
+    outer boundto inner;
+}
+
+
+function core(c : component) : component =
+    if has_player(c)
+        then core(player(c))
+        else c;

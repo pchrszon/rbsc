@@ -8,7 +8,7 @@ import Control.Lens
 import Control.Monad
 
 import           Data.Foldable
-import           Data.List        (intercalate)
+import           Data.List        (intercalate, sort)
 import           Data.Text        (Text)
 import qualified Data.Text.IO     as Text
 import           Data.Traversable
@@ -35,7 +35,7 @@ goldenDir = "test/golden/"
 spec :: Spec
 spec = do
     paths <- runIO (findByExtension "rbl" goldenDir)
-    traverse_ mkGoldenTest paths
+    traverse_ mkGoldenTest (sort paths)
 
 
 mkGoldenTest :: FilePath -> Spec
