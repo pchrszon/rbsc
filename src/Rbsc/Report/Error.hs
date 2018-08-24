@@ -91,6 +91,7 @@ data LocErrorDesc
 data NoLocErrorDesc
     = TooManyRoles !Name [(TypeName, Int)]
     | NoSystems
+    | EmptySystem
     deriving (Eq, Show)
 
 
@@ -353,6 +354,11 @@ noLocReport = \case
     NoSystems ->
         errorReport
             "there is no system instance satisfying the defined constraints"
+            []
+
+    EmptySystem ->
+        errorReport
+            "the system has no components"
             []
 
 

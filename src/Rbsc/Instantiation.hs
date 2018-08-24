@@ -63,4 +63,7 @@ generateInstances model info = do
 
         when (null sysInfos') (throwNoLoc NoSystems)
 
+        for_ sysInfos' $ \(sys', _) ->
+            when (null (view instances sys')) (throwNoLoc EmptySystem)
+
         return sysInfos'
