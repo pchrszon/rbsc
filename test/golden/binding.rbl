@@ -1,0 +1,50 @@
+natural type Core;
+
+impl Core {
+    s : [0 .. 2] init 0;
+
+    [a] s = 0 -> (s' = 1);
+    [b] s = 1 -> (s' = 2);
+}
+
+
+role type Left(Core);
+
+impl Left {
+    s : [0 .. 2] init 0;
+
+    [override a] s = 0 -> (s' = 1);
+    [c] s = 1 -> (s' = 2);
+}
+
+
+role type Right(Core);
+
+impl Right {
+    s : [0 .. 1] init 0;
+
+    [override b] s = 0 -> (s' = 1);
+}
+
+
+role type Outer(Left);
+
+impl Outer {
+    s : [0 .. 2] init 0;
+
+    [override a] s = 0 -> (s' = 1);
+    [d] s = 1 -> (s' = 2);
+}
+
+
+system {
+    core : Core;
+
+    left : Left;
+    right : Right;
+    outer : Outer;
+
+    left boundto core;
+    right boundto core;
+    outer boundto left;
+}
