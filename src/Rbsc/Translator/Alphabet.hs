@@ -11,8 +11,11 @@ module Rbsc.Translator.Alphabet
     , alphabet
     , stripLocAndKind
 
+    , ModuleAlphabets
+    , moduleAlphabets
+
     , Alphabets
-    , alphabets
+    , componentAlphabets
 
     , OverrideActions
     , overrideActions
@@ -20,6 +23,7 @@ module Rbsc.Translator.Alphabet
     ) where
 
 
+import Control.Lens
 import Control.Monad.Except
 
 import           Data.Map.Strict (Map)
@@ -65,17 +69,30 @@ stripLocAndKind :: Alphabet -> Set Action
 stripLocAndKind = Set.map (unLoc . fst)
 
 
+-- | Mapping of module names to their alphabet.
+type ModuleAlphabets = Map Name Alphabet
+
+
+-- | Given a map of component implementations, get the action 'Alphabet' of
+-- each module of each component.
+moduleAlphabets
+    :: MonadError Error m
+    => Map ComponentName [TNamedModuleBody Elem]
+    -> m (Map ComponentName ModuleAlphabets)
+moduleAlphabets = traverse (fmap Map.fromList . traverse fromNamedModuleBody)
+  where
+    fromNamedModuleBody body =
+        (,) (view bodyName body) <$> alphabet (view namedBody body)
+
+
 -- | Mapping of component names to their alphabet.
 type Alphabets = Map ComponentName Alphabet
 
 
--- | Given a map of component implementations, get the action 'Alphabet' of
--- each component.
-alphabets
-    :: MonadError Error m
-    => Map ComponentName [TNamedModuleBody Elem]
-    -> m Alphabets
-alphabets = traverse (fmap Set.unions . traverse (alphabet . _namedBody))
+-- | Given the 'ModuleAlphabets' for each component, get the combined
+-- 'Alphabet' of each component.
+componentAlphabets :: Map ComponentName ModuleAlphabets -> Alphabets
+componentAlphabets = Map.map (Set.unions . Map.elems)
 
 
 -- | The override actions of a component.
@@ -85,7 +102,7 @@ type OverrideActions = Map ComponentName (Set Action)
 -- | Get the override actions of all components from the given 'Alphabets'.
 overrideActions :: Alphabets -> OverrideActions
 overrideActions =
-    Map.map (Set.map (unLoc . fst) . Set.filter (isOverrideAction . snd))
+    Map.map (stripLocAndKind . Set.filter (isOverrideAction . snd))
 
 
 -- | Returns 'True' if the given 'ActionKind' is 'OverrideAction'.

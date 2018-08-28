@@ -1,0 +1,36 @@
+mdp
+
+module n_N_first
+    n_s : [0..2] init 0;
+
+    ]a[ n_s = 0 -> (n_s' = 1);
+    ]b[ n_s = 1 -> (n_s' = 2);
+    ]b, ovr_r[ true -> true;
+endmodule
+
+module n_N_second
+    n_t : [0..2] init 0;
+
+    ]a[ n_t = 0 -> (n_t' = 1);
+    ]c[ n_t = 1 -> (n_t' = 2);
+endmodule
+
+module r_R_first
+    r_s : [0..1] init 0;
+
+    ]a, r[ r_s = 0 -> (r_s' = 1);
+    ]a, not_r[ true -> true;
+endmodule
+
+module r_R_second
+    r_t : [0..1] init 0;
+
+    ]b, r, ovr_r[ r_t = 0 -> (r_t' = 1);
+    ]b, not_r[ true -> true;
+endmodule
+
+module Desync
+    ]a[ true -> true;
+    ]b[ true -> true;
+    ]c[ true -> true;
+endmodule

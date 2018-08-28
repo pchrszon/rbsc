@@ -63,12 +63,13 @@ translateModel model sys info = do
         (traverse instantiateCoordinator (modelCoordinators model))
         info
 
-    as <- alphabets modules
+    mas <- moduleAlphabets modules
+    let as = componentAlphabets mas
     bi <- generateBindingInfo sys as
 
     runTranslator info $ do
         globals' <- trnsGlobalVars (modelGlobals model)
-        modules' <- trnsModules sys bi as modules
+        modules' <- trnsModules sys bi mas as modules
         coordinators' <-
             trnsCoordinators (view componentTypes info) sys bi as coordinators
         desync <- genDesyncModule as

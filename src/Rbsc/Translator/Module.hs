@@ -34,19 +34,24 @@ import Rbsc.Translator.Variable
 trnsModules
     :: System
     -> BindingInfo
+    -> Map ComponentName ModuleAlphabets
     -> Alphabets
     -> Map ComponentName [TNamedModuleBody Elem]
     -> Translator [Prism.Module]
-trnsModules sys bi as bodiess = do
+trnsModules sys bi mas as bodiess = do
     compTys <- view componentTypes
     let oas = overrideActions as
 
     fmap concat . for (Map.assocs bodiess) $ \(name, bodies) ->
-        case view (instances.at name) sys of
+        case view (instances . at name) sys of
             Just typeName -> do
                 let isRole = has (at typeName._Just._RoleType) compTys
-                    alph   = Map.findWithDefault Set.empty name as
-                traverse (trnsModule bi as alph oas isRole typeName name) bodies
+                    cmas   = Map.findWithDefault Map.empty name mas
+                for bodies $ \body -> do
+                    let alph = Map.findWithDefault Set.empty
+                                                   (view bodyName body)
+                                                   cmas
+                    trnsModule bi as alph oas isRole typeName name body
             Nothing -> error $ "trnsModules: undefined component " ++ show name
 
 
@@ -68,7 +73,7 @@ trnsModule bi as alph oas isRole typeName compName (NamedModuleBody moduleName b
         (trnsCommand isRole typeName compName . getElem)
         (bodyCommands body)
 
-    override <- genOverrideSelfLoops bi oas isRole compName
+    override <- genOverrideSelfLoops bi oas alph isRole compName
     nonblocking <- if isRole
         then genNonblockingSelfLoops bi as compName alph
         else return []
@@ -76,17 +81,18 @@ trnsModule bi as alph oas isRole typeName compName (NamedModuleBody moduleName b
     return (Prism.Module ident vars' (concat [cmds', override, nonblocking]))
 
 
--- TODO: only generate self-loops for actions in own module alphabet
 genOverrideSelfLoops
     :: MonadState TranslatorState m
     => BindingInfo
     -> OverrideActions
+    -> Alphabet
     -> Bool
     -> ComponentName
     -> m [Prism.Command]
-genOverrideSelfLoops bi oas isRole compName = traverse
+genOverrideSelfLoops bi oas alph isRole compName = traverse
     genCommand
-    (toList (overrideActionsOfRoles bi oas compName))
+    (filter (isModuleAction . snd)
+            (toList (overrideActionsOfRoles bi oas compName)))
   where
     genCommand (roleName, act) = do
         act' <- trnsQualified (trnsAction act)
@@ -95,8 +101,11 @@ genOverrideSelfLoops bi oas isRole compName = traverse
                 if isRole then acts ++ [notPlayedActionIdent compName] else acts
         return (selfLoops acts' Prism.ActionOpen)
 
+    isModuleAction act = act `Set.member` alph'
 
--- TODO: only generate self-loops for actions in own module alphabet
+    alph' = stripLocAndKind alph
+
+
 genNonblockingSelfLoops
     :: MonadState TranslatorState m
     => BindingInfo

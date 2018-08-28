@@ -1,0 +1,43 @@
+natural type N;
+
+impl N(N_first, N_second);
+
+module N_first {
+    s : [0 .. 2] init 0;
+
+    [a] s = 0 -> (s' = 1);
+
+    // self-loop for overridden b should only be generated here
+    [b] s = 1 -> (s' = 2);
+}
+
+module N_second {
+    t : [0 .. 2] init 0;
+
+    [a] t = 0 -> (t' = 1);
+    [c] t = 1 -> (t' = 2);
+}
+
+
+role type R(N);
+
+impl R(R_first, R_second);
+
+module R_first {
+    s : [0 .. 1] init 0;
+
+    [a] s = 0 -> (s' = 1);
+}
+
+module R_second {
+    t : [0 .. 1] init 0;
+
+    // self-loop for not playing b should only be generated here
+    [override b] t = 0 -> (t' = 1);
+}
+
+system {
+    n : N;
+    r : R;
+    r boundto n;
+}
