@@ -43,7 +43,7 @@ makeLenses ''System
 
 instance Pretty System where
     pretty sys =
-        sep (punctuate comma (instanceDocs ++ bindingDocs ++ containmentDocs))
+        sep (fmap (<> semi) (instanceDocs ++ bindingDocs ++ containmentDocs))
       where
         instanceDocs = fmap prettyInstance (view (instances.to assocs) sys)
         bindingDocs = fmap prettyBinding (view (boundTo.to assocs) sys)
