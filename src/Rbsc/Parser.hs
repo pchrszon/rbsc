@@ -29,6 +29,7 @@ import Rbsc.Parser.ComponentType
 import Rbsc.Parser.Constant
 import Rbsc.Parser.Coordinator
 import Rbsc.Parser.Definition
+import Rbsc.Parser.Enumeration
 import Rbsc.Parser.Function
 import Rbsc.Parser.Global
 import Rbsc.Parser.Impl
@@ -66,6 +67,7 @@ modelFile =
 definition :: Parser ErrorOrDef
 definition = withRecoveryOn (semi <|> symbol "}") . choice $
     [ constantDef
+    , enumerationDef
     , functionDef
     , componentTypeDef
     , systemDef

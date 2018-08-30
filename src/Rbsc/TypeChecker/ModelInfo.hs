@@ -35,8 +35,8 @@ import Rbsc.Report.Result
 import           Rbsc.Syntax.Typed   (HasConstants (..), SomeExpr (..),
                                       TConstant, TType)
 import qualified Rbsc.Syntax.Typed   as T
-import           Rbsc.Syntax.Untyped (UConstant, UFunction, UType, UVarDecl,
-                                      UVarType)
+import           Rbsc.Syntax.Untyped (Enumeration (..), UConstant, UFunction,
+                                      UType, UVarDecl, UVarType)
 import qualified Rbsc.Syntax.Untyped as U
 
 import           Rbsc.TypeChecker.ComponentTypes
@@ -221,7 +221,7 @@ fromSyntaxVarType = \case
         (lowerVal, _) <- evalIntExpr lower
         (upperVal, _) <- evalIntExpr upper
         return (Some TyInt, Just (lowerVal, upperVal))
-    U.VarTyEnum names ->
+    U.VarTyEnum (Enumeration names) ->
         return (Some TyInt, Just (0, length names - 1))
     U.VarTyArray size vTy -> do
         (sizeVal, _) <- evalIntExpr size

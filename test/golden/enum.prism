@@ -1,0 +1,8 @@
+mdp
+
+module n_impl
+    n_loc : [0..2] init 0;
+
+    [] n_loc = 0 -> (n_loc' = 1);
+    [] n_loc = 1 -> (n_loc' = 2);
+endmodule

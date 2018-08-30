@@ -99,6 +99,7 @@ makeLenses ''BuilderState
 identifierDefs :: Model -> Either [Error] Identifiers
 identifierDefs Model{..} = runBuilder $ do
     insertConstants modelConstants
+    traverse_ insertEnumeration modelEnumumerations
     insertFunctions modelFunctions
     insertGlobals modelGlobals
     insertLabels modelLabels
@@ -164,9 +165,13 @@ insertVarDecl sc c decl = do
 
 insertVarType :: UVarType -> Builder ()
 insertVarType = \case
-    VarTyEnum names ->
-        insertConstants (fmap mkConstant (zip names [0 ..]))
+    VarTyEnum e -> insertEnumeration e
     _ -> return ()
+
+
+insertEnumeration :: Enumeration -> Builder ()
+insertEnumeration (Enumeration names) =
+    insertConstants (fmap mkConstant (zip names [0 ..]))
   where
     mkConstant (name, i) =
         Constant name (Just TyInt) (LitInt i `withLocOf` name)

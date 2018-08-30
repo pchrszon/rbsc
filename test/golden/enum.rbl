@@ -1,0 +1,17 @@
+enum {
+    FIRST,
+    SECOND,
+    THIRD
+}
+
+
+natural type N;
+
+impl N {
+    loc : [FIRST .. THIRD] init FIRST;
+
+    [] loc = FIRST -> (loc' = SECOND);
+    [] loc = SECOND -> (loc' = THIRD);
+}
+
+system { n : N; }

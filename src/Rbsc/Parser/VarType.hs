@@ -10,6 +10,7 @@ module Rbsc.Parser.VarType
 import Text.Megaparsec
 
 
+import Rbsc.Parser.Enumeration
 import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
 
@@ -21,6 +22,6 @@ varType :: Parser UVarType
 varType = label "type" . choice $
     [ VarTyBool  <$  reserved "bool"
     , VarTyInt   <$> range
-    , VarTyEnum  <$> (reserved "enum" *> braces (identifier `sepBy1` comma))
+    , VarTyEnum  <$> enumeration
     , VarTyArray <$> (reserved "array" *> expr) <*> (reserved "of" *> varType)
     ]

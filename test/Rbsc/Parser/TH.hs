@@ -95,6 +95,8 @@ deriving instance Data Model
 
 deriving instance Data expr => Data (Constant expr)
 
+deriving instance Data Enumeration
+
 deriving instance Data expr => Data (Function expr)
 deriving instance Data expr => Data (Parameter expr)
 

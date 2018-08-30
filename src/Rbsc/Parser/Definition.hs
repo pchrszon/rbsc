@@ -40,6 +40,7 @@ type ErrorOrDef = Either (ParseError Char Void) Definition
 -- | Top-level definitions of a model.
 data Definition
     = DefConstant UConstant
+    | DefEnumeration Enumeration
     | DefFunction UFunction
     | DefGlobal UVarDecl
     | DefLabel ULabel
@@ -61,6 +62,7 @@ toModel defs = do
     impls <- getImplementations defs
     return Model
         { modelConstants        = def _DefConstant
+        , modelEnumumerations   = def _DefEnumeration
         , modelFunctions        = def _DefFunction
         , modelGlobals          = def _DefGlobal
         , modelLabels           = def _DefLabel
