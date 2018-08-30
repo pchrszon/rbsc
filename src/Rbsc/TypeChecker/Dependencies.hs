@@ -81,6 +81,7 @@ sortDefinitions idents = do
         DepDefinition def -> case def of
             DefConstant _                            -> "constant"
             DefFunction _                            -> "function"
+            DefLabel                                 -> "label"
             DefGlobal _                              -> "global variable"
             DefLocal _ _                             -> "local variable"
             DefComponentType _                       -> "type"
@@ -103,6 +104,7 @@ insert :: IdentifierDef -> Analyzer ()
 insert def = case def of
     DefConstant c        -> insertConstant c
     DefFunction f        -> insertFunction f
+    DefLabel             -> return ()
     DefGlobal g          -> insertGlobal g
     DefLocal tyName decl -> insertLocal tyName decl
     DefComponentType t   -> insertComponentType t

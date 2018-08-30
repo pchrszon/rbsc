@@ -9,6 +9,7 @@ module Rbsc.Parser.Constant
 
 import Text.Megaparsec
 
+
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer

@@ -19,6 +19,9 @@ module Rbsc.Syntax.Untyped
       -- * Variables
     , UVarDecl
 
+      -- * Labels
+    , ULabel
+
       -- * Implementation
     , UImplementation
     , UImplBody
@@ -54,6 +57,7 @@ import Rbsc.Syntax.Constant       as Syntax
 import Rbsc.Syntax.Coordinator    as Syntax
 import Rbsc.Syntax.Function       as Syntax
 import Rbsc.Syntax.Impl           as Syntax
+import Rbsc.Syntax.Label          as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
 import Rbsc.Syntax.Type           as Syntax
@@ -67,6 +71,7 @@ data Model = Model
     { modelConstants        :: [UConstant]
     , modelFunctions        :: [UFunction]
     , modelGlobals          :: [UVarDecl]
+    , modelLabels           :: [ULabel]
     , modelNaturalTypes     :: [NaturalTypeDef]
     , modelRoleTypes        :: [RoleTypeDef]
     , modelCompartmentTypes :: [UCompartmentTypeDef]
@@ -88,6 +93,9 @@ type UParameter = Parameter LExpr
 
 
 type UVarDecl = VarDecl LExpr
+
+
+type ULabel = Label LExpr
 
 
 type UImplementation  = Implementation ElemMulti UVarDecls UQuantifiedType LExpr

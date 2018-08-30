@@ -85,6 +85,7 @@ addDependency = \case
     DepDefinition def -> case def of
         DefConstant c        -> addConstant c
         DefFunction f        -> addFunction f
+        DefLabel             -> return ()
         DefGlobal decl       -> addVariable Global decl
         DefLocal tyName decl -> addVariable (Local tyName) decl
         DefComponentType t   -> addComponentType t

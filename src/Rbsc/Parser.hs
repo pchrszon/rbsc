@@ -32,6 +32,7 @@ import Rbsc.Parser.Definition
 import Rbsc.Parser.Function
 import Rbsc.Parser.Global
 import Rbsc.Parser.Impl
+import Rbsc.Parser.Label
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.System
 
@@ -69,6 +70,7 @@ definition = withRecoveryOn (semi <|> symbol "}") . choice $
     , componentTypeDef
     , systemDef
     , globalDef
+    , labelDef
     , implementationDef
     , moduleDef
     , coordinatorDef

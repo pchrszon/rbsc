@@ -53,9 +53,16 @@ typeCheck model = do
 tcModel :: U.Model -> [TConstant] -> TypeChecker T.Model
 tcModel U.Model{..} consts = T.Model consts
     <$> traverse tcVarDecl modelGlobals
+    <*> traverse tcLabel modelLabels
     <*> traverse tcConstraint modelSystem
     <*> tcImpls modelImpls
     <*> traverse tcCoordinator modelCoordinators
+
+
+tcLabel :: ULabel -> TypeChecker TLabel
+tcLabel Label{..} = do
+    e' <- labelExpr `hasType` TyBool
+    return (Label labelName (SomeExpr e' TyBool `withLocOf` labelExpr))
 
 
 tcConstraint :: LExpr -> TypeChecker (Loc (T.Expr Bool))

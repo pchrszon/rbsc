@@ -15,6 +15,9 @@ module Rbsc.Syntax.Typed
       -- * Variables
     , TVarDecl
 
+      -- * Labels
+    , TLabel
+
       -- * Implementation
     , TImplementation
     , TImplBody
@@ -57,6 +60,7 @@ import Rbsc.Syntax.Constant       as Syntax
 import Rbsc.Syntax.Coordinator    as Syntax
 import Rbsc.Syntax.Function       as Syntax
 import Rbsc.Syntax.Impl           as Syntax
+import Rbsc.Syntax.Label          as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
 import Rbsc.Syntax.Type           as Syntax
@@ -69,6 +73,7 @@ import Rbsc.Syntax.VarType        as Syntax
 data Model = Model
     { modelConstants    :: [TConstant]
     , modelGlobals      :: TInits
+    , modelLabels       :: [TLabel]
     , modelSystem       :: [Loc (Expr Bool)]
     , modelImpls        :: Map TypeName [TNamedModuleBody ElemMulti]
     , modelCoordinators :: [TCoordinator ElemMulti]
@@ -83,6 +88,9 @@ type TParameter = Parameter LSomeExpr
 
 
 type TVarDecl = VarDecl LSomeExpr
+
+
+type TLabel = Label LSomeExpr
 
 
 type TImplementation       = Implementation ElemMulti TInits TQuantifiedType LSomeExpr

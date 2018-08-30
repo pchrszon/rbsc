@@ -42,6 +42,7 @@ data Definition
     = DefConstant UConstant
     | DefFunction UFunction
     | DefGlobal UVarDecl
+    | DefLabel ULabel
     | DefNaturalType NaturalTypeDef
     | DefRoleType RoleTypeDef
     | DefCompartmentType UCompartmentTypeDef
@@ -62,6 +63,7 @@ toModel defs = do
         { modelConstants        = def _DefConstant
         , modelFunctions        = def _DefFunction
         , modelGlobals          = def _DefGlobal
+        , modelLabels           = def _DefLabel
         , modelNaturalTypes     = def _DefNaturalType
         , modelRoleTypes        = def _DefRoleType
         , modelCompartmentTypes = def _DefCompartmentType

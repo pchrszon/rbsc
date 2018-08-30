@@ -51,6 +51,7 @@ type Identifiers = Map ScopedName (Loc IdentifierDef)
 data IdentifierDef
     = DefConstant UConstant -- ^ the identifier represents a constant
     | DefFunction UFunction -- ^ the identifier represents a function
+    | DefLabel -- ^ the identifier represents a label
     | DefGlobal UVarDecl -- ^ the identifier represents a global variable
     | DefLocal !TypeName UVarDecl -- ^ the identifier represents a local variable
     | DefComponentType ComponentTypeDef -- ^ the identifier represents a component type
@@ -100,6 +101,7 @@ identifierDefs Model{..} = runBuilder $ do
     insertConstants modelConstants
     insertFunctions modelFunctions
     insertGlobals modelGlobals
+    insertLabels modelLabels
     insertComponentTypes ntdName TypeDefNatural modelNaturalTypes
     insertComponentTypes rtdName TypeDefRole modelRoleTypes
     insertComponentTypes ctdName TypeDefCompartment modelCompartmentTypes
@@ -119,6 +121,11 @@ insertFunctions =
 
 insertGlobals :: [UVarDecl] -> Builder ()
 insertGlobals = traverse_ (insertVarDecl Global DefGlobal)
+
+
+insertLabels :: [ULabel] -> Builder ()
+insertLabels = traverse_ $ \l ->
+    insert Global (labelName l) DefLabel
 
 
 insertComponentTypes ::

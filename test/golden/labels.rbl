@@ -1,0 +1,13 @@
+natural type N;
+
+impl N {
+    s : [0 .. 1] init 0;
+
+    [self.a] s = 0 -> (s' = 1);
+}
+
+system {
+    n[3] : N;
+}
+
+label "goal" = forall c : N. c.s = 1;

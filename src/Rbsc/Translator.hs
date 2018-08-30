@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 
 module Rbsc.Translator
@@ -37,6 +38,7 @@ import qualified Rbsc.Syntax.Untyped as U
 import Rbsc.Translator.Alphabet
 import Rbsc.Translator.Binding
 import Rbsc.Translator.Coordinator
+import Rbsc.Translator.Expr
 import Rbsc.Translator.Instantiation
 import Rbsc.Translator.Internal
 import Rbsc.Translator.Module
@@ -70,6 +72,7 @@ translateModel model sys info = do
 
     runTranslator info $ do
         globals' <- trnsGlobalVars (modelGlobals model)
+        labels'  <- traverse trnsLabel (modelLabels model)
         modules' <- trnsModules sys bi mas as modules
         coordinators' <-
             trnsCoordinators (view componentTypes info) sys bi as coordinators
@@ -78,12 +81,18 @@ translateModel model sys info = do
         return Prism.Model
             { Prism.modelType       = Prism.MDP
             , Prism.modelFormulas   = []
-            , Prism.modelLabels     = []
+            , Prism.modelLabels     = labels'
             , Prism.modelConstants  = []
             , Prism.modelGlobalVars = fmap Prism.GlobalVar globals'
             , Prism.modelModules    = concat [coordinators', desync, modules']
             , Prism.modelInitStates = Nothing
             }
+
+
+trnsLabel :: TLabel -> Translator Prism.Label
+trnsLabel Label{..} = do
+    e' <- reduceLSomeExpr labelExpr
+    Prism.Label (unLoc labelName) <$> trnsLSomeExpr Nothing e'
 
 
 genDesyncModule :: Alphabets -> Translator (Maybe Prism.Module)

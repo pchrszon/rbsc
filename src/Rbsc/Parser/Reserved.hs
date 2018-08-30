@@ -26,6 +26,7 @@ reservedWords =
     , "function"
     , "global"
     , "init"
+    , "label"
     , "component"
     , "natural"
     , "role"

@@ -108,6 +108,8 @@ deriving instance Data expr => Data (MultiRole expr)
 deriving instance Data expr => Data (Syntax.Type expr)
 deriving instance Data expr => Data (VarType expr)
 
+deriving instance Data expr => Data (Label expr)
+
 deriving instance (Data expr, Data ty, Data vars) => Data (Implementation ElemMulti vars ty expr)
 deriving instance (Data expr, Data ty, Data vars) => Data (ImplBody ElemMulti vars ty expr)
 deriving instance (Data expr, Data ty, Data vars) => Data (Module ElemMulti vars ty expr)
