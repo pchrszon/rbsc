@@ -12,6 +12,7 @@ import Control.Monad.Reader
 
 import           Data.Foldable
 import qualified Data.Map.Strict  as Map
+import           Data.Maybe
 import qualified Data.Set         as Set
 import           Data.Traversable
 
@@ -72,7 +73,7 @@ translateModel model sys info = do
         modules' <- trnsModules sys bi mas as modules
         coordinators' <-
             trnsCoordinators (view componentTypes info) sys bi as coordinators
-        desync <- genDesyncModule as
+        desync <- maybeToList <$> genDesyncModule as
 
         return Prism.Model
             { Prism.modelType       = Prism.MDP
@@ -80,16 +81,18 @@ translateModel model sys info = do
             , Prism.modelLabels     = []
             , Prism.modelConstants  = []
             , Prism.modelGlobalVars = fmap Prism.GlobalVar globals'
-            , Prism.modelModules    = concat [coordinators', [desync], modules']
+            , Prism.modelModules    = concat [coordinators', desync, modules']
             , Prism.modelInitStates = Nothing
             }
 
 
-genDesyncModule :: Alphabets -> Translator Prism.Module
+genDesyncModule :: Alphabets -> Translator (Maybe Prism.Module)
 genDesyncModule as = do
     ident <- trnsQualified (QlName "Desync")
     cmds <- traverse genCommand acts
-    return (Prism.Module ident [] cmds)
+    return $ if null cmds
+        then Nothing
+        else Just (Prism.Module ident [] cmds)
   where
     acts = toList (Set.map (unLoc . fst) (Set.unions (Map.elems as)))
 

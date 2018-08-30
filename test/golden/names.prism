@@ -2,10 +2,6 @@ mdp
 
 global n_x : bool init false;
 
-module Desync
-
-endmodule
-
 module n_impl
     n_x2 : bool init false;
 

@@ -1,9 +1,5 @@
 mdp
 
-module Desync
-
-endmodule
-
 module n_impl
     n_x_0 : [1..16] init 1;
     n_x_1 : [1..16] init 4;
