@@ -1,13 +1,13 @@
 mdp
 
+module Desync
+
+endmodule
+
 module n_impl
     n_xs_0 : [0..2];
     n_xs_1 : [0..2];
     n_xs_2 : [0..2];
 
     [] n_xs_0 = 0 & n_xs_1 = 1 & n_xs_2 = 2 -> true;
-endmodule
-
-module Desync
-
 endmodule

@@ -80,7 +80,7 @@ translateModel model sys info = do
             , Prism.modelLabels     = []
             , Prism.modelConstants  = []
             , Prism.modelGlobalVars = fmap Prism.GlobalVar globals'
-            , Prism.modelModules    = concat [modules', coordinators', [desync]]
+            , Prism.modelModules    = concat [coordinators', [desync], modules']
             , Prism.modelInitStates = Nothing
             }
 

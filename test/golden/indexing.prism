@@ -1,5 +1,11 @@
 mdp
 
+module Desync
+    ]a_0[ true -> true;
+    ]a_1[ true -> true;
+    ]a_2[ true -> true;
+endmodule
+
 module n_impl
     n_i : [0..2] init 0;
     n_arr_0 : bool;
@@ -18,10 +24,4 @@ module n_impl
     ]a_0[ n_i = 0 & n_arr_0 -> (n_arr_0' = false);
     ]a_1[ n_i = 1 & n_arr_1 -> (n_arr_1' = false);
     ]a_2[ n_i = 2 & n_arr_2 -> (n_arr_2' = false);
-endmodule
-
-module Desync
-    ]a_0[ true -> true;
-    ]a_1[ true -> true;
-    ]a_2[ true -> true;
 endmodule

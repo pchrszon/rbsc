@@ -1,5 +1,12 @@
 mdp
 
+module Desync
+    ]a[ true -> true;
+    ]b[ true -> true;
+    ]c[ true -> true;
+    ]d[ true -> true;
+endmodule
+
 module core_impl
     core_s : [0..2] init 0;
 
@@ -32,11 +39,4 @@ module right_impl
 
     ]b, right, ovr_right[ right_s = 0 -> (right_s' = 1);
     ]b, not_right[ true -> true;
-endmodule
-
-module Desync
-    ]a[ true -> true;
-    ]b[ true -> true;
-    ]c[ true -> true;
-    ]d[ true -> true;
 endmodule

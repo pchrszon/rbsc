@@ -1,5 +1,14 @@
 mdp
 
+module Desync
+    ]a[ true -> true;
+    ]b[ true -> true;
+    ]c[ true -> true;
+    ]n_a[ true -> true;
+    ]n_a_0[ true -> true;
+    ]msg_1_2[ true -> true;
+endmodule
+
 module n_impl
     [] true -> true;
     ]a[ true -> true;
@@ -7,14 +16,5 @@ module n_impl
     ]n_a_0[ true -> true;
     ]c[ true -> true;
     ]b[ true -> true;
-    ]msg_1_2[ true -> true;
-endmodule
-
-module Desync
-    ]a[ true -> true;
-    ]b[ true -> true;
-    ]c[ true -> true;
-    ]n_a[ true -> true;
-    ]n_a_0[ true -> true;
     ]msg_1_2[ true -> true;
 endmodule

@@ -1,5 +1,11 @@
 mdp
 
+module Desync
+    ]a[ true -> true;
+    ]b[ true -> true;
+    ]c[ true -> true;
+endmodule
+
 module n_N_first
     n_s : [0..2] init 0;
 
@@ -27,10 +33,4 @@ module r_R_second
 
     ]b, r, ovr_r[ r_t = 0 -> (r_t' = 1);
     ]b, not_r[ true -> true;
-endmodule
-
-module Desync
-    ]a[ true -> true;
-    ]b[ true -> true;
-    ]c[ true -> true;
 endmodule
