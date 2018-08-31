@@ -32,7 +32,7 @@ componentTypeDef = label "type definition" $ choice
 naturalTypeDef :: Parser NaturalTypeDef
 naturalTypeDef = NaturalTypeDef <$> (keyword *> identifier <* semi)
   where
-    keyword = reserved "natural" *> reserved "type"
+    keyword = reserved "type" <|> (reserved "natural" *> reserved "type")
 
 
 -- | Parser for a role type definition.
