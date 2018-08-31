@@ -78,11 +78,16 @@ trnsCoordinator roleActMap Coordinator{..} = do
     alph <- fmap (Set.fromList . catMaybes) (traverse action coordCommands)
 
     let alph'   = Set.toList alph ++ playAlphabet
-        alphCmd = Prism.Command alph' Prism.ActionOpen (Prism.LitBool True) []
+        alphCmd = if null playAlphabet
+                      then []
+                      else [alphabetCmd alph']
 
-    return (Prism.Module ident vars' (cmds' ++ [alphCmd]))
+    return (Prism.Module ident vars' (cmds' ++ alphCmd))
   where
     valuations = allValuatations constrainedRoles
+
+    alphabetCmd alph =
+        Prism.Command alph Prism.ActionOpen (Prism.LitBool True) []
 
     playAlphabet = concatMap genPlayActs (Set.toList constrainedRoles)
     genPlayActs roleName =
