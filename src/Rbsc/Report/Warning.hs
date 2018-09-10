@@ -5,7 +5,7 @@
 module Rbsc.Report.Warning where
 
 
-import           Data.Text (Text)
+import           Data.Text (Text, pack)
 import qualified Data.Text as Text
 
 
@@ -19,6 +19,7 @@ data Warning
     = NonRoleInRelation !Region
     | NonCompartmentInRelation !Region
     | InstantiationCycle [TypeName]
+    | OutOfRangeUpdate !Region (Int, Int) !Int
     deriving (Eq, Show)
 
 
@@ -42,6 +43,14 @@ toReport = \case
         flip warningReport [] $
             "omitted system instance because of cycle among types:\n" <>
             Text.intercalate ", " (fmap getTypeName tyNames)
+
+    OutOfRangeUpdate rgn (lower, upper) actual ->
+        warningReport "out-of-range update"
+            [ hintPart rgn . Just $
+                "expression evaluates to " <> pack (show actual) <>
+                ", but variable has range [" <> pack (show lower) <> ".." <>
+                pack (show upper) <> "]"
+            ]
 
 
 warningReport :: Text -> [Part] -> Report

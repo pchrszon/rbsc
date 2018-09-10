@@ -12,11 +12,13 @@ module Rbsc.Translator.Command
     ) where
 
 
+import Control.Applicative
 import Control.Lens
 import Control.Monad.Except
 
 import Data.Maybe
 import Data.Traversable
+import qualified Data.Map.Strict as Map
 
 import qualified Language.Prism as Prism
 
@@ -28,7 +30,9 @@ import Rbsc.Data.Some
 import Rbsc.Data.Type
 
 import Rbsc.Report.Error
+import Rbsc.Report.Warning
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed hiding (Type (..))
 
@@ -96,6 +100,8 @@ trnsAssignment
     -> TAssignment
     -> Translator [(Prism.Ident, Prism.Expr)]
 trnsAssignment mComp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = do
+    checkOutOfRange mComp name e
+
     symTable <- view symbolTable
     let (baseName, varTy) = if
             | Just (typeName, comp) <- mComp
@@ -129,3 +135,21 @@ trnsIndices qname (TyArray size innerTy) (Loc (SomeExpr idx TyInt) rgn : idxs) =
         _ -> throw rgn NotConstant
 trnsIndices qname _ [] = return qname
 trnsIndices _     _ _  = error "trnsIndices: type error"
+
+
+checkOutOfRange :: Maybe (TypeName, ComponentName) -> Name -> LSomeExpr -> Translator ()
+checkOutOfRange mComp name (Loc (SomeExpr (Literal x TyInt) TyInt) rgn) = do
+    rt <- view rangeTable
+
+    let rangeLocal = case mComp of
+            Just (typeName, _) ->
+                Map.lookup (ScopedName (Local typeName) name) rt
+            Nothing -> Nothing
+        rangeGlobal = Map.lookup (ScopedName Global name) rt
+
+    case rangeLocal <|> rangeGlobal of
+        Just (lower, upper)
+            | x < lower || x > upper ->
+                lift (lift (warn (OutOfRangeUpdate rgn (lower, upper) x)))
+        _ -> return ()
+checkOutOfRange _ _ _ = return ()
