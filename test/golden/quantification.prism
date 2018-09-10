@@ -1,0 +1,18 @@
+mdp
+
+global g : [0..1] init 0;
+
+module Desync
+    ]n_act_0[ true -> true;
+    ]n_act_1[ true -> true;
+    ]n_act_2[ true -> true;
+endmodule
+
+module n_impl
+    n_x_0 : bool init false;
+    n_x_1 : bool init false;
+
+    ]n_act_0[ g = 0 & g = 1 -> (n_x_0' = true) & (n_x_1' = true);
+    ]n_act_1[ g = 0 & g = 1 -> (n_x_0' = true) & (n_x_1' = true);
+    ]n_act_2[ g = 0 & g = 1 -> (n_x_0' = true) & (n_x_1' = true);
+endmodule

@@ -106,7 +106,7 @@ instantiateModuleBody comp (NamedModuleBody name body) = do
 unrollModuleBody ::
        MonadEval r m => TModuleBody ElemMulti -> m (TModuleBody Elem)
 unrollModuleBody ModuleBody {..} = do
-    cmds <- unrollElemMultis bodyCommands
+    cmds <- unrollElemMultis instantiateCommand bodyCommands
     cmds' <- for cmds $ \(Elem cmd) -> Elem <$> unrollCommand cmd
     return (ModuleBody bodyVars cmds')
 
@@ -114,14 +114,14 @@ unrollModuleBody ModuleBody {..} = do
 unrollCoordinator
     :: MonadEval r m => TCoordinator ElemMulti -> m (TCoordinator Elem)
 unrollCoordinator Coordinator {..} = do
-    cmds  <- unrollElemMultis coordCommands
+    cmds  <- unrollElemMultis instantiateCoordCommand coordCommands
     cmds' <- for cmds $ \(Elem cmd) -> Elem <$> unrollCoordCommand cmd
     return (Coordinator coordVars cmds')
 
 
 unrollCommand :: MonadEval r m => TCommand ElemMulti -> m (TCommand Elem)
 unrollCommand Command {..} = do
-    upds  <- unrollElemMultis cmdUpdates
+    upds  <- unrollElemMultis instantiateUpdate cmdUpdates
     upds' <- for upds $ \(Elem upd) -> Elem <$> unrollUpdate upd
     return (Command cmdAction cmdActionKind cmdGuard upds')
 
@@ -129,28 +129,30 @@ unrollCommand Command {..} = do
 unrollCoordCommand
     :: MonadEval r m => TCoordCommand ElemMulti -> m (TCoordCommand Elem)
 unrollCoordCommand CoordCommand {..} = do
-    upds <- unrollElemMultis coordUpdates
+    upds <- unrollElemMultis instantiateUpdate coordUpdates
     upds' <- for upds $ \(Elem upd) -> Elem <$> unrollUpdate upd
     return (CoordCommand coordAction coordConstraint coordGuard upds')
 
 
 unrollUpdate :: MonadEval r m => TUpdate ElemMulti -> m (TUpdate Elem)
-unrollUpdate Update{..} = Update updProb <$> unrollElemMultis updAssignments
+unrollUpdate Update {..} =
+    Update updProb <$> unrollElemMultis instantiateAssignment updAssignments
 
 
-unrollElemMultis :: (HasExprs a, MonadEval r m) => [TElemMulti a] -> m [TElem a]
-unrollElemMultis = fmap concat . traverse unrollElemMulti
+unrollElemMultis
+    :: MonadEval r m => Instantiate a -> [TElemMulti a] -> m [TElem a]
+unrollElemMultis inst = fmap concat . traverse (unrollElemMulti inst)
 
 
-unrollElemMulti :: (HasExprs a, MonadEval r m) => TElemMulti a -> m [TElem a]
-unrollElemMulti = \case
+unrollElemMulti :: MonadEval r m => Instantiate a -> TElemMulti a -> m [TElem a]
+unrollElemMulti inst = \case
     ElemSingle x   -> return [Elem x]
     ElemLoop l     -> unrollLoop l
     ElemIf g elems -> case g of
         Loc (SomeExpr g' TyBool) rgn -> do
             b <- eval (Loc g' rgn)
             if b
-                then unrollElemMultis elems
+                then unrollElemMultis inst elems
                 else return []
         _ -> error "unrollElemMulti: type error"
   where
@@ -162,8 +164,70 @@ unrollElemMulti = \case
                 l <- eval lower
                 u <- eval upper
                 return (fmap (\i -> SomeExpr (Literal i TyInt) TyInt) [l .. u])
-        let bodies' = concatMap (\e -> fmap (instantiateExprs e) loopBody) es
-        unrollElemMultis bodies'
+        let bodies' =
+                concatMap (\e -> instantiateElemMultis inst 0 e loopBody) es
+        unrollElemMultis inst bodies'
+
+
+-- | An instantiation function. The first argument gives the number of
+-- binders we are operating under.
+type Instantiate a = Int -> SomeExpr -> a -> a
+
+
+instantiateCommand :: Instantiate (TCommand ElemMulti)
+instantiateCommand i s Command{..} = Command
+    { cmdAction     = fmap (instantiateLSomeExpr i s) cmdAction
+    , cmdActionKind = cmdActionKind
+    , cmdGuard      = instantiateLSomeExpr i s cmdGuard
+    , cmdUpdates    = instantiateElemMultis instantiateUpdate i s cmdUpdates
+    }
+
+
+instantiateCoordCommand :: Instantiate (TCoordCommand ElemMulti)
+instantiateCoordCommand i s CoordCommand{..} = CoordCommand
+    { coordAction     = fmap inst coordAction
+    , coordConstraint = fmap inst coordConstraint
+    , coordGuard      = inst coordGuard
+    , coordUpdates    = instantiateElemMultis instantiateUpdate i s coordUpdates
+    }
+  where
+    inst = instantiateLSomeExpr i s
+
+
+instantiateUpdate :: Instantiate (TUpdate ElemMulti)
+instantiateUpdate i s Update{..} = Update
+    { updProb        = fmap (instantiateLSomeExpr i s) updProb
+    , updAssignments =
+        instantiateElemMultis instantiateAssignment i s updAssignments
+    }
+
+
+instantiateElemMultis :: Instantiate a -> Instantiate [TElemMulti a]
+instantiateElemMultis instInner i s = fmap (instantiateElemMulti instInner i s)
+
+
+instantiateElemMulti :: Instantiate a -> Instantiate (TElemMulti a)
+instantiateElemMulti instInner i s = \case
+    ElemSingle x -> ElemSingle (instInner i s x)
+    ElemLoop (Loop var ty body) ->
+        let body' = fmap (instantiateElemMulti instInner (i + 1) s) body
+        in ElemLoop (Loop var ty body')
+    ElemIf c elems ->
+        let c' = instantiateLSomeExpr i s c
+            elems' = fmap (instantiateElemMulti instInner i s) elems
+        in ElemIf c' elems'
+
+
+instantiateAssignment :: Instantiate TAssignment
+instantiateAssignment i s (Assignment name idxs e) =
+    Assignment name (fmap inst idxs) (inst e)
+  where
+    inst = instantiateLSomeExpr i s
+
+
+instantiateLSomeExpr :: Instantiate LSomeExpr
+instantiateLSomeExpr i s (Loc (SomeExpr e ty) rgn) =
+    Loc (SomeExpr (instantiateUnder i (Scoped e) s) ty) rgn
 
 
 -- | Replace the 'Self' keyword with a concrete instance.

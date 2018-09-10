@@ -1,0 +1,16 @@
+type N;
+
+global g : [0 .. 1] init 0;
+
+impl N {
+    x : array 2 of bool init false;
+
+    forall n {
+        forall k : [0 .. 2] {
+            [n.act[k]] forall i : [0 .. 1]. g = i ->
+                forall q : [0 .. 1] { (x[q]' = true) };
+        }
+    }
+}
+
+system { n : N; }

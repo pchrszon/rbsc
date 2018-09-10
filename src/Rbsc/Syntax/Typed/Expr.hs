@@ -22,7 +22,7 @@ module Rbsc.Syntax.Typed.Expr
     , HasExprs(..)
 
     , instantiate
-    , instantiateExprs
+    , instantiateUnder
 
     , transformExpr
     , transformExprM
@@ -157,9 +157,17 @@ instance HasExprs (Loc SomeExpr) where
         fromLocExpr (Loc e' rgn') = Loc (SomeExpr e' ty) rgn'
 
 
--- | Instantiate all variables bound by the outermost binder.
+-- | @instantiate body e@ substitutes all variables in @body@ bound by the
+-- outermost binder with @e@.
 instantiate :: Scoped t -> SomeExpr -> Expr t
-instantiate (Scoped body) (SomeExpr s ty) = runReader (go body) 0
+instantiate = instantiateUnder 0
+
+
+-- | @instantiateUnder i body e@ substitutes all variables in @body@ bound
+-- by the outermost binder with @e@, where @i@ is the number of binders
+-- above.
+instantiateUnder :: Int -> Scoped t -> SomeExpr -> Expr t
+instantiateUnder o (Scoped body) (SomeExpr s ty) = runReader (go body) o
   where
     go :: Expr a -> Reader Int (Expr a)
     go = \case
@@ -182,11 +190,6 @@ instantiate (Scoped body) (SomeExpr s ty) = runReader (go body) 0
         QdTypeComponent tySet -> return (QdTypeComponent tySet)
         QdTypeInt (lower, upper) ->
             QdTypeInt <$> ((,) <$> traverse go lower <*> traverse go upper)
-
-
--- | Instantiate the outermost binder in all expressions in a syntax tree.
-instantiateExprs :: HasExprs a => SomeExpr -> a -> a
-instantiateExprs s = transformExprs (\e -> instantiate (Scoped e) s)
 
 
 -- | Transform every element in an expression tree, in a bottom-up manner.
