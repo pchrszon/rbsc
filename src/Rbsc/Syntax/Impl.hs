@@ -18,7 +18,6 @@ module Rbsc.Syntax.Impl
 
     , Command(..)
     , cmdGuardLens
-    , ActionKind(..)
     , Update(..)
     , Assignment(..)
 
@@ -115,10 +114,11 @@ deriving instance
 
 -- | A guarded command.
 data Command elem ty expr = Command
-    { cmdAction     :: Maybe expr
-    , cmdActionKind :: !ActionKind
-    , cmdGuard      :: expr
-    , cmdUpdates    :: [elem ty expr (Update elem ty expr)]
+    { cmdAction       :: Maybe expr
+    , cmdActionKind   :: !ActionKind
+    , cmdActionIntent :: !ActionIntent
+    , cmdGuard        :: expr
+    , cmdUpdates      :: [elem ty expr (Update elem ty expr)]
     }
 
 deriving instance (Show ty, Show expr) => Show (Command ElemMulti ty expr)
@@ -129,6 +129,7 @@ instance (HasExprs ty, HasExprs expr) =>
     exprs f Command {..} = Command
         <$> traverse (exprs f) cmdAction
         <*> pure cmdActionKind
+        <*> pure cmdActionIntent
         <*> exprs f cmdGuard
         <*> traverse (exprs f) cmdUpdates
 
@@ -136,6 +137,7 @@ instance HasExprs expr => HasExprs (Command Elem ty expr) where
     exprs f Command {..} = Command
         <$> traverse (exprs f) cmdAction
         <*> pure cmdActionKind
+        <*> pure cmdActionIntent
         <*> exprs f cmdGuard
         <*> traverse (exprs f) cmdUpdates
 

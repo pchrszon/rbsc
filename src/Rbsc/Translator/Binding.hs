@@ -12,6 +12,7 @@ module Rbsc.Translator.Binding
     , generateBindingInfo
 
     , requiredActionsOfRole
+    , internalActionsOfPlayers
     , overrideActionsOfRoles
     ) where
 
@@ -79,11 +80,22 @@ generateBindingInfo sys as = do
 requiredActionsOfRole
     :: BindingInfo -> Alphabets -> RoleName -> Alphabet -> Set Action
 requiredActionsOfRole bi as roleName alph =
-    stripLocAndKind alph `Set.intersection` playerAlphabets
+    stripActionInfo alph `Set.intersection` playerAlphabets
   where
-    playerAlphabets = stripLocAndKind
-        (Set.unions (fmap getAlphabet (toList (playersOfRole bi roleName))))
+    playerAlphabets = stripActionInfo (alphabetOfPlayers bi as roleName)
 
+
+-- | The internal actions of all players of a given role.
+internalActionsOfPlayers :: BindingInfo -> Alphabets -> RoleName -> Set Action
+internalActionsOfPlayers bi as roleName = stripActionInfo
+    (Set.filter isInternalAction (alphabetOfPlayers bi as roleName))
+
+
+-- | Get the combined 'Alphabet' of all players of a given role.
+alphabetOfPlayers :: BindingInfo -> Alphabets -> RoleName -> Alphabet
+alphabetOfPlayers bi as roleName =
+    Set.unions (fmap getAlphabet (toList (playersOfRole bi roleName)))
+  where
     getAlphabet compName = Map.findWithDefault Set.empty compName as
 
 
@@ -203,11 +215,11 @@ incompatibilities l r = Set.toList (incompat l r `Set.union` incompat r l)
     incompat l' r' = Set.unions (fmap (`joinWith` r') (overrideActs l'))
 
     overrideActs =
-        Set.toList . Set.map fst . Set.filter (isOverrideAction . snd)
+        Set.toList . Set.map actionName . Set.filter isOverrideAction
 
-    joinWith act = Set.map (getLocs act) . Set.filter ((act ==) . fst)
+    joinWith act = Set.map (getLocs act) . Set.filter ((act ==) . actionName)
 
-    getLocs (Loc act lRgn) (Loc _ rRgn, _) = (act, lRgn, rRgn)
+    getLocs (Loc act lRgn) actR = (act, lRgn, getLoc (actionName actR))
 
 
 players :: System -> ComponentName -> Set ComponentName

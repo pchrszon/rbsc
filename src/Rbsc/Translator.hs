@@ -103,7 +103,7 @@ genDesyncModule as = do
         then Nothing
         else Just (Prism.Module ident [] cmds)
   where
-    acts = toList (Set.map (unLoc . fst) (Set.unions (Map.elems as)))
+    acts = toList (stripActionInfo (Set.unions (Map.elems as)))
 
     genCommand :: Action -> Translator Prism.Command
     genCommand act = do

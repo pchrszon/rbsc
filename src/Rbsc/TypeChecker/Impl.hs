@@ -20,6 +20,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
@@ -62,6 +63,7 @@ tcCommand Command{..} = do
     Command
         <$> traverse (\act -> (`withLocOf` act) <$> tcAction act) cmdAction
         <*> pure cmdActionKind
+        <*> pure cmdActionIntent
         <*> someExpr cmdGuard TyBool
         <*> tcElemMultis tcUpdate cmdUpdates
   where

@@ -13,6 +13,7 @@ module Rbsc.Parser.Impl
 import Text.Megaparsec
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.ComponentType
 
 import Rbsc.Parser.Definition
@@ -53,10 +54,16 @@ moduleBody = ModuleBody <$> many (varDecl <* semi) <*> elemMultis command many
 
 command :: Parser UCommand
 command = label "command" $ do
-    (actKind, act) <- brackets $
-        (,) <$> option NormalAction (OverrideAction <$> reserved "override")
-            <*> optional expr
-    Command act actKind <$> expr <*> (operator "->" *> updates)
+    ((actKind, actIntent), act) <- brackets $
+        (,) <$> modifier <*> optional expr
+    Command act actKind actIntent <$> expr <*> (operator "->" *> updates)
+  where
+    modifier = option (NormalAction, ExternalAction) $ choice
+        [ (,) <$>
+            (OverrideAction <$> reserved "override") <*>
+            pure ExternalAction
+        , (NormalAction, InternalAction) <$ reserved "internal"
+        ]
 
 
 updates :: Parser [UElemMulti UUpdate]

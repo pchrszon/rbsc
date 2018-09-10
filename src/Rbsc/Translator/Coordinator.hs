@@ -192,7 +192,7 @@ roleActionsOfRole :: Set Action -> RoleName -> Alphabet -> Set RoleAction
 roleActionsOfRole reqActs roleName =
     Set.fromList . concatMap roleAction . Set.toList
   where
-    roleAction (Loc act _, _)
+    roleAction (ActionInfo (Loc act _) _ _)
         | act `Set.member` reqActs =
             [ (act, [Positive roleName])
             , (act, [Negative roleName])

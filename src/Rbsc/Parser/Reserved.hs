@@ -65,6 +65,7 @@ reservedWords =
     , "has_player"
     , "player"
     , "override"
+    , "internal"
     ]
 
 

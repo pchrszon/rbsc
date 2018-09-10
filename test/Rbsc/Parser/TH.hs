@@ -27,6 +27,7 @@ import Language.Haskell.TH       hiding (Loc, Body)
 import Language.Haskell.TH.Quote
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Function (FunctionName (..))
 import Rbsc.Data.Name
@@ -120,7 +121,9 @@ deriving instance (Data expr, Data ty, Data vars) => Data (NamedModuleBody ElemM
 deriving instance (Data expr, Data ty) => Data (Command ElemMulti ty expr)
 deriving instance (Data expr, Data ty) => Data (Update ElemMulti ty expr)
 deriving instance Data expr => Data (Assignment expr)
+
 deriving instance Data ActionKind
+deriving instance Data ActionIntent
 
 deriving instance (Data ty, Data expr, Data a) => Data (Elem ty expr a)
 deriving instance (Data ty, Data expr, Data a) => Data (ElemMulti ty expr a)

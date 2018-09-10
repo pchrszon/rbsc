@@ -1,0 +1,21 @@
+mdp
+
+module Desync
+    ]a[ true -> true;
+    ]reset[ true -> true;
+endmodule
+
+module n_impl
+    n_s : [0..1] init 0;
+
+    ]reset[ true -> (n_s' = 0);
+    ]a[ n_s = 0 -> (n_s' = 1);
+endmodule
+
+module r_impl
+    r_s : [0..1] init 0;
+
+    ]a, r[ r_s = 0 -> (r_s' = 1);
+    ]reset, r[ r_s = 1 -> (r_s' = 0);
+    ]a, not_r[ true -> true;
+endmodule

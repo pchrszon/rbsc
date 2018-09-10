@@ -4,7 +4,12 @@
 -- | Internal representation of actions.
 module Rbsc.Data.Action
     ( Action(..)
+    , ActionInfo(..)
     , ActionKind(..)
+    , ActionIntent(..)
+
+    , isOverrideAction
+    , isInternalAction
     ) where
 
 
@@ -30,6 +35,14 @@ instance Pretty Action where
         IndexedAction act idx -> pretty act <> brackets (pretty idx)
 
 
+-- | An 'Action' boundled with its 'ActionKind' and its 'ActionIntent'.
+data ActionInfo = ActionInfo
+    { actionName   :: !(Loc Action)
+    , actionKind   :: !ActionKind
+    , actionIntent :: !ActionIntent
+    } deriving (Eq, Ord, Show)
+
+
 -- | An action can be either normal or overriding.
 data ActionKind
     = NormalAction
@@ -48,3 +61,25 @@ instance Ord ActionKind where
     compare (OverrideAction _) = \case
         NormalAction     -> GT
         OverrideAction _ -> EQ
+
+
+-- | If an action is intended to be internal, then it should only be
+-- executed if a bound role synchronizes with it. Otherwise, it should
+-- block. However, if a component has no bound roles, then internal actions
+-- behave exactly the same as external actions.
+data ActionIntent
+    = ExternalAction
+    | InternalAction
+    deriving (Eq, Ord, Show)
+
+
+-- | Returns 'True' if the given action is an 'OverrideAction'.
+isOverrideAction :: ActionInfo -> Bool
+isOverrideAction (ActionInfo _ k _) = case k of
+    OverrideAction _ -> True
+    NormalAction     -> False
+
+
+-- | Returns 'True' if the given action is an 'InternalAction'.
+isInternalAction :: ActionInfo -> Bool
+isInternalAction = (== InternalAction) . actionIntent

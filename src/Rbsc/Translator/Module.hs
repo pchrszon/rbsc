@@ -103,7 +103,7 @@ genOverrideSelfLoops bi oas alph isRole compName = traverse
 
     isModuleAction act = act `Set.member` alph'
 
-    alph' = stripLocAndKind alph
+    alph' = stripActionInfo alph
 
 
 genNonblockingSelfLoops
@@ -113,17 +113,21 @@ genNonblockingSelfLoops
     -> RoleName
     -> Alphabet
     -> m [Prism.Command]
-genNonblockingSelfLoops bi as roleName alph = traverse
-    genCommand
-    (filter isRequired (toList (stripLocAndKind alph)))
+genNonblockingSelfLoops bi as roleName alph =
+    traverse genCommand
+        . filter ((&&) <$> isRequired <*> (not . isInternal))
+        . toList
+        $ stripActionInfo alph
   where
     genCommand act = do
         act' <- trnsQualified (trnsAction act)
         return (selfLoops [act', notPlayedActionIdent roleName] Prism.ActionOpen)
 
     isRequired = (`Set.member` required)
+    isInternal = (`Set.member` internal)
 
     required = requiredActionsOfRole bi as roleName alph
+    internal = internalActionsOfPlayers bi as roleName
 
 
 selfLoops :: [Prism.Ident] -> Prism.ActionType -> Prism.Command

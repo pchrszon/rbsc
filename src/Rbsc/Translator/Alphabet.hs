@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
 
@@ -9,7 +8,7 @@
 module Rbsc.Translator.Alphabet
     ( Alphabet
     , alphabet
-    , stripLocAndKind
+    , stripActionInfo
 
     , ModuleAlphabets
     , moduleAlphabets
@@ -19,7 +18,6 @@ module Rbsc.Translator.Alphabet
 
     , OverrideActions
     , overrideActions
-    , isOverrideAction
     ) where
 
 
@@ -44,7 +42,7 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 
 
 -- | The action alphabet of a component.
-type Alphabet = Set (Loc Action, ActionKind)
+type Alphabet = Set ActionInfo
 
 
 -- | Get the set of all actions (i.e., the 'Alphabet') contained in
@@ -53,20 +51,18 @@ type Alphabet = Set (Loc Action, ActionKind)
 alphabet :: MonadError Error m => TModuleBody Elem -> m Alphabet
 alphabet = fmap (Set.fromList . catMaybes) . traverse action . bodyCommands
   where
-    action ::
-           MonadError Error m
-        => TElem (TCommand Elem)
-        -> m (Maybe (Loc Action, ActionKind))
-    action (Elem Command{..}) = case cmdAction of
-        Just (Loc (SomeExpr (Literal act _) TyAction) rgn) ->
-            return (Just (Loc act rgn, cmdActionKind))
+    action
+        :: MonadError Error m => TElem (TCommand Elem) -> m (Maybe ActionInfo)
+    action (Elem Command {..}) = case cmdAction of
+        Just (Loc (SomeExpr (Literal act _) TyAction) rgn) -> return
+            (Just (ActionInfo (Loc act rgn) cmdActionKind cmdActionIntent))
         Just (Loc _ rgn) -> throw rgn NotConstant
-        Nothing -> return Nothing
+        Nothing          -> return Nothing
 
 
--- | Strip location information and the 'ActionKind's from an 'Alphabet'.
-stripLocAndKind :: Alphabet -> Set Action
-stripLocAndKind = Set.map (unLoc . fst)
+-- | Strip locations, 'ActionKind's and 'ActionIntent's from an 'Alphabet'.
+stripActionInfo :: Alphabet -> Set Action
+stripActionInfo = Set.map (unLoc . actionName)
 
 
 -- | Mapping of module names to their alphabet.
@@ -101,12 +97,4 @@ type OverrideActions = Map ComponentName (Set Action)
 
 -- | Get the override actions of all components from the given 'Alphabets'.
 overrideActions :: Alphabets -> OverrideActions
-overrideActions =
-    Map.map (stripLocAndKind . Set.filter (isOverrideAction . snd))
-
-
--- | Returns 'True' if the given 'ActionKind' is 'OverrideAction'.
-isOverrideAction :: ActionKind -> Bool
-isOverrideAction = \case
-    OverrideAction _ -> True
-    NormalAction     -> False
+overrideActions = Map.map (stripActionInfo . Set.filter isOverrideAction)

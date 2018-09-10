@@ -123,7 +123,7 @@ unrollCommand :: MonadEval r m => TCommand ElemMulti -> m (TCommand Elem)
 unrollCommand Command {..} = do
     upds  <- unrollElemMultis instantiateUpdate cmdUpdates
     upds' <- for upds $ \(Elem upd) -> Elem <$> unrollUpdate upd
-    return (Command cmdAction cmdActionKind cmdGuard upds')
+    return (Command cmdAction cmdActionKind cmdActionIntent cmdGuard upds')
 
 
 unrollCoordCommand
@@ -176,10 +176,11 @@ type Instantiate a = Int -> SomeExpr -> a -> a
 
 instantiateCommand :: Instantiate (TCommand ElemMulti)
 instantiateCommand i s Command{..} = Command
-    { cmdAction     = fmap (instantiateLSomeExpr i s) cmdAction
-    , cmdActionKind = cmdActionKind
-    , cmdGuard      = instantiateLSomeExpr i s cmdGuard
-    , cmdUpdates    = instantiateElemMultis instantiateUpdate i s cmdUpdates
+    { cmdAction       = fmap (instantiateLSomeExpr i s) cmdAction
+    , cmdActionKind   = cmdActionKind
+    , cmdActionIntent = cmdActionIntent
+    , cmdGuard        = instantiateLSomeExpr i s cmdGuard
+    , cmdUpdates      = instantiateElemMultis instantiateUpdate i s cmdUpdates
     }
 
 
