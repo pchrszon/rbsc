@@ -82,7 +82,7 @@ handleText = Just . appE (varE 'Text.pack) . litE . StringL . Text.unpack
 
 parseIO :: String -> IO Model
 parseIO str = do
-    result <- parse "splice" (Text.pack str)
+    (result, _) <- parse "splice" (Text.pack str)
     case toEither result of
         Left errors -> throwIO (userError (unlines (printErrors errors)))
         Right m     -> return m

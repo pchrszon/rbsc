@@ -7,9 +7,7 @@ module Rbsc.CLI
     ) where
 
 
-import Control.Exception
 import Control.Exception.Lens
-import Control.Lens
 import Control.Monad.Reader
 
 import           Data.Foldable
@@ -23,12 +21,11 @@ import qualified Data.Text.Prettyprint.Doc.Render.Text     as U
 
 import qualified Language.Prism as Prism
 
-import System.Exit
 import System.FilePath
 import System.IO
-import System.IO.Error.Lens
 
 
+import Rbsc.CLI.ExceptionHandlers
 import Rbsc.CLI.Options
 import Rbsc.CLI.Parser
 
@@ -69,19 +66,20 @@ runApp = runReaderT
 rbsc :: App ()
 rbsc = do
     (path, content) <- readModel
-    parseResult <- parse path content
+    (parseResult, sourceMap) <- parse path content
 
-    depth <- asks optRecursionDepth
-    let (result, warnings) = toEither' (translate depth parseResult)
+    handling _ErrorCall (lift . errorHandler sourceMap) $ do
+        depth <- asks optRecursionDepth
+        let (result, warnings) = toEither' (translate depth parseResult)
 
-    case result of
-        Right results -> do
-            printWarnings warnings
-            handleResults results
-        Left errors -> do
-            printWarnings warnings
-            unless (null warnings) (liftIO (putStrLn ""))
-            printErrors errors
+        case result of
+            Right results -> do
+                printWarnings warnings
+                handleResults results
+            Left errors -> do
+                printWarnings warnings
+                unless (null warnings) (liftIO (putStrLn ""))
+                printErrors errors
 
 
 handleResults :: [(System, Prism.Model)] -> App ()
@@ -160,10 +158,3 @@ putStrLnVerbose :: Text -> App ()
 putStrLnVerbose s = asks optVerbose >>= \case
     Verbose    -> liftIO (Text.putStrLn s)
     NonVerbose -> return ()
-
-
-ioExceptionHandler :: IOException -> IO a
-ioExceptionHandler e = do
-    let file = fromMaybe "<unknown source>" (view fileName e)
-    hPutStrLn stderr (view description e ++ ": " ++ file)
-    exitWith (ExitFailure 2)

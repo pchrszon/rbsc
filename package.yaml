@@ -28,7 +28,9 @@ dependencies:
   - prettyprinter
   - prettyprinter-ansi-terminal
   - process
+  - random
   - text
+  - uuid
 
 ghc-options:
   - -Wall

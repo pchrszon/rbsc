@@ -69,7 +69,7 @@ translateFile :: FilePath -> IO (Either [Error] [Text])
 translateFile path = do
     content <- Text.readFile path
 
-    parseResult <- parse path content
+    (parseResult, _) <- parse path content
     let results = toEither $ do
             model <- parseResult
             translateModels 10 model

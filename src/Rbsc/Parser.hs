@@ -1,8 +1,10 @@
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 
 module Rbsc.Parser
     ( parse
+    , SourceMap
     ) where
 
 
@@ -46,17 +48,28 @@ import Rbsc.Syntax.Untyped
 
 
 -- | Parse a source file.
-parse :: MonadIO m => FilePath -> Text -> m (Result Model)
-parse path content = fmap fromEither $ do
+parse :: MonadIO m => FilePath -> Text -> m (Result Model, SourceMap)
+parse path content = fmap getResult $ do
     (result, sourceMap) <- run modelFile path content
 
     return $ case result of
-        Left err -> Left [fromParseError sourceMap err]
+        Left  err         -> Left [fromParseError sourceMap err]
         Right errorOrDefs -> do
             let (errors, defs) = partitionEithers errorOrDefs
             if null errors
-                then toModel defs
+                then do
+                    model <- toModel defs
+                    return (model, sourceMap)
                 else throwError (fmap (fromParseError sourceMap) errors)
+  where
+    getResult :: Either [Error] (Model, SourceMap) -> (Result Model, SourceMap)
+    getResult r =
+        let sourceMap = getSourceMap r
+        in  (fromEither (over _Right fst r), sourceMap)
+
+    getSourceMap = \case
+        Right (_, sourceMap) -> sourceMap
+        Left  _              -> Map.empty
 
 
 modelFile :: MonadIO m => ParserT m [ErrorOrDef]
