@@ -107,7 +107,11 @@ include = do
     exists <- liftIO (doesFileExist path)
     if not exists
         then fail ("file " ++ path ++ " does not exist")
-        else parseIncludeFile path
+        else do
+            seen <- Map.member path <$> use sources
+            if seen
+                then return []
+                else parseIncludeFile path
 
 
 parseIncludeFile :: MonadIO m => FilePath -> ParserT m [ErrorOrDef]
