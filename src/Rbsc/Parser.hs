@@ -74,22 +74,26 @@ parse path content = fmap getResult $ do
 
 modelFile :: MonadIO m => ParserT m [ErrorOrDef]
 modelFile =
-    concat <$> between sc eof (many (include <|> fmap (: []) definition))
+    concat <$> between sc eof (many (include <|> definitions))
 
 
-definition :: Parser ErrorOrDef
-definition = withRecoveryOn (semi <|> symbol "}") . choice $
+definitions :: Parser [ErrorOrDef]
+definitions = fmap leftToList . withRecoveryOn (semi <|> symbol "}") $
+    componentTypeDef <|> (fmap (: []) . choice $
     [ constantDef
     , enumerationDef
     , functionDef
-    , componentTypeDef
     , systemDef
     , globalDef
     , labelDef
     , implementationDef
     , moduleDef
     , coordinatorDef
-    ]
+    ])
+  where
+    leftToList = \case
+        Left e   -> [Left e]
+        Right xs -> fmap Right xs
 
 
 include :: MonadIO m => ParserT m [ErrorOrDef]

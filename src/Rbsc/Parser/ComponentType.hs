@@ -15,43 +15,65 @@ import Text.Megaparsec
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Expr
 import Rbsc.Parser.Lexer
+import Rbsc.Parser.Impl
 
 import Rbsc.Syntax.Untyped
 
 
--- | Parser for a componen type definition.
-componentTypeDef :: Parser Definition
+-- | Parser for a component type definition. A type definition may
+-- optionally provide the 'Implementation'.
+componentTypeDef :: Parser [Definition]
 componentTypeDef = label "type definition" $ choice
-    [ DefNaturalType <$> naturalTypeDef
-    , DefRoleType <$> roleTypeDef
-    , DefCompartmentType <$> compartmentTypeDef
+    [ naturalTypeDef
+    , roleTypeDef
+    , compartmentTypeDef
     ]
 
 
--- | Parser for a natural type definition.
-naturalTypeDef :: Parser NaturalTypeDef
-naturalTypeDef = NaturalTypeDef <$> (keyword *> identifier <* semi)
+naturalTypeDef :: Parser [Definition]
+naturalTypeDef = typeDef
+    (reserved "type" <|> (reserved "natural" *> reserved "type"))
+    (return . DefNaturalType . NaturalTypeDef)
+
+
+roleTypeDef :: Parser [Definition]
+roleTypeDef = typeDef
+    (reserved "role" *> reserved "type")
+    (\typeName -> DefRoleType . RoleTypeDef typeName <$> players)
   where
-    keyword = reserved "type" <|> (reserved "natural" *> reserved "type")
+    players :: Parser [Loc TypeName]
+    players = parens (identifier `sepBy` comma)
 
 
--- | Parser for a role type definition.
-roleTypeDef :: Parser RoleTypeDef
-roleTypeDef =
-    RoleTypeDef <$> (keyword *> identifier) <*>
-    (parens (identifier `sepBy` comma) <* semi)
+compartmentTypeDef :: Parser [Definition]
+compartmentTypeDef = typeDef
+    (reserved "compartment" *> reserved "type")
+    (\typeName -> DefCompartmentType . CompartmentTypeDef typeName <$> roles)
   where
-    keyword = reserved "role" *> reserved "type"
+    roles :: Parser [[UMultiRole]]
+    roles = parens (multiRoleList `sepBy` symbol "|")
 
-
--- | Parser for a compartment type definition.
-compartmentTypeDef :: Parser UCompartmentTypeDef
-compartmentTypeDef =
-    CompartmentTypeDef <$> (keyword *> identifier) <*>
-    (parens (multiRoleList `sepBy` symbol "|") <* semi)
-  where
-    keyword = reserved "compartment" *> reserved "type"
+    multiRoleList :: Parser [UMultiRole]
     multiRoleList = multiRole `sepBy` comma
+
+
+typeDef :: Parser a -> (Loc TypeName -> Parser Definition) -> Parser [Definition]
+typeDef keyword p = do
+    typeName <- keyword *> identifier
+    def <- p typeName
+    (def :) <$> implDef typeName
+
+
+implDef :: Loc TypeName -> Parser [Definition]
+implDef typeName = choice
+    [ []     <$  semi
+    , (: []) <$> impl typeName
+    ]
+
+
+impl :: Loc TypeName -> Parser Definition
+impl typeName = DefImplementation . Implementation typeName . ImplSingle <$>
+    braces moduleBody
 
 
 multiRole :: Parser UMultiRole
