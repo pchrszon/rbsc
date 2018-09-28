@@ -14,8 +14,10 @@ module Rbsc.Translator.Internal
 
     , trnsQualified
     , trnsAction
+    , overridePrefix
     , overrideActionIdent
     , playedActionIdent
+    , notPlayedPrefix
     , notPlayedActionIdent
     , trnsComponentName
     , indexedNames
@@ -32,7 +34,7 @@ import Control.Monad.State
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set        as Set
-import           Data.Text       (pack)
+import           Data.Text       (pack, isPrefixOf)
 
 
 import qualified Language.Prism as Prism
@@ -98,21 +100,34 @@ trnsQualified qname = use (tsIdents.at qname) >>= \case
 
 trnsAction :: Action -> Qualified
 trnsAction = \case
-    Action name           -> QlName name
-    LocalAction comp name -> QlMember (QlName (trnsComponentName comp)) name
-    IndexedAction act idx -> QlIndex (trnsAction act) idx
+    Action name             -> QlName (quote name)
+    LocalAction   comp name -> QlMember (QlName (trnsComponentName comp)) name
+    IndexedAction act  idx  -> QlIndex (trnsAction act) idx
+  where
+    quote name
+        | overridePrefix `isPrefixOf` name || notPlayedPrefix `isPrefixOf` name =
+            "_" <> name
+        | otherwise = name
+
+
+overridePrefix :: Name
+overridePrefix = "ovr_"
 
 
 overrideActionIdent :: RoleName -> Name
-overrideActionIdent roleName = "ovr_" <> trnsComponentName roleName
+overrideActionIdent roleName = overridePrefix <> trnsComponentName roleName
 
 
 playedActionIdent :: RoleName -> Name
 playedActionIdent = trnsComponentName
 
 
+notPlayedPrefix :: Name
+notPlayedPrefix = "not_"
+
+
 notPlayedActionIdent :: RoleName -> Name
-notPlayedActionIdent roleName = "not_" <> trnsComponentName roleName
+notPlayedActionIdent roleName = notPlayedPrefix <> trnsComponentName roleName
 
 
 trnsComponentName :: ComponentName -> Name

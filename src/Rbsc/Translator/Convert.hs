@@ -22,6 +22,8 @@ import qualified Language.Prism.Convert as Prism
 import Data.Text (intercalate, isPrefixOf, pack)
 
 
+import Rbsc.Translator.Internal (overridePrefix)
+
 import Rbsc.Util.NameGen
 
 
@@ -74,5 +76,5 @@ convert acts = use (csIdents.at acts) >>= \case
         Prism.Tau i      -> "tau" <> pack (show i)
 
     isOverrideAction = \case
-        Prism.Action act | "ovr" `isPrefixOf` act -> True
+        Prism.Action act | overridePrefix `isPrefixOf` act -> True
         _ -> False
