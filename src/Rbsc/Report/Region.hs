@@ -22,7 +22,10 @@ import Data.Text      (Text)
 data Position = Position
     { line   :: !Int
     , column :: !Int
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord)
+
+instance Show Position where
+    show (Position l c) = show l ++ "," ++ show c
 
 
 -- | A region within a source file.

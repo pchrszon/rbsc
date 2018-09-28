@@ -55,16 +55,17 @@ moduleBody = ModuleBody <$> many (varDecl <* semi) <*> elemMultis command many
 
 command :: Parser UCommand
 command = label "command" $ do
-    ((actKind, actIntent), act) <- brackets $
-        (,) <$> modifier <*> optional expr
+    ((actKind, actIntent), act) <- brackets . option (noModifier, Nothing) $
+        (,) <$> modifier <*> (Just <$> (expr <?> "action"))
     Command act actKind actIntent <$> expr <*> (operator "->" *> updates)
   where
-    modifier = option (NormalAction, ExternalAction) $ choice
+    modifier = option noModifier $ choice
         [ (,) <$>
             (OverrideAction <$> reserved "override") <*>
             pure ExternalAction
         , (NormalAction, InternalAction) <$ reserved "internal"
         ]
+    noModifier = (NormalAction, ExternalAction)
 
 
 updates :: Parser [UElemMulti UUpdate]
