@@ -45,6 +45,12 @@ options = Options
         ( metavar "FILE"
        <> short 'o'
        <> help helpOutputFile ))
+    <*> switch
+        ( short 'm'
+       <> long "multi-actions"
+       <> hidden
+       <> help helpMultiActions
+        )
     <*> optional (strOption
         ( metavar "FILE"
        <> long "export-systems"
@@ -79,6 +85,7 @@ options = Options
 
 helpModelFile      = "The model file (pass - to read from stdin)"
 helpOutputFile     = "The output file(s)"
+helpMultiActions   = "Allow multi-actions in generated code"
 helpExportSystems  = "Export the full system block"
 helpExportDiagrams = "Export the component diagram as Graphviz dot"
 helpRecursionDepth = "The maximal recursion depth for evaluating expressions"

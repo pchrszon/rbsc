@@ -71,12 +71,12 @@ translateModel model sys info = do
     bi <- generateBindingInfo sys as
 
     runTranslator info $ do
+        desync   <- maybeToList <$> genDesyncModule as
         globals' <- trnsGlobalVars (modelGlobals model)
         labels'  <- traverse trnsLabel (modelLabels model)
         modules' <- trnsModules sys bi mas as modules
         coordinators' <-
             trnsCoordinators (view componentTypes info) sys bi as coordinators
-        desync <- maybeToList <$> genDesyncModule as
 
         return Prism.Model
             { Prism.modelType       = Prism.MDP
@@ -108,4 +108,7 @@ genDesyncModule as = do
     genCommand :: Action -> Translator Prism.Command
     genCommand act = do
         act' <- trnsQualified (trnsAction act)
-        return (Prism.Command [act'] Prism.ActionOpen (Prism.LitBool True) [])
+        return (Prism.Command
+            [Prism.Action act']
+            Prism.ActionOpen
+            (Prism.LitBool True) [])

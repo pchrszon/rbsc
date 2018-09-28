@@ -55,7 +55,7 @@ trnsCommand isRole typeName comp Command{..} = do
             act' <- trnsActionExpr act
             ract <- roleAct
             oact <- overrideAct
-            let acts' = catMaybes [Just act', ract, oact]
+            let acts' = fmap Prism.Action (catMaybes [Just act', ract, oact])
             return (Prism.Command acts' Prism.ActionOpen grd' upds')
         Nothing ->
             return (Prism.Command [] Prism.ActionClosed grd' upds')

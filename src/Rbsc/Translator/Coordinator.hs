@@ -80,7 +80,7 @@ trnsCoordinator roleActMap Coordinator{..} = do
     let alph'   = Set.toList alph ++ playAlphabet
         alphCmd = if null playAlphabet
                       then []
-                      else [alphabetCmd alph']
+                      else [alphabetCmd (fmap Prism.Action alph')]
 
     return (Prism.Module ident vars' (cmds' ++ alphCmd))
   where
@@ -142,7 +142,8 @@ trnsCoordCommand valuations roleActs CoordCommand {..} = do
   where
     mkCommand grd upds acts
         | null acts = Prism.Command [] Prism.ActionClosed grd upds
-        | otherwise = Prism.Command acts Prism.ActionOpen grd upds
+        | otherwise =
+            Prism.Command (fmap Prism.Action acts) Prism.ActionOpen grd upds
 
 
 toMultiAction :: RoleAction -> Translator [Prism.Ident]

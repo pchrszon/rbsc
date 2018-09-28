@@ -17,6 +17,9 @@ data Options = Options
       -- added between the file name and the file extension.
     , optOutput         :: Maybe FilePath
 
+      -- | Enable/disable the generation of multi-action code.
+    , optMultiActions   :: Bool
+
       -- | Export the full system block for each generated system instance.
     , optExportSystems  :: Maybe FilePath
 

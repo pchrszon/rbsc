@@ -131,4 +131,5 @@ genNonblockingSelfLoops bi as roleName alph =
 
 
 selfLoops :: [Prism.Ident] -> Prism.ActionType -> Prism.Command
-selfLoops acts actTy = Prism.Command acts actTy (Prism.LitBool True) []
+selfLoops acts actTy =
+    Prism.Command (fmap Prism.Action acts) actTy (Prism.LitBool True) []

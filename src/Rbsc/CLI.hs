@@ -7,6 +7,7 @@ module Rbsc.CLI
     ) where
 
 
+import Control.Lens
 import Control.Exception.Lens
 import Control.Monad.Reader
 
@@ -45,6 +46,7 @@ import           Rbsc.Report.Warning as Warning
 import Rbsc.Syntax.Untyped (Model)
 
 import Rbsc.Translator
+import Rbsc.Translator.Convert
 
 import Rbsc.Util (whenIsJust)
 
@@ -69,8 +71,11 @@ rbsc = do
     (parseResult, sourceMap) <- parse path content
 
     handling _ErrorCall (lift . errorHandler sourceMap) $ do
-        depth <- asks optRecursionDepth
-        let (result, warnings) = toEither' (translate depth parseResult)
+        depth        <- asks optRecursionDepth
+        multiActions <- asks optMultiActions
+
+        let (result, warnings) =
+                toEither' (translate depth multiActions parseResult)
 
         case result of
             Right results -> do
@@ -125,10 +130,15 @@ readModel = asks optInput >>= \case
     path -> (,) path <$> liftIO (Text.readFile path)
 
 
-translate :: RecursionDepth -> Result Model -> Result [(System, Prism.Model)]
-translate depth parseResult = do
-    model <- parseResult
-    translateModels depth model
+translate
+    :: RecursionDepth -> Bool -> Result Model -> Result [(System, Prism.Model)]
+translate depth multiActions parseResult = do
+    model   <- parseResult
+    results <- translateModels depth model
+
+    return $ if multiActions
+        then results
+        else fmap (over _2 convertToSingleActions) results
 
 
 printErrors :: [Error] -> App ()
