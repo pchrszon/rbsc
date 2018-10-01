@@ -1,0 +1,16 @@
+function f() : action = action a;
+
+function is_init() : bool = n.s = 0;
+
+const c : action = action a;
+
+
+type N {
+    s : [0 .. 1] init 0;
+
+    [f()] is_init -> (s' = 1);
+    [c] s = 0 -> (s' = 1);
+}
+
+
+system { n : N; }

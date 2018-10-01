@@ -112,6 +112,15 @@ reduceInternal cs depth (Loc e rgn) =
   where
     go :: Expr t -> Reducer (Expr t)
     go e' = case e' of
+        Identifier name ty ->
+            view (riConstants.at name) >>= \case
+                Just (SomeExpr e'' ty') -> case typeEq ty ty' of -- if the identifier is a constant ...
+                    Just Refl -> go e'' -- ... then replace by constant value
+                    Nothing   -> error "toLiteral: type error"
+                Nothing -> case ty of
+                    TyAction -> return (Literal (Action name) TyAction)
+                    _        -> return e'
+
         LogicOp lOp l r -> do
             l' <- go l
             case l' of
@@ -199,15 +208,6 @@ tryEvalBuiltIn f arg =
 -- sub-expressions are literals.
 toLiteral :: Expr t -> Reducer (Expr t)
 toLiteral e = case e of
-    Identifier name ty ->
-        view (riConstants.at name) >>= \case
-            Just (SomeExpr e' ty') -> case typeEq ty ty' of -- if the identifier is a constant ...
-                Just Refl -> return e' -- ... then replace by constant value
-                Nothing   -> error "toLiteral: type error"
-            Nothing -> case ty of
-                TyAction -> return (Literal (Action name) TyAction)
-                _        -> return e
-
     LitArray es -> return $ case toArray es of
         Just (arr, ty) -> Literal arr ty
         Nothing        -> e

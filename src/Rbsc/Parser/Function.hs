@@ -26,7 +26,7 @@ functionDef = DefFunction <$> function <?> "function definition"
 function :: Parser UFunction
 function = Function
     <$> (reserved "function" *> identifier)
-    <*> parens (commaSepNonEmpty parameter)
+    <*> parens (parameter `sepBy` comma)
     <*> (colon *> typ)
     <*> (equals *> expr <* semi)
 

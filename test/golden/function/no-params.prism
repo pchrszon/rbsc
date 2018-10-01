@@ -1,0 +1,12 @@
+mdp
+
+module Desync
+    ]a[ true -> true;
+endmodule
+
+module n_impl
+    n_s : [0..1] init 0;
+
+    ]a[ n_s = 0 -> (n_s' = 1);
+    ]a[ n_s = 0 -> (n_s' = 1);
+endmodule

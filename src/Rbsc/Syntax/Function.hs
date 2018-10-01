@@ -6,7 +6,6 @@ module Rbsc.Syntax.Function
 
 
 import Data.Function
-import Data.List.NonEmpty (NonEmpty)
 import Data.Ord
 
 
@@ -20,7 +19,7 @@ import Rbsc.Syntax.Type
 -- | A function definition.
 data Function expr = Function
     { functionName   :: Loc Name
-    , functionParams :: NonEmpty (Parameter expr)
+    , functionParams :: [Parameter expr]
     , functionType   :: Type expr
     , functionBody   :: expr
     } deriving (Show)

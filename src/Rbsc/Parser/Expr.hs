@@ -105,7 +105,7 @@ index = do
 call :: Parser (LExpr -> LExpr)
 call = do
     _ <- symbol "("
-    args <- expr `sepBy1` comma
+    args <- expr `sepBy` comma
     end <- symbol ")"
     return (\e -> Loc (Call e args) (getLoc e <> end))
 

@@ -14,8 +14,7 @@ import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 
-import           Data.Foldable
-import qualified Data.Set      as Set
+import qualified Data.Set as Set
 
 
 import Rbsc.Config
@@ -127,8 +126,8 @@ addFunctionSignature (U.Function (Loc name _) params sTy _) = do
 
 addFunction :: UFunction -> Builder ()
 addFunction (U.Function (Loc name _) params sTy body) = do
-    paramSyms <- toList <$> traverse paramToSym params
-    tyResult <- snd <$> fromSyntaxType sTy
+    paramSyms <- traverse paramToSym params
+    tyResult  <- snd <$> fromSyntaxType sTy
 
     f <- runTypeChecker (tcFunctionDef paramSyms tyResult body)
     insertConstant name f
