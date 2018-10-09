@@ -1,0 +1,33 @@
+natural type N;
+
+impl N(step);
+
+role type R(N);
+
+impl R(step);
+
+module step {
+    s : [0..1] init 0;
+
+    [a] s = 0 -> (s' = 1);
+}
+
+system {
+    n[2] : N;
+    r[4] : R;
+
+    r[0] boundto n[0];
+    r[1] boundto n[0];
+    r[2] boundto n[1];
+    r[3] boundto n[1];
+}
+
+coordinator {
+    b : bool init false;
+
+    [][!(r[0] & r[1])] !b -> (b' = true);
+    [][!(r[2] & r[3])] !b -> (b' = true);
+
+    [][r[0] & r[1]] b -> true;
+    [][r[2] & r[3]] b -> true;
+}

@@ -1,0 +1,59 @@
+mdp
+
+module coordinator
+    ]a, r_0, not_r_1[ true -> true;
+    ]a, not_r_0, r_1[ true -> true;
+    ]a, not_r_0, not_r_1[ true -> true;
+    ]r_0, not_r_0, r_1, not_r_1[ true -> true;
+endmodule
+
+module coordinator2
+    ]a, r_2, not_r_3[ true -> true;
+    ]a, not_r_2, r_3[ true -> true;
+    ]a, not_r_2, not_r_3[ true -> true;
+    ]r_2, not_r_2, r_3, not_r_3[ true -> true;
+endmodule
+
+module Desync
+    ]a[ true -> true;
+endmodule
+
+module n_0_step
+    n_0_s : [0..1] init 0;
+
+    ]a[ n_0_s = 0 -> (n_0_s' = 1);
+endmodule
+
+module n_1_step
+    n_1_s : [0..1] init 0;
+
+    ]a[ n_1_s = 0 -> (n_1_s' = 1);
+endmodule
+
+module r_0_step
+    r_0_s : [0..1] init 0;
+
+    ]a, r_0[ r_0_s = 0 -> (r_0_s' = 1);
+    ]a, not_r_0[ true -> true;
+endmodule
+
+module r_1_step
+    r_1_s : [0..1] init 0;
+
+    ]a, r_1[ r_1_s = 0 -> (r_1_s' = 1);
+    ]a, not_r_1[ true -> true;
+endmodule
+
+module r_2_step
+    r_2_s : [0..1] init 0;
+
+    ]a, r_2[ r_2_s = 0 -> (r_2_s' = 1);
+    ]a, not_r_2[ true -> true;
+endmodule
+
+module r_3_step
+    r_3_s : [0..1] init 0;
+
+    ]a, r_3[ r_3_s = 0 -> (r_3_s' = 1);
+    ]a, not_r_3[ true -> true;
+endmodule

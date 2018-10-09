@@ -1,17 +1,23 @@
 mdp
 
 module coordinator
-    s : bool init false;
-
-    [] !s & n_s = 0 & r_0_s = 0 & r_1_s = 0 -> (s' = true);
     ]a[ true -> true;
+endmodule
+
+module coordinator2
+    ]a, r_0, r_1[ s -> true;
     ]a, r_0, r_1[ !s -> true;
     ]a, r_0, not_r_1[ !s -> true;
     ]a, not_r_0, r_1[ !s -> true;
     ]r_0_b, r_0[ !s -> true;
     ]r_1_b, r_1[ !s -> true;
-    ]a, r_0, r_1[ s -> true;
     ]a, r_0, not_r_0, r_1, not_r_1[ true -> true;
+endmodule
+
+module coordinator3
+    s : bool init false;
+
+    [] !s & n_s = 0 & r_0_s = 0 & r_1_s = 0 -> (s' = true);
 endmodule
 
 module Desync

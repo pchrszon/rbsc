@@ -14,11 +14,11 @@ module Rbsc.Translator.Coordinator
 import Control.Lens
 import Control.Monad.Reader
 
-import           Data.Map.Strict  (Map)
-import qualified Data.Map.Strict  as Map
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import           Data.Maybe
-import           Data.Set         (Set)
-import qualified Data.Set         as Set
+import           Data.Set        (Set)
+import qualified Data.Set        as Set
 
 import qualified Language.Prism as Prism
 
@@ -27,7 +27,6 @@ import Rbsc.Data.Action
 import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name
-import Rbsc.Data.Some
 import Rbsc.Data.System
 import Rbsc.Data.Type
 
@@ -41,6 +40,8 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 import Rbsc.Translator.Alphabet
 import Rbsc.Translator.Binding
 import Rbsc.Translator.Command
+import Rbsc.Translator.Coordinator.Internal
+import Rbsc.Translator.Coordinator.Partition
 import Rbsc.Translator.Expr
 import Rbsc.Translator.Internal
 import Rbsc.Translator.Variable
@@ -55,7 +56,8 @@ trnsCoordinators
     -> Alphabets
     -> [TCoordinator Elem]
     -> Translator [Prism.Module]
-trnsCoordinators compTys sys bi as = traverse (trnsCoordinator roleActMap)
+trnsCoordinators compTys sys bi as =
+    traverse (trnsCoordinator roleActMap) . concatMap partition
   where
     roleActMap  = roleActions reqActss roleAs
     reqActss    = Map.mapWithKey getRequired roleAs
@@ -241,13 +243,3 @@ allValuatations = go . Set.toList
         b <- [True, False]
         return (Map.insert roleName b val)
     go [] = return Map.empty
-
-
-rolesInConstraint :: LSomeExpr -> Set RoleName
-rolesInConstraint (Loc (SomeExpr e _) _) =
-    Set.fromList (mapMaybe getRole (universeExpr e))
-  where
-    getRole :: Some Expr -> Maybe RoleName
-    getRole = \case
-        Some (IsPlayed (Literal comp _)) -> Just (view compName comp)
-        _ -> Nothing
