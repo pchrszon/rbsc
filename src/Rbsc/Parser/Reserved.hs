@@ -66,6 +66,7 @@ reservedWords =
     , "player"
     , "override"
     , "internal"
+    , "over"
     ]
 
 

@@ -187,12 +187,19 @@ instantiateCommand i s Command{..} = Command
 instantiateCoordCommand :: Instantiate (TCoordCommand ElemMulti)
 instantiateCoordCommand i s CoordCommand{..} = CoordCommand
     { coordAction     = fmap inst coordAction
-    , coordConstraint = fmap inst coordConstraint
+    , coordConstraint = fmap (instantiatePlayingConstraint i s) coordConstraint
     , coordGuard      = inst coordGuard
     , coordUpdates    = instantiateElemMultis instantiateUpdate i s coordUpdates
     }
   where
     inst = instantiateLSomeExpr i s
+
+
+instantiatePlayingConstraint :: Instantiate TPlayingConstraint
+instantiatePlayingConstraint i s PlayingConstraint{..} = PlayingConstraint
+    { pcExpr  = instantiateLSomeExpr i s pcExpr
+    , pcRoles = fmap (instantiateLSomeExpr i s) pcRoles
+    }
 
 
 instantiateUpdate :: Instantiate (TUpdate ElemMulti)

@@ -22,7 +22,9 @@ module Rbsc.Translator.Coordinator.Partition
 
 
 import Control.Lens
+import Control.Monad.Except
 
+import Data.Traversable
 import           Data.Function
 import qualified Data.List       as List
 import qualified Data.Map.Strict as Map
@@ -33,6 +35,7 @@ import qualified Data.Set        as Set
 
 import Rbsc.Data.Name
 
+import Rbsc.Report.Error
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Typed hiding (Type (..))
@@ -65,8 +68,12 @@ import Rbsc.Util (regions)
 --    is generated.
 
 
-partition :: TCoordinator Elem -> [TCoordinator Elem]
-partition coord@Coordinator{..} = statelessCoords ++ statefulCoords
+partition :: MonadError Error m => TCoordinator Elem -> m [TCoordinator Elem]
+partition coord@Coordinator{..} = do -- statelessCoords ++ statefulCoords
+    statelessCoords <- fmap concat . for statelessPart $
+        fmap (fmap genStatelessCoordinator) . partitionOnRoleSets . snd
+
+    return (statelessCoords ++ statefulCoords)
   where
     cmdVars =
         fmap ((\cmd -> (cmd, updatedVariables cmd)) . getElem) coordCommands
@@ -77,9 +84,6 @@ partition coord@Coordinator{..} = statelessCoords ++ statefulCoords
         List.partition (Set.null . fst) varPartitions
 
     statefulCoords  = fmap (genStatefulCoordinators coord) statefulParts
-    statelessCoords = concatMap
-        (fmap genStatelessCoordinator . partitionOnRoleSets . snd)
-        statelessPart
 
 
 genStatefulCoordinators
@@ -102,11 +106,18 @@ filterVariables vars = filter contained
     contained (name, _) = name `Set.member` vars
 
 
-partitionOnRoleSets :: [TCoordCommand Elem] -> [[TCoordCommand Elem]]
-partitionOnRoleSets = Map.elems . Map.fromListWith (++) . fmap addRoleSet
+partitionOnRoleSets
+    :: MonadError Error m => [TCoordCommand Elem] -> m [[TCoordCommand Elem]]
+partitionOnRoleSets =
+    fmap (Map.elems . Map.fromListWith (++)) . traverse addRoleSet
   where
-    addRoleSet cmd = (roles cmd, [cmd])
-    roles = maybe Set.empty rolesInConstraint . coordConstraint
+    addRoleSet cmd = do
+        roleSet <- roles cmd
+        return (roleSet, [cmd])
+
+    roles cmd = case coordConstraint cmd of
+        Just pc -> rolesInConstraint pc
+        Nothing -> return Set.empty
 
 
 partitionOnVariables

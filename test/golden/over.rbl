@@ -1,0 +1,26 @@
+type N {
+    s : [0..1] init 0;
+
+    [a] s = 0 -> (s' = 1);
+}
+
+
+role type R(N) {
+    s : [0..1] init 0;
+
+    [a] s = 0 -> (s' = 1);
+}
+
+
+system {
+    n : N;
+    r[2] : R;
+
+    forall i : [0 .. length(r) - 1]. r[i] boundto n;
+}
+
+
+coordinator {
+    [][r[0] over r[0], r[1]] true -> true;
+    [][r[1] over r[0], r[1]] true -> true;
+}

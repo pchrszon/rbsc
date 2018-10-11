@@ -34,6 +34,7 @@ module Rbsc.Syntax.Typed
       -- * Coordination
     , TCoordinator
     , TCoordCommand
+    , TPlayingConstraint
 
       -- * Types
     , TType
@@ -101,6 +102,7 @@ type TNamedModuleBody elem = NamedModuleBody elem TInits TQuantifiedType LSomeEx
 
 type TCoordinator elem  = Coordinator elem TInits TQuantifiedType LSomeExpr
 type TCoordCommand elem = CoordCommand elem TQuantifiedType LSomeExpr
+type TPlayingConstraint = PlayingConstraint LSomeExpr
 
 type TInits = [TInit]
 type TInit  = (Name, Maybe LSomeExpr)

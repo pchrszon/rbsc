@@ -27,6 +27,13 @@ tcCoordinator Coordinator{..} = Coordinator
 tcCoordCommand :: UCoordCommand -> TypeChecker (TCoordCommand ElemMulti)
 tcCoordCommand CoordCommand{..} = CoordCommand
     <$> traverse (\act -> (`withLocOf` act) <$> tcAction act) coordAction
-    <*> traverse (\c -> (`withLocOf` c) <$> tcRoleConstraint c) coordConstraint
+    <*> traverse tcPlayingConstraint coordConstraint
     <*> someExpr coordGuard TyBool
     <*> tcElemMultis tcUpdate coordUpdates
+
+
+tcPlayingConstraint :: UPlayingConstraint -> TypeChecker TPlayingConstraint
+tcPlayingConstraint PlayingConstraint{..} = do
+    constr <- tcRoleConstraint pcExpr
+    roles  <- traverse tcRoleExpr pcRoles
+    return (PlayingConstraint (constr `withLocOf` pcExpr) roles)

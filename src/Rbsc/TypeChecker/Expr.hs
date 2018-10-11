@@ -9,6 +9,7 @@ module Rbsc.TypeChecker.Expr
     ( tcExpr
     , tcAction
     , tcRoleConstraint
+    , tcRoleExpr
     , tcFunctionDef
     , tcQuantifiedType
     , hasType
@@ -279,6 +280,17 @@ tcExpr (Loc e rgn) = case e of
         T.Quantified q' qdTy' (T.Scoped body') `withType` qTy
 
 
+-- | Type check an untyped expression and also check if it has a role type.
+tcRoleExpr :: Loc U.Expr -> TypeChecker (Loc SomeExpr)
+tcRoleExpr e = do
+    tyComponent <- getTyComponent
+    (e', ty) <- e `hasType'` tyComponent
+    case ty of
+        TyComponent tySet -> checkIfRole (getLoc e) tySet
+
+    return (SomeExpr e' ty `withLocOf` e)
+
+
 -- | @tcFunctionDef params tyRes body@ checks an untyped function
 -- definition. The parameter list @params@ is transformed into a sequence
 -- of lambda abstractions.
@@ -458,17 +470,12 @@ cast _ arrTy@(TyArray tSize ty) e@(SomeExpr e' elemTy) =
                 T.LitArray (fromList (replicate tSize e'))
                 `withType` arrTy
         Nothing -> return e
-cast rgn TyBool e@(SomeExpr e' ty@(TyComponent tySet)) = do
+cast rgn TyBool e@(SomeExpr e' (TyComponent tySet)) = do
     ctx <- view context
     case ctx of
         ConstraintContext -> do
-            compTys <- view componentTypes
-
-            for_ (toList tySet) $ \tyName ->
-                unless (isRoleType compTys tyName) $
-                    throw rgn (CannotBePlayed (renderPretty ty) tyName)
-
-            T.IsPlayed e' `withType` TyBool
+            checkIfRole rgn tySet
+            T.IsPlayed (Loc e' rgn) `withType` TyBool
         _ -> return e
 cast _ _ e = return e
 
@@ -496,6 +503,16 @@ typeUnion l _ = l
 -- defined component types.
 getTyComponent :: TypeChecker (Type Component)
 getTyComponent = TyComponent <$> view (componentTypes.to Map.keysSet)
+
+
+-- | Check whether each of the given component types is a role type. If
+-- not, a 'CannotBePlayed' error is thrown.
+checkIfRole :: Region -> Set TypeName -> TypeChecker ()
+checkIfRole rgn tySet = do
+    compTys <- view componentTypes
+    for_ (toList tySet) $ \tyName ->
+        unless (isRoleType compTys tyName) $
+            throw rgn (CannotBePlayed (renderPretty (TyComponent tySet)) tyName)
 
 
 warnIfNot :: Prism' ComponentType a -> Set TypeName -> Warning -> TypeChecker ()

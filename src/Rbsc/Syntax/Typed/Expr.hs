@@ -70,7 +70,7 @@ data Expr t where
     Identifier     :: Name -> Type t -> Expr t
     Cast           :: Expr Int -> Expr Double
     ActionArray    :: Expr Action -> Expr (Array Action)
-    IsPlayed       :: Expr Component -> Expr Bool
+    IsPlayed       :: Loc (Expr Component) -> Expr Bool
     Not            :: Expr Bool -> Expr Bool
     Negate         :: Num t => Expr t -> Expr t
     ArithOp        :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
@@ -259,7 +259,7 @@ plateExpr f = \case
     Identifier name ty -> pure (Identifier name ty)
     Cast e             -> Cast <$> f e
     ActionArray e      -> ActionArray <$> f e
-    IsPlayed e         -> IsPlayed <$> f e
+    IsPlayed e         -> IsPlayed <$> traverse f e
     Not e              -> Not <$> f e
     Negate e           -> Negate <$> f e
     ArithOp aOp l r    -> ArithOp aOp <$> f l <*> f r

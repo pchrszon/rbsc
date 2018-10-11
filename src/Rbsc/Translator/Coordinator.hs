@@ -56,8 +56,9 @@ trnsCoordinators
     -> Alphabets
     -> [TCoordinator Elem]
     -> Translator [Prism.Module]
-trnsCoordinators compTys sys bi as =
-    traverse (trnsCoordinator roleActMap) . concatMap partition
+trnsCoordinators compTys sys bi as coords = do
+    coords' <- concat <$> traverse partition coords
+    traverse (trnsCoordinator roleActMap) coords'
   where
     roleActMap  = roleActions reqActss roleAs
     reqActss    = Map.mapWithKey getRequired roleAs
@@ -72,6 +73,16 @@ trnsCoordinator
     -> TCoordinator Elem
     -> Translator Prism.Module
 trnsCoordinator roleActMap Coordinator{..} = do
+    let constraints = mapMaybe (coordConstraint . getElem) coordCommands
+    constrainedRoles <- Set.unions <$> traverse rolesInConstraint constraints
+
+    let roleActss = fmap getRoleActs (Set.toList constrainedRoles)
+        roleActs  = foldr compose Set.empty roleActss
+
+        playAlphabet = concatMap genPlayActs (Set.toList constrainedRoles)
+
+        valuations = allValuatations constrainedRoles
+
     ident <- newNameFrom "coordinator"
     vars' <- trnsGlobalVars coordVars
     cmds' <- concat <$>
@@ -86,20 +97,11 @@ trnsCoordinator roleActMap Coordinator{..} = do
 
     return (Prism.Module ident vars' (cmds' ++ alphCmd))
   where
-    valuations = allValuatations constrainedRoles
-
     alphabetCmd alph =
         Prism.Command alph Prism.ActionOpen (Prism.LitBool True) []
 
-    playAlphabet = concatMap genPlayActs (Set.toList constrainedRoles)
     genPlayActs roleName =
         [playedActionIdent roleName, notPlayedActionIdent roleName]
-
-    roleActs  = foldr compose Set.empty roleActss
-    roleActss = fmap getRoleActs (Set.toList constrainedRoles)
-
-    constrainedRoles = Set.unions (fmap rolesInConstraint constraints)
-    constraints      = mapMaybe (coordConstraint . getElem) coordCommands
 
     getRoleActs roleName = Map.findWithDefault Set.empty roleName roleActMap
 
@@ -122,7 +124,7 @@ trnsCoordCommand valuations roleActs CoordCommand {..} = do
     upds'     <- trnsUpdates Nothing coordUpdates
 
     multiActs <- case coordConstraint of
-        Just (Loc (SomeExpr c TyBool) rgn) -> do
+        Just (PlayingConstraint (Loc (SomeExpr c TyBool) rgn) _) -> do
             sat <- satisfyingValuations valuations (Loc c rgn)
             let constrActs = filter (isAllowed sat) (Set.toList roleActs)
             constrActs' <- case coordAction of
@@ -227,7 +229,7 @@ satisfyingValuations valuations constraint = filterM satisfying valuations
 
     substituteRoles :: Valuation -> Expr t -> Expr t
     substituteRoles val = transformExpr $ \case
-        IsPlayed (Literal comp (TyComponent _)) ->
+        IsPlayed (Loc (Literal comp (TyComponent _)) _) ->
             case Map.lookup (view compName comp) val of
                 Just b -> Literal b TyBool
                 Nothing -> error $

@@ -9,6 +9,7 @@ module Rbsc.Syntax.Coordinator
     ( Coordinator(..)
     , CoordCommand(..)
     , coordGuardLens
+    , PlayingConstraint(..)
     ) where
 
 
@@ -37,7 +38,7 @@ deriving instance
 -- | A coordinator command possibly having a role-playing constraint.
 data CoordCommand elem ty expr = CoordCommand
     { coordAction     :: Maybe expr
-    , coordConstraint :: Maybe expr
+    , coordConstraint :: Maybe (PlayingConstraint expr)
     , coordGuard      :: expr
     , coordUpdates    :: [elem ty expr (Update elem ty expr)]
     }
@@ -59,5 +60,18 @@ instance HasExprs expr => HasExprs (CoordCommand Elem ty expr) where
         <*> traverse (exprs f) coordConstraint
         <*> exprs f coordGuard
         <*> traverse (exprs f) coordUpdates
+
+
+-- | A role-playing constraint with a list of roles that are coordinated.
+data PlayingConstraint expr = PlayingConstraint
+    { pcExpr  :: expr
+    , pcRoles :: [expr]
+    } deriving (Show)
+
+instance HasExprs expr => HasExprs (PlayingConstraint expr) where
+    exprs f PlayingConstraint{..} = PlayingConstraint
+        <$> exprs f pcExpr
+        <*> traverse (exprs f) pcRoles
+
 
 makeLensesFor [("coordGuard", "coordGuardLens")] ''CoordCommand

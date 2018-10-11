@@ -39,6 +39,7 @@ module Rbsc.Syntax.Untyped
       -- * Coordination
     , UCoordinator
     , UCoordCommand
+    , UPlayingConstraint
 
       -- * Types
     , UType
@@ -106,8 +107,9 @@ type UModule          = Module ElemMulti UVarDecls UQuantifiedType LExpr
 type UModuleBody      = ModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
 type UNamedModuleBody = NamedModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
 
-type UCoordinator  = Coordinator ElemMulti UVarDecls UQuantifiedType LExpr
-type UCoordCommand = CoordCommand ElemMulti UQuantifiedType LExpr
+type UCoordinator       = Coordinator ElemMulti UVarDecls UQuantifiedType LExpr
+type UCoordCommand      = CoordCommand ElemMulti UQuantifiedType LExpr
+type UPlayingConstraint = PlayingConstraint LExpr
 
 type UVarDecls = [VarDecl LExpr]
 

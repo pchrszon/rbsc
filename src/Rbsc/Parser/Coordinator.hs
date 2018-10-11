@@ -32,6 +32,12 @@ coordinator = reserved "coordinator" *> braces (Coordinator
 coordCommand :: Parser UCoordCommand
 coordCommand = label "command" $ CoordCommand
     <$> brackets (optional expr)
-    <*> optional (brackets expr)
+    <*> optional (brackets playingConstraint)
     <*> expr
     <*> (operator "->" *> updates)
+
+
+playingConstraint :: Parser UPlayingConstraint
+playingConstraint = PlayingConstraint
+    <$> expr
+    <*> option [] (reserved "over" *> (expr `sepBy1` comma))
