@@ -24,20 +24,28 @@ coordinatorDef = DefCoordinator <$> coordinator <?> "coordinator definition"
 
 
 coordinator :: Parser UCoordinator
-coordinator = reserved "coordinator" *> braces (Coordinator
-    <$> many (varDecl <* semi)
-    <*> elemMultis coordCommand many)
+coordinator = do
+    _ <- reserved "coordinator"
+    roles <- option [] over
+
+    braces $ Coordinator
+        <$> many (varDecl <* semi)
+        <*> elemMultis (coordCommand roles) many
 
 
-coordCommand :: Parser UCoordCommand
-coordCommand = label "command" $ CoordCommand
+coordCommand :: Monad m => [LExpr] -> ParserT m UCoordCommand
+coordCommand roles = label "command" $ CoordCommand
     <$> brackets (optional expr)
-    <*> optional (brackets playingConstraint)
+    <*> optional (brackets (playingConstraint roles))
     <*> expr
     <*> (operator "->" *> updates)
 
 
-playingConstraint :: Parser UPlayingConstraint
-playingConstraint = PlayingConstraint
+playingConstraint :: Monad m => [LExpr] -> ParserT m UPlayingConstraint
+playingConstraint roles = PlayingConstraint
     <$> expr
-    <*> option [] (reserved "over" *> (expr `sepBy1` comma))
+    <*> fmap (++ roles) (option [] over)
+
+
+over :: Parser [LExpr]
+over = reserved "over" *> (expr `sepBy1` comma)
