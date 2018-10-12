@@ -18,6 +18,7 @@ import Control.Monad.Reader
 
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import           Data.Maybe      (isJust)
 
 
 import Rbsc.Data.Action
@@ -65,7 +66,7 @@ tcCommand Command{..} = do
         <*> pure cmdActionKind
         <*> pure cmdActionIntent
         <*> someExpr cmdGuard TyBool
-        <*> tcElemMultis tcUpdate cmdUpdates
+        <*> tcElemMultis (tcUpdate hasAction []) cmdUpdates
   where
     checkActionKind = case cmdActionKind of
         OverrideAction rgn -> view scope >>= \case
@@ -75,15 +76,26 @@ tcCommand Command{..} = do
             Global -> throw rgn InvalidOverrideAction
         NormalAction -> return ()
 
+    hasAction = isJust cmdAction
 
-tcUpdate :: UUpdate -> TypeChecker (TUpdate ElemMulti)
-tcUpdate Update {..} = Update
+
+tcUpdate :: Bool -> [Name] -> UUpdate -> TypeChecker (TUpdate ElemMulti)
+tcUpdate hasAction ownVars Update {..} = Update
     <$> traverse (`someExpr` TyDouble) updProb
-    <*> tcElemMultis tcAssignment updAssignments
+    <*> tcElemMultis (tcAssignment hasAction ownVars) updAssignments
 
 
-tcAssignment :: UAssignment -> TypeChecker TAssignment
-tcAssignment (Assignment (Loc name rgn) idxs e) = do
+tcAssignment :: Bool -> [Name] -> UAssignment -> TypeChecker TAssignment
+tcAssignment hasAction ownVars (Assignment (Loc name rgn) idxs e) = do
+    -- check for illegal update of global variable
+    symTable <- view symbolTable
+    when (hasAction && (name `notElem` ownVars)) $
+        view scope >>= \case
+            Local tyName
+                | not (isLocalSymbol symTable tyName name) ->
+                    throw rgn IllegalGlobalUpdate
+            _ -> return ()
+
     varTy <- getIdentifierType name rgn
     (idxs', Some ty) <- tcIndices rgn idxs varTy
     e' <- someExpr e ty

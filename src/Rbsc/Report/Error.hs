@@ -73,6 +73,7 @@ data LocErrorDesc
     | InvalidOverrideAction
     | IncompatibleRoles !Name !Region !Name !Name !Text
     | EmptyGenArray !Int !Int
+    | IllegalGlobalUpdate
 
     -- evaluation errors
     | DivisionByZero
@@ -289,6 +290,12 @@ locReport rgn = \case
                 "this array is empty" <>
                 "\nits bounds are [" <> pack (show l) <> ".." <>
                 pack (show u) <> "]"
+            ]
+
+    IllegalGlobalUpdate ->
+        errorReport "illegal update of global variable"
+            [ errorPart rgn . Just $
+                "synchronous command cannot update global variable"
             ]
 
 

@@ -6,6 +6,9 @@ module Rbsc.TypeChecker.Coordinator
     ) where
 
 
+import Data.Maybe (isJust)
+
+
 import Rbsc.Data.Type
 
 import Rbsc.Report.Region
@@ -21,15 +24,20 @@ import Rbsc.TypeChecker.Internal
 tcCoordinator :: UCoordinator -> TypeChecker (TCoordinator ElemMulti)
 tcCoordinator Coordinator{..} = Coordinator
     <$> traverse tcVarDecl coordVars
-    <*> tcElemMultis tcCoordCommand coordCommands
+    <*> tcElemMultis (tcCoordCommand ownVars) coordCommands
+  where
+    ownVars = fmap (unLoc . declName) coordVars
 
 
-tcCoordCommand :: UCoordCommand -> TypeChecker (TCoordCommand ElemMulti)
-tcCoordCommand CoordCommand{..} = CoordCommand
+tcCoordCommand
+    :: [Name] -> UCoordCommand -> TypeChecker (TCoordCommand ElemMulti)
+tcCoordCommand ownVars CoordCommand{..} = CoordCommand
     <$> traverse (\act -> (`withLocOf` act) <$> tcAction act) coordAction
     <*> traverse tcPlayingConstraint coordConstraint
     <*> someExpr coordGuard TyBool
-    <*> tcElemMultis tcUpdate coordUpdates
+    <*> tcElemMultis (tcUpdate hasAction ownVars) coordUpdates
+  where
+    hasAction = isJust coordAction || isJust coordConstraint
 
 
 tcPlayingConstraint :: UPlayingConstraint -> TypeChecker TPlayingConstraint
