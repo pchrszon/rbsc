@@ -86,6 +86,7 @@ data LocErrorDesc
 
     -- translation errors
     | TranslationNotSupported !Text
+    | IllegalPlayingConstraint
     deriving (Eq, Show)
 
 
@@ -345,6 +346,13 @@ locReport rgn = \case
         errorReport "translation not supported"
             [ errorPart rgn . Just $
                 "could not translate " <> node
+            ]
+
+    IllegalPlayingConstraint ->
+        errorReport "illegal playing constraint"
+            [ errorPart rgn . Just $
+                "role-playing constraints are not allowed\n" <>
+                "outside of coordinator commands"
             ]
 
 

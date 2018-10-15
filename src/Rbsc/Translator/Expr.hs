@@ -66,6 +66,9 @@ trnsExpr mComp rgn = go
             Cast inner ->
                 go inner
 
+            IsPlayed _ ->
+                throw rgn IllegalPlayingConstraint
+
             Not inner ->
                 Prism.UnaryOp Prism.Not <$> go inner
 

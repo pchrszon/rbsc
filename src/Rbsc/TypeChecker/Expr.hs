@@ -110,6 +110,11 @@ tcExpr (Loc e rgn) = case e of
 
         return (SomeExpr (T.GenArray inner' l u) (TyArray (u - l + 1) ty))
 
+    U.Constraint inner ->
+        local (set context ConstraintContext) $ do
+            inner' <- inner `hasType` TyBool
+            inner' `withType` TyBool
+
     U.Self ->
         view scope >>= \case
             Global       -> throw rgn SelfOutsideImpl

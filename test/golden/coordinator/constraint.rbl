@@ -1,0 +1,24 @@
+natural type N;
+
+
+role type R(N) {
+    s : [0..1] init 0;
+
+    [a] s = 0 -> (s' = 1);
+}
+
+
+system {
+    n : N;
+    r : R;
+    r boundto n;
+}
+
+
+coordinator {
+    [][always(r)] true -> true;
+}
+
+
+// enter constraint-context to specify role-playing constraints in functions
+function always(r : role) : bool = constraint r;

@@ -75,6 +75,7 @@ atom = choice
     , litNumber
     , litAction
     , litArray
+    , constraint
     , ifThenElse
     , function
     , countFunction
@@ -130,6 +131,13 @@ litAction = do
     start <- reserved "action"
     e <- expr
     return (Loc (LitAction e) (start <> getLoc e))
+
+
+constraint :: Parser LExpr
+constraint = do
+    start <- reserved "constraint"
+    e <- expr
+    return (Loc (Constraint e) (start <> getLoc e))
 
 
 litArray :: Parser LExpr

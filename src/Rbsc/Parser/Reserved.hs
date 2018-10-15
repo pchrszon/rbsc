@@ -67,6 +67,7 @@ reservedWords =
     , "override"
     , "internal"
     , "over"
+    , "constraint"
     ]
 
 
