@@ -11,7 +11,7 @@ module n_N_first
 
     ]a[ n_s = 0 -> (n_s' = 1);
     ]b[ n_s = 1 -> (n_s' = 2);
-    ]b, ovr_r[ true -> true;
+    ]b, _ovr_r[ true -> true;
 endmodule
 
 module n_N_second
@@ -24,13 +24,13 @@ endmodule
 module r_R_first
     r_s : [0..1] init 0;
 
-    ]a, r[ r_s = 0 -> (r_s' = 1);
-    ]a, not_r[ true -> true;
+    ]a, _r[ r_s = 0 -> (r_s' = 1);
+    ]a, _not_r[ true -> true;
 endmodule
 
 module r_R_second
     r_t : [0..1] init 0;
 
-    ]b, r, ovr_r[ r_t = 0 -> (r_t' = 1);
-    ]b, not_r[ true -> true;
+    ]b, _r, _ovr_r[ r_t = 0 -> (r_t' = 1);
+    ]b, _not_r[ true -> true;
 endmodule

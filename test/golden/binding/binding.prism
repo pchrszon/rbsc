@@ -12,31 +12,31 @@ module core_impl
 
     ]a[ core_s = 0 -> (core_s' = 1);
     ]b[ core_s = 1 -> (core_s' = 2);
-    ]a, ovr_left[ true -> true;
-    ]a, ovr_outer[ true -> true;
-    ]b, ovr_right[ true -> true;
+    ]a, _ovr_left[ true -> true;
+    ]a, _ovr_outer[ true -> true;
+    ]b, _ovr_right[ true -> true;
 endmodule
 
 module left_impl
     left_s : [0..2] init 0;
 
-    ]a, left, ovr_left[ left_s = 0 -> (left_s' = 1);
-    ]c, left[ left_s = 1 -> (left_s' = 2);
-    ]a, ovr_outer, not_left[ true -> true;
-    ]a, not_left[ true -> true;
+    ]a, _left, _ovr_left[ left_s = 0 -> (left_s' = 1);
+    ]c, _left[ left_s = 1 -> (left_s' = 2);
+    ]a, _ovr_outer, _not_left[ true -> true;
+    ]a, _not_left[ true -> true;
 endmodule
 
 module outer_impl
     outer_s : [0..2] init 0;
 
-    ]a, outer, ovr_outer[ outer_s = 0 -> (outer_s' = 1);
-    ]d, outer[ outer_s = 1 -> (outer_s' = 2);
-    ]a, not_outer[ true -> true;
+    ]a, _outer, _ovr_outer[ outer_s = 0 -> (outer_s' = 1);
+    ]d, _outer[ outer_s = 1 -> (outer_s' = 2);
+    ]a, _not_outer[ true -> true;
 endmodule
 
 module right_impl
     right_s : [0..1] init 0;
 
-    ]b, right, ovr_right[ right_s = 0 -> (right_s' = 1);
-    ]b, not_right[ true -> true;
+    ]b, _right, _ovr_right[ right_s = 0 -> (right_s' = 1);
+    ]b, _not_right[ true -> true;
 endmodule

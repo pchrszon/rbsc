@@ -46,7 +46,8 @@ convertToSingleActions =
     removeDesyncModule . runConverter . Prism.convertToSingleActions convert
   where
     removeDesyncModule model = model
-        { Prism.modelModules = filter (not . isDesyncModule) (Prism.modelModules model)
+        { Prism.modelModules =
+            filter (not . isDesyncModule) (Prism.modelModules model)
         }
 
     isDesyncModule = ("Desync" ==) . Prism.modIdent
@@ -69,7 +70,8 @@ convert acts = use (csIdents.at acts) >>= \case
 
         return ident'
   where
-    mkIdent = intercalate "_" . fmap actionToIdent . filter (not . isOverrideAction)
+    mkIdent =
+        intercalate "_" . fmap actionToIdent . filter (not . isOverrideAction)
 
     actionToIdent = \case
         Prism.Action act -> act

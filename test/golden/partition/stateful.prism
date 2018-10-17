@@ -3,31 +3,32 @@ mdp
 module coordinator
     b : bool init false;
 
-    ]a, r_0, not_r_1, r_2, r_3[ true -> (b' = true);
-    ]a, r_0, not_r_1, r_2, not_r_3[ true -> (b' = true);
-    ]a, r_0, not_r_1, not_r_2, r_3[ true -> (b' = true);
-    ]a, r_0, not_r_1, not_r_2, not_r_3[ true -> (b' = true);
-    ]a, not_r_0, r_1, r_2, r_3[ true -> (b' = true);
-    ]a, not_r_0, r_1, r_2, not_r_3[ true -> (b' = true);
-    ]a, not_r_0, r_1, not_r_2, r_3[ true -> (b' = true);
-    ]a, not_r_0, r_1, not_r_2, not_r_3[ true -> (b' = true);
-    ]a, not_r_0, not_r_1, r_2, r_3[ true -> (b' = true);
-    ]a, not_r_0, not_r_1, r_2, not_r_3[ true -> (b' = true);
-    ]a, not_r_0, not_r_1, not_r_2, r_3[ true -> (b' = true);
-    ]a, not_r_0, not_r_1, not_r_2, not_r_3[ true -> (b' = true);
-    ]a, r_0, r_1, r_2, not_r_3[ true -> (b' = true);
-    ]a, r_0, r_1, not_r_2, r_3[ true -> (b' = true);
-    ]a, r_0, r_1, not_r_2, not_r_3[ true -> (b' = true);
-    ]a, r_0, not_r_1, r_2, not_r_3[ true -> (b' = true);
-    ]a, r_0, not_r_1, not_r_2, r_3[ true -> (b' = true);
-    ]a, r_0, not_r_1, not_r_2, not_r_3[ true -> (b' = true);
-    ]a, not_r_0, r_1, r_2, not_r_3[ true -> (b' = true);
-    ]a, not_r_0, r_1, not_r_2, r_3[ true -> (b' = true);
-    ]a, not_r_0, r_1, not_r_2, not_r_3[ true -> (b' = true);
-    ]a, not_r_0, not_r_1, r_2, not_r_3[ true -> (b' = true);
-    ]a, not_r_0, not_r_1, not_r_2, r_3[ true -> (b' = true);
-    ]a, not_r_0, not_r_1, not_r_2, not_r_3[ true -> (b' = true);
-    ]r_0, not_r_0, r_1, not_r_1, r_2, not_r_2, r_3, not_r_3[ true -> true;
+    ]a, _r_0, _not_r_1, _r_2, _r_3[ true -> (b' = true);
+    ]a, _r_0, _not_r_1, _r_2, _not_r_3[ true -> (b' = true);
+    ]a, _r_0, _not_r_1, _not_r_2, _r_3[ true -> (b' = true);
+    ]a, _r_0, _not_r_1, _not_r_2, _not_r_3[ true -> (b' = true);
+    ]a, _not_r_0, _r_1, _r_2, _r_3[ true -> (b' = true);
+    ]a, _not_r_0, _r_1, _r_2, _not_r_3[ true -> (b' = true);
+    ]a, _not_r_0, _r_1, _not_r_2, _r_3[ true -> (b' = true);
+    ]a, _not_r_0, _r_1, _not_r_2, _not_r_3[ true -> (b' = true);
+    ]a, _not_r_0, _not_r_1, _r_2, _r_3[ true -> (b' = true);
+    ]a, _not_r_0, _not_r_1, _r_2, _not_r_3[ true -> (b' = true);
+    ]a, _not_r_0, _not_r_1, _not_r_2, _r_3[ true -> (b' = true);
+    ]a, _not_r_0, _not_r_1, _not_r_2, _not_r_3[ true -> (b' = true);
+    ]a, _r_0, _r_1, _r_2, _not_r_3[ true -> (b' = true);
+    ]a, _r_0, _r_1, _not_r_2, _r_3[ true -> (b' = true);
+    ]a, _r_0, _r_1, _not_r_2, _not_r_3[ true -> (b' = true);
+    ]a, _r_0, _not_r_1, _r_2, _not_r_3[ true -> (b' = true);
+    ]a, _r_0, _not_r_1, _not_r_2, _r_3[ true -> (b' = true);
+    ]a, _r_0, _not_r_1, _not_r_2, _not_r_3[ true -> (b' = true);
+    ]a, _not_r_0, _r_1, _r_2, _not_r_3[ true -> (b' = true);
+    ]a, _not_r_0, _r_1, _not_r_2, _r_3[ true -> (b' = true);
+    ]a, _not_r_0, _r_1, _not_r_2, _not_r_3[ true -> (b' = true);
+    ]a, _not_r_0, _not_r_1, _r_2, _not_r_3[ true -> (b' = true);
+    ]a, _not_r_0, _not_r_1, _not_r_2, _r_3[ true -> (b' = true);
+    ]a, _not_r_0, _not_r_1, _not_r_2, _not_r_3[ true -> (b' = true);
+    ]_r_0, _not_r_0, _r_1, _not_r_1, _r_2, _not_r_2, _r_3, _not_r_3[ true ->
+        true;
 endmodule
 
 module Desync
@@ -49,27 +50,27 @@ endmodule
 module r_0_step
     r_0_s : [0..1] init 0;
 
-    ]a, r_0[ r_0_s = 0 -> (r_0_s' = 1);
-    ]a, not_r_0[ true -> true;
+    ]a, _r_0[ r_0_s = 0 -> (r_0_s' = 1);
+    ]a, _not_r_0[ true -> true;
 endmodule
 
 module r_1_step
     r_1_s : [0..1] init 0;
 
-    ]a, r_1[ r_1_s = 0 -> (r_1_s' = 1);
-    ]a, not_r_1[ true -> true;
+    ]a, _r_1[ r_1_s = 0 -> (r_1_s' = 1);
+    ]a, _not_r_1[ true -> true;
 endmodule
 
 module r_2_step
     r_2_s : [0..1] init 0;
 
-    ]a, r_2[ r_2_s = 0 -> (r_2_s' = 1);
-    ]a, not_r_2[ true -> true;
+    ]a, _r_2[ r_2_s = 0 -> (r_2_s' = 1);
+    ]a, _not_r_2[ true -> true;
 endmodule
 
 module r_3_step
     r_3_s : [0..1] init 0;
 
-    ]a, r_3[ r_3_s = 0 -> (r_3_s' = 1);
-    ]a, not_r_3[ true -> true;
+    ]a, _r_3[ r_3_s = 0 -> (r_3_s' = 1);
+    ]a, _not_r_3[ true -> true;
 endmodule

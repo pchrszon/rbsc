@@ -6,6 +6,6 @@ module Desync
 endmodule
 
 module outer_impl
-    ]inner_a, outer[ true -> true;
-    ]n_a, outer[ true -> true;
+    ]inner_a, _outer[ true -> true;
+    ]n_a, _outer[ true -> true;
 endmodule

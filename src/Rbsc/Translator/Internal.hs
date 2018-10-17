@@ -115,11 +115,12 @@ overridePrefix = "ovr_"
 
 
 overrideActionIdent :: RoleName -> Name
-overrideActionIdent roleName = overridePrefix <> trnsComponentName roleName
+overrideActionIdent roleName =
+    "_" <> overridePrefix <> trnsComponentName roleName
 
 
 playedActionIdent :: RoleName -> Name
-playedActionIdent = trnsComponentName
+playedActionIdent roleName = "_" <> trnsComponentName roleName
 
 
 notPlayedPrefix :: Name
@@ -127,7 +128,8 @@ notPlayedPrefix = "not_"
 
 
 notPlayedActionIdent :: RoleName -> Name
-notPlayedActionIdent roleName = notPlayedPrefix <> trnsComponentName roleName
+notPlayedActionIdent roleName =
+    "_" <> notPlayedPrefix <> trnsComponentName roleName
 
 
 trnsComponentName :: ComponentName -> Name
