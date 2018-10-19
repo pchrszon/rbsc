@@ -111,12 +111,11 @@ trnsAction = \case
 
 
 overridePrefix :: Name
-overridePrefix = "ovr_"
+overridePrefix = "_ovr_"
 
 
 overrideActionIdent :: RoleName -> Name
-overrideActionIdent roleName =
-    "_" <> overridePrefix <> trnsComponentName roleName
+overrideActionIdent roleName = overridePrefix <> trnsComponentName roleName
 
 
 playedActionIdent :: RoleName -> Name
@@ -124,12 +123,11 @@ playedActionIdent roleName = "_" <> trnsComponentName roleName
 
 
 notPlayedPrefix :: Name
-notPlayedPrefix = "not_"
+notPlayedPrefix = "_not_"
 
 
 notPlayedActionIdent :: RoleName -> Name
-notPlayedActionIdent roleName =
-    "_" <> notPlayedPrefix <> trnsComponentName roleName
+notPlayedActionIdent roleName = notPlayedPrefix <> trnsComponentName roleName
 
 
 trnsComponentName :: ComponentName -> Name
