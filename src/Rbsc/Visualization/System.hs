@@ -21,10 +21,12 @@ import Rbsc.Data.System
 -- format.
 visualizeSystem :: System -> Doc ann
 visualizeSystem sys =
-    "digraph system" <+> lbrace <> line <> indent 4 body <> rbrace
+    "digraph system" <+> lbrace <> line <> indent 4 body <> line <> rbrace
   where
     body =
+        "margin=0;" <> line <>
         sep (fmap (visualizeInstance sys) (view (instances.to assocs) sys)) <>
+        line <>
         sep (fmap (visualizeBoundTo sys) (view (boundTo.to assocs) sys))
 
 
