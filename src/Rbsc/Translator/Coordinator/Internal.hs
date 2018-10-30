@@ -2,17 +2,19 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 
 module Rbsc.Translator.Coordinator.Internal
-    ( rolesInConstraint
+    ( coordinatedRoles
+    , rolesInConstraint
     ) where
 
 
 import Control.Lens
 import Control.Monad.Except
 
-import           Data.Maybe (catMaybes)
+import           Data.Maybe (catMaybes, mapMaybe)
 import           Data.Set   (Set)
 import qualified Data.Set   as Set
 
@@ -25,6 +27,13 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 
 import Rbsc.Syntax.Typed hiding (Type (..))
+
+
+coordinatedRoles :: MonadError Error m => TCoordinator Elem -> m (Set RoleName)
+coordinatedRoles Coordinator{..} =
+    Set.unions <$> traverse rolesInConstraint constraints
+  where
+    constraints = mapMaybe (coordConstraint . getElem) coordCommands
 
 
 rolesInConstraint

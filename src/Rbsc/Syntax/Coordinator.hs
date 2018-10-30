@@ -34,6 +34,12 @@ deriving instance
          (Show vars, Show ty, Show expr) =>
          Show (Coordinator Elem vars ty expr)
 
+instance Semigroup vars => Semigroup (Coordinator elem vars ty expr) where
+    Coordinator vars1 cmds1 <> Coordinator vars2 cmds2 = Coordinator
+        { coordVars     = vars1 <> vars2
+        , coordCommands = cmds1 <> cmds2
+        }
+
 
 -- | A coordinator command possibly having a role-playing constraint.
 data CoordCommand elem ty expr = CoordCommand

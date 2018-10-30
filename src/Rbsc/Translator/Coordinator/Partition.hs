@@ -56,24 +56,32 @@ import Rbsc.Util (regions)
 --      [][...] ... -> (y' = 1);
 --      [][...] ... -> (x' = 2) & (y' = 3);
 --
---   If the third command didn't exist, the first two commands would be in
---   separate regions.
+--    If the third command didn't exist, the first two commands would be in
+--    separate regions.
 --
 -- 2. If there is a region with no variables, the commands in this region
 --    are further partitioned w.r.t. the roles they coordinate. These
 --    commands can be put into different modules without any restrictions,
 --    since they update no variables.
 --
--- 3. A coordinator for each region from (1) and for each partition of (2)
---    is generated.
+-- 3. If regions from (1) and partitions of (2) coordinate the same set of
+--    roles, they are merged.
+--
+-- 4. A coordinator for each partition is generated.
 
 
 partition :: MonadError Error m => TCoordinator Elem -> m [TCoordinator Elem]
-partition coord@Coordinator{..} = do -- statelessCoords ++ statefulCoords
+partition coord@Coordinator{..} = do
     statelessCoords <- fmap concat . for statelessPart $
-        fmap (fmap genStatelessCoordinator) . partitionOnRoleSets . snd
+        fmap (fmap (over _2 genStatelessCoordinator)) . partitionOnRoleSets . snd
 
-    return (statelessCoords ++ statefulCoords)
+    statefulCoords <- for statefulParts $ \part -> do
+        let coord' = genStatefulCoordinator coord part
+        roles <- coordinatedRoles coord'
+        return (roles, coord')
+
+    return
+        (Map.elems (Map.fromListWith (<>) (statelessCoords ++ statefulCoords)))
   where
     cmdVars =
         fmap ((\cmd -> (cmd, updatedVariables cmd)) . getElem) coordCommands
@@ -83,14 +91,12 @@ partition coord@Coordinator{..} = do -- statelessCoords ++ statefulCoords
     (statelessPart, statefulParts) =
         List.partition (Set.null . fst) varPartitions
 
-    statefulCoords  = fmap (genStatefulCoordinators coord) statefulParts
 
-
-genStatefulCoordinators
+genStatefulCoordinator
     :: TCoordinator Elem
     -> (Set Name, [TCoordCommand Elem])
     -> TCoordinator Elem
-genStatefulCoordinators Coordinator{..} (vars, cmds) = Coordinator
+genStatefulCoordinator Coordinator {..} (vars, cmds) = Coordinator
     { coordVars     = filterVariables vars coordVars
     , coordCommands = fmap Elem cmds
     }
@@ -107,9 +113,11 @@ filterVariables vars = filter contained
 
 
 partitionOnRoleSets
-    :: MonadError Error m => [TCoordCommand Elem] -> m [[TCoordCommand Elem]]
+    :: MonadError Error m
+    => [TCoordCommand Elem]
+    -> m [(Set RoleName, [TCoordCommand Elem])]
 partitionOnRoleSets =
-    fmap (Map.elems . Map.fromListWith (++)) . traverse addRoleSet
+    fmap (Map.assocs . Map.fromListWith (++)) . traverse addRoleSet
   where
     addRoleSet cmd = do
         roleSet <- roles cmd

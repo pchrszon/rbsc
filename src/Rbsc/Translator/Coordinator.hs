@@ -72,9 +72,8 @@ trnsCoordinator
     :: Map RoleName (Set RoleAction)
     -> TCoordinator Elem
     -> Translator Prism.Module
-trnsCoordinator roleActMap Coordinator{..} = do
-    let constraints = mapMaybe (coordConstraint . getElem) coordCommands
-    constrainedRoles <- Set.unions <$> traverse rolesInConstraint constraints
+trnsCoordinator roleActMap coord@Coordinator{..} = do
+    constrainedRoles <- coordinatedRoles coord
 
     let roleActss = fmap getRoleActs (Set.toList constrainedRoles)
         roleActs  = foldr compose Set.empty roleActss

@@ -1,0 +1,25 @@
+natural type N;
+
+role type R(N) {
+    s : [0..1] init 0;
+
+    [self.a] s = 0 -> (s' = 1);
+}
+
+system {
+    n : N;
+    r : R;
+
+    r boundto n;
+}
+
+// Coordinator should not be partitioned, since each command coordinates the
+// same set of roles.
+coordinator {
+    x : [0..1] init 0;
+    y : [0..1] init 0;
+
+    [][r] x = 0 -> (x' = 1);
+    [][r] y = 0 -> (y' = 1);
+    [][r] true -> true;
+}
