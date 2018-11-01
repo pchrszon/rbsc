@@ -18,6 +18,8 @@ import           Data.Maybe (catMaybes, mapMaybe)
 import           Data.Set   (Set)
 import qualified Data.Set   as Set
 
+import GHC.Exts (IsList (..))
+
 
 import Rbsc.Data.Component
 import Rbsc.Data.Some
@@ -41,7 +43,7 @@ rolesInConstraint
 rolesInConstraint (PlayingConstraint (Loc (SomeExpr e _) _) roles) = do
     rolesInExpr <- Set.fromList . catMaybes <$>
         traverse getRoleFromExpr (universeExpr e)
-    roles' <- Set.fromList <$> traverse getRole roles
+    roles' <- Set.fromList <$> getRoles roles
     return (rolesInExpr `Set.union` roles')
   where
     getRoleFromExpr :: MonadError Error m => Some Expr -> m (Maybe RoleName)
@@ -52,8 +54,9 @@ rolesInConstraint (PlayingConstraint (Loc (SomeExpr e _) _) roles) = do
             throw rgn NotConstant
         _ -> return Nothing
 
-    getRole :: MonadError Error m => LSomeExpr -> m RoleName
-    getRole = \case
-        Loc (SomeExpr (Literal comp (TyComponent _)) _) _ ->
-            return (view compName comp)
-        Loc _ rgn -> throw rgn NotConstant
+    getRoles :: MonadError Error m => Maybe LSomeExpr -> m [RoleName]
+    getRoles = \case
+        Nothing -> return []
+        Just (Loc (SomeExpr (Literal arr (TyArray _ (TyComponent _))) _) _) ->
+            return (fmap (view compName) (toList arr))
+        Just (Loc _ rgn) -> throw rgn NotConstant

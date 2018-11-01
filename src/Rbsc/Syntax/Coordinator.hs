@@ -68,10 +68,10 @@ instance HasExprs expr => HasExprs (CoordCommand Elem ty expr) where
         <*> traverse (exprs f) coordUpdates
 
 
--- | A role-playing constraint with a list of roles that are coordinated.
+-- | A role-playing constraint with an array of roles that are coordinated.
 data PlayingConstraint expr = PlayingConstraint
     { pcExpr  :: expr
-    , pcRoles :: [expr]
+    , pcRoles :: Maybe expr
     } deriving (Show)
 
 instance HasExprs expr => HasExprs (PlayingConstraint expr) where

@@ -9,7 +9,6 @@ module Rbsc.TypeChecker.Expr
     ( tcExpr
     , tcAction
     , tcRoleConstraint
-    , tcRoleExpr
     , tcFunctionDef
     , tcQuantifiedType
     , hasType
@@ -283,17 +282,6 @@ tcExpr (Loc e rgn) = case e of
         body' <- local (over boundVars ((var, varTy) :)) $
             body `hasType` qTy
         T.Quantified q' qdTy' (T.Scoped body') `withType` qTy
-
-
--- | Type check an untyped expression and also check if it has a role type.
-tcRoleExpr :: Loc U.Expr -> TypeChecker (Loc SomeExpr)
-tcRoleExpr e = do
-    tyComponent <- getTyComponent
-    (e', ty) <- e `hasType'` tyComponent
-    case ty of
-        TyComponent tySet -> checkIfRole (getLoc e) tySet
-
-    return (SomeExpr e' ty `withLocOf` e)
 
 
 -- | @tcFunctionDef params tyRes body@ checks an untyped function

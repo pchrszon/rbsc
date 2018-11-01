@@ -21,6 +21,6 @@ system {
 
 
 coordinator {
-    [][r[0] over r[0], r[1]] true -> true;
-    [][r[1] over r[0], r[1]] true -> true;
+    [][r[0] over r] true -> true;
+    [][r[1] over [ r[i] || i : [0..1] ] ] true -> true;
 }
