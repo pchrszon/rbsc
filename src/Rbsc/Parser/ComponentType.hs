@@ -42,7 +42,7 @@ roleTypeDef = typeDef
     (\typeName -> DefRoleType . RoleTypeDef typeName <$> players)
   where
     players :: Parser [Loc TypeName]
-    players = parens (identifier `sepBy` comma)
+    players = parens (identifier `sepBy` comma) <?> "list of player types"
 
 
 compartmentTypeDef :: Parser [Definition]

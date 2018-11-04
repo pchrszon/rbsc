@@ -47,6 +47,7 @@ reservedWords =
     , "impl"
     , "module"
     , "coordinator"
+    , "rewards"
     , "self"
     , "player"
     , "index"

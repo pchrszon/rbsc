@@ -88,4 +88,5 @@ getName = \case
             TypeDefRole rt        -> rtdName rt
             TypeDefCompartment ct -> ctdName ct
         DefComponent c -> unLoc (compDefName c)
+        DefRewardStruct -> "reward structure"
     DepFunctionSignature f -> "sig_" <> unLoc (functionName f)

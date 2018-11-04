@@ -29,11 +29,11 @@ module Rbsc.TypeChecker.Identifiers
 import Control.Lens
 import Control.Monad.State.Strict
 
-import Data.Function
-import Data.Ord
 import           Data.Foldable
+import           Data.Function
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import           Data.Ord
 
 
 import Rbsc.Data.Scope
@@ -56,6 +56,7 @@ data IdentifierDef
     | DefLocal !TypeName UVarDecl -- ^ the identifier represents a local variable
     | DefComponentType ComponentTypeDef -- ^ the identifier represents a component type
     | DefComponent ComponentDef -- ^ the identifier represents a component or a component array
+    | DefRewardStruct -- ^ the identifier represents a reward structure
     deriving (Eq, Ord, Show)
 
 
@@ -109,6 +110,7 @@ identifierDefs Model{..} = runBuilder $ do
     insertComponents modelSystem
     insertLocalVars modelImpls
     insertCoordinatorVars modelCoordinators
+    insertRewardStructs modelRewardStructs
 
 
 insertConstants :: [UConstant] -> Builder ()
@@ -181,6 +183,12 @@ insertCoordinatorVars :: [UCoordinator] -> Builder ()
 insertCoordinatorVars = traverse_ insertVars
   where
     insertVars coord = insertGlobals (coordVars coord)
+
+
+insertRewardStructs :: [URewardStruct] -> Builder ()
+insertRewardStructs = traverse_ $ \s -> case rsName s of
+    Just n  -> insert Global n DefRewardStruct
+    Nothing -> return ()
 
 
 type Builder a = State BuilderState a

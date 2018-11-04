@@ -1,0 +1,31 @@
+type N {
+    s : [0..2] init 0;
+
+    [a] s = 0 -> (s' = 1);
+    [b] s = 0 -> (s' = 2);
+}
+
+
+role type R(N) {
+    s : [0..1] init 0;
+
+    [[a, b][index(self)]] s = 0 -> (s' = 1);
+}
+
+
+system {
+    n : N;
+
+    r[2] : R;
+    r[0] boundto n; r[1] boundto n;
+}
+
+
+rewards "test" {
+    r[0].s = 1 := 1;
+    [a][r[0]] true := 2;
+
+    forall r : R {
+        [][!r] true := r.s;
+    }
+}

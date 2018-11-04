@@ -1,0 +1,34 @@
+mdp
+
+module Desync
+    ]a[ true -> true;
+    ]b[ true -> true;
+endmodule
+
+module n_impl
+    n_s : [0..2] init 0;
+
+    ]a[ n_s = 0 -> (n_s' = 1);
+    ]b[ n_s = 0 -> (n_s' = 2);
+endmodule
+
+module r_0_impl
+    r_0_s : [0..1] init 0;
+
+    ]a, _r_0[ r_0_s = 0 -> (r_0_s' = 1);
+    ]a, _not_r_0[ true -> true;
+endmodule
+
+module r_1_impl
+    r_1_s : [0..1] init 0;
+
+    ]b, _r_1[ r_1_s = 0 -> (r_1_s' = 1);
+    ]b, _not_r_1[ true -> true;
+endmodule
+
+rewards "test"
+    r_0_s = 1 : 1.0;
+    ]a, _r_0[ true : 2.0;
+    ]_not_r_0[ true : r_0_s;
+    ]_not_r_1[ true : r_1_s;
+endrewards

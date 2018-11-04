@@ -42,6 +42,7 @@ import Rbsc.Translator.Expr
 import Rbsc.Translator.Instantiation
 import Rbsc.Translator.Internal
 import Rbsc.Translator.Module
+import Rbsc.Translator.RewardStruct
 import Rbsc.Translator.Variable
 
 import Rbsc.TypeChecker
@@ -61,10 +62,10 @@ translateModels depth model = do
 
 translateModel :: Model -> System -> Info -> Result Prism.Model
 translateModel model sys info = do
-    modules      <- runReaderT (instantiateComponents model sys) info
-    coordinators <- runReaderT
-        (traverse instantiateCoordinator (modelCoordinators model))
-        info
+    (modules, coordinators, rewardStructs) <- flip runReaderT info $ (,,)
+        <$> instantiateComponents model sys
+        <*> traverse instantiateCoordinator (modelCoordinators model)
+        <*> traverse instantiateRewardStruct (modelRewardStructs model)
 
     mas <- moduleAlphabets modules
     let as = componentAlphabets mas
@@ -77,15 +78,19 @@ translateModel model sys info = do
         modules' <- trnsModules sys bi mas as modules
         coordinators' <-
             trnsCoordinators (view componentTypes info) sys bi as coordinators
+        rewardStructs' <-
+            trnsRewardStructs rewardStructs
 
         return Prism.Model
-            { Prism.modelType       = Prism.MDP
-            , Prism.modelFormulas   = []
-            , Prism.modelLabels     = labels'
-            , Prism.modelConstants  = []
-            , Prism.modelGlobalVars = fmap Prism.GlobalVar globals'
-            , Prism.modelModules    = concat [coordinators', desync, modules']
-            , Prism.modelInitStates = Nothing
+            { Prism.modelType          = Prism.MDP
+            , Prism.modelFormulas      = []
+            , Prism.modelLabels        = labels'
+            , Prism.modelConstants     = []
+            , Prism.modelGlobalVars    = fmap Prism.GlobalVar globals'
+            , Prism.modelModules       =
+                concat [coordinators', desync, modules']
+            , Prism.modelInitStates    = Nothing
+            , Prism.modelRewardStructs = rewardStructs'
             }
 
 

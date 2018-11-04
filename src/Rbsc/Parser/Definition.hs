@@ -51,6 +51,7 @@ data Definition
     | DefImplementation UImplementation
     | DefModule UModule
     | DefCoordinator UCoordinator
+    | DefRewardStruct URewardStruct
     deriving (Show)
 
 makePrisms ''Definition
@@ -72,6 +73,7 @@ toModel defs = do
         , modelSystem           = concat (def _DefSystem)
         , modelImpls            = impls
         , modelCoordinators     = def _DefCoordinator
+        , modelRewardStructs    = def _DefRewardStruct
         }
   where
     def p = toListOf (traverse.p) defs

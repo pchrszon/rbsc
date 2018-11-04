@@ -37,6 +37,7 @@ import Rbsc.Parser.Global
 import Rbsc.Parser.Impl
 import Rbsc.Parser.Label
 import Rbsc.Parser.Lexer
+import Rbsc.Parser.RewardStruct
 import Rbsc.Parser.System
 
 import           Rbsc.Report.Error  (Error (..), LocError (..))
@@ -89,6 +90,7 @@ definitions = fmap leftToList . withRecoveryOn (semi <|> symbol "}") $
     , implementationDef
     , moduleDef
     , coordinatorDef
+    , rewardStructDef
     ])
   where
     leftToList = \case

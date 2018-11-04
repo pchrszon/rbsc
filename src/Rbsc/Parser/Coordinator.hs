@@ -3,6 +3,7 @@
 -- | Parser for coordinators.
 module Rbsc.Parser.Coordinator
     ( coordinatorDef
+    , playingConstraint
     ) where
 
 

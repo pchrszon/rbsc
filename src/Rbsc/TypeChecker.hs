@@ -1,6 +1,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE LambdaCase #-}
 
 
 -- | Type checker for 'Model's.
@@ -57,6 +58,7 @@ tcModel U.Model{..} consts = T.Model consts
     <*> traverse tcConstraint modelSystem
     <*> tcImpls modelImpls
     <*> traverse tcCoordinator modelCoordinators
+    <*> traverse tcRewardStruct modelRewardStructs
 
 
 tcLabel :: ULabel -> TypeChecker TLabel
@@ -69,3 +71,23 @@ tcConstraint :: LExpr -> TypeChecker (Loc (T.Expr Bool))
 tcConstraint e = do
     e' <- e `hasType` TyBool
     return (e' `withLocOf` e)
+
+
+tcRewardStruct :: URewardStruct -> TypeChecker (TRewardStruct ElemMulti)
+tcRewardStruct RewardStruct{..} = RewardStruct rsName
+    <$> tcElemMultis tcRewardStructItem rsItems
+
+
+tcRewardStructItem :: URewardStructItem -> TypeChecker TRewardStructItem
+tcRewardStructItem RewardStructItem{..} = RewardStructItem
+    <$> tcRewardKind riKind
+    <*> someExpr riGuard TyBool
+    <*> someExpr riReward TyDouble
+
+
+tcRewardKind :: URewardKind -> TypeChecker TRewardKind
+tcRewardKind = \case
+    TransitionReward mAct mConstr -> TransitionReward
+        <$> traverse (\act -> (`withLocOf` act) <$> tcAction act) mAct
+        <*> traverse tcPlayingConstraint mConstr
+    StateReward -> return StateReward

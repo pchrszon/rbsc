@@ -11,6 +11,7 @@ module Rbsc.Translator.Instantiation
     ( instantiateComponents
     , instantiateComponent
     , instantiateCoordinator
+    , instantiateRewardStruct
     ) where
 
 
@@ -67,6 +68,12 @@ instantiateCoordinator =
     reduceCoordinator <=< removeVariableIndicesInCoord <=< unrollCoordinator
 
 
+-- | Instantiate a 'RewardStruct'.
+instantiateRewardStruct
+    :: MonadEval r m => TRewardStruct ElemMulti -> m (TRewardStruct Elem)
+instantiateRewardStruct = reduceRewardStruct <=< unrollRewardStruct
+
+
 reduceModuleBody :: MonadEval r m => TModuleBody Elem -> m (TModuleBody Elem)
 reduceModuleBody ModuleBody {..} = do
     vars <- (traverse._2._Just) (exprs reduce) bodyVars
@@ -79,6 +86,12 @@ reduceCoordinator Coordinator {..} = do
     vars <- (traverse._2._Just) (exprs reduce) coordVars
     cmds <- traverse (exprs reduce) coordCommands
     return (Coordinator vars cmds)
+
+
+reduceRewardStruct
+    :: MonadEval r m => TRewardStruct Elem -> m (TRewardStruct Elem)
+reduceRewardStruct RewardStruct {..} = RewardStruct rsName
+    <$> traverse (exprs reduce) rsItems
 
 
 -- | Instantiate all 'ModuleBody's for the given 'Component'.
@@ -137,6 +150,12 @@ unrollCoordCommand CoordCommand {..} = do
 unrollUpdate :: MonadEval r m => TUpdate ElemMulti -> m (TUpdate Elem)
 unrollUpdate Update {..} =
     Update updProb <$> unrollElemMultis instantiateAssignment updAssignments
+
+
+unrollRewardStruct
+    :: MonadEval r m => TRewardStruct ElemMulti -> m (TRewardStruct Elem)
+unrollRewardStruct RewardStruct {..} = RewardStruct rsName
+    <$> unrollElemMultis instantiateRewardStructItem rsItems
 
 
 unrollElemMultis
@@ -231,6 +250,24 @@ instantiateAssignment i s (Assignment name idxs e) =
     Assignment name (fmap inst idxs) (inst e)
   where
     inst = instantiateLSomeExpr i s
+
+
+instantiateRewardStructItem :: Instantiate TRewardStructItem
+instantiateRewardStructItem i s RewardStructItem{..} = RewardStructItem
+    { riKind   = instantiateRewardKind i s riKind
+    , riGuard  = inst riGuard
+    , riReward = inst riReward
+    }
+  where
+    inst = instantiateLSomeExpr i s
+
+
+instantiateRewardKind :: Instantiate TRewardKind
+instantiateRewardKind i s = \case
+    TransitionReward mAct mConstr -> TransitionReward
+        (fmap (instantiateLSomeExpr i s) mAct)
+        (fmap (instantiatePlayingConstraint i s) mConstr)
+    StateReward -> StateReward
 
 
 instantiateLSomeExpr :: Instantiate LSomeExpr

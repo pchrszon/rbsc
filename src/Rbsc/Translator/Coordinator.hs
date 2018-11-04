@@ -12,7 +12,6 @@ module Rbsc.Translator.Coordinator
 
 
 import Control.Lens
-import Control.Monad.Reader
 
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -24,13 +23,10 @@ import qualified Language.Prism as Prism
 
 
 import Rbsc.Data.Action
-import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name
 import Rbsc.Data.System
 import Rbsc.Data.Type
-
-import Rbsc.Eval
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
@@ -215,32 +211,3 @@ compose x y = fromMap (Map.unionWith combine (toMap x) (toMap y))
             . concatMap (\(act, annots) -> fmap ((,) act) annots)
             . Map.assocs
     toMap = Map.fromListWith (++) . fmap (over _2 (: [])) . Set.toList
-
-
-type Valuation = Map RoleName Bool
-
-
-satisfyingValuations
-    :: MonadEval r m => [Valuation] -> Loc (Expr Bool) -> m [Valuation]
-satisfyingValuations valuations constraint = filterM satisfying valuations
-  where
-    satisfying val = eval (fmap (substituteRoles val) constraint)
-
-    substituteRoles :: Valuation -> Expr t -> Expr t
-    substituteRoles val = transformExpr $ \case
-        IsPlayed (Loc (Literal comp (TyComponent _)) _) ->
-            case Map.lookup (view compName comp) val of
-                Just b -> Literal b TyBool
-                Nothing -> error $
-                    "satisfyingValuations: " ++ show comp ++ " not found"
-        e -> e
-
-
-allValuatations :: Set RoleName -> [Valuation]
-allValuatations = go . Set.toList
-  where
-    go (roleName : roleNames) = do
-        val <- go roleNames
-        b <- [True, False]
-        return (Map.insert roleName b val)
-    go [] = return Map.empty

@@ -41,6 +41,11 @@ module Rbsc.Syntax.Untyped
     , UCoordCommand
     , UPlayingConstraint
 
+      -- * Reward structures
+    , URewardStruct
+    , URewardStructItem
+    , URewardKind
+
       -- * Types
     , UType
     , UVarType
@@ -62,6 +67,7 @@ import Rbsc.Syntax.Impl           as Syntax
 import Rbsc.Syntax.Label          as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
+import Rbsc.Syntax.RewardStruct   as Syntax
 import Rbsc.Syntax.Type           as Syntax
 import Rbsc.Syntax.Untyped.Expr   as Syntax
 import Rbsc.Syntax.VarDecl        as Syntax
@@ -81,6 +87,7 @@ data Model = Model
     , modelSystem           :: [LExpr]
     , modelImpls            :: Map TypeName [UNamedModuleBody]
     , modelCoordinators     :: [UCoordinator]
+    , modelRewardStructs    :: [URewardStruct]
     } deriving (Show)
 
 
@@ -122,6 +129,11 @@ type UElemMulti = ElemMulti UQuantifiedType LExpr
 type ULoop      = Loop UQuantifiedType LExpr
 
 type UQuantifiedType = QuantifiedType ComponentTypeSet LExpr
+
+
+type URewardStruct     = RewardStruct ElemMulti UQuantifiedType LExpr
+type URewardStructItem = RewardStructItem LExpr
+type URewardKind       = RewardKind LExpr
 
 
 type UType    = Type LExpr

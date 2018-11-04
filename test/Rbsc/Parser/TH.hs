@@ -125,6 +125,10 @@ deriving instance Data expr => Data (Assignment expr)
 deriving instance Data ActionKind
 deriving instance Data ActionIntent
 
+deriving instance (Data expr, Data ty) => Data (RewardStruct ElemMulti ty expr)
+deriving instance Data expr => Data (RewardStructItem expr)
+deriving instance Data expr => Data (RewardKind expr)
+
 deriving instance (Data ty, Data expr, Data a) => Data (Elem ty expr a)
 deriving instance (Data ty, Data expr, Data a) => Data (ElemMulti ty expr a)
 deriving instance (Data ty, Data expr, Data a) => Data (Loop ty expr a)

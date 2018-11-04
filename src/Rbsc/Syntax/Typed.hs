@@ -36,6 +36,11 @@ module Rbsc.Syntax.Typed
     , TCoordCommand
     , TPlayingConstraint
 
+      -- * Reward structures
+    , TRewardStruct
+    , TRewardStructItem
+    , TRewardKind
+
       -- * Types
     , TType
     , TVarType
@@ -64,6 +69,7 @@ import Rbsc.Syntax.Impl           as Syntax
 import Rbsc.Syntax.Label          as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
+import Rbsc.Syntax.RewardStruct   as Syntax
 import Rbsc.Syntax.Type           as Syntax
 import Rbsc.Syntax.Typed.Expr     as Syntax
 import Rbsc.Syntax.VarDecl        as Syntax
@@ -72,12 +78,13 @@ import Rbsc.Syntax.VarType        as Syntax
 
 -- | Typed abstract syntax of a model.
 data Model = Model
-    { modelConstants    :: [TConstant]
-    , modelGlobals      :: TInits
-    , modelLabels       :: [TLabel]
-    , modelSystem       :: [Loc (Expr Bool)]
-    , modelImpls        :: Map TypeName [TNamedModuleBody ElemMulti]
-    , modelCoordinators :: [TCoordinator ElemMulti]
+    { modelConstants     :: [TConstant]
+    , modelGlobals       :: TInits
+    , modelLabels        :: [TLabel]
+    , modelSystem        :: [Loc (Expr Bool)]
+    , modelImpls         :: Map TypeName [TNamedModuleBody ElemMulti]
+    , modelCoordinators  :: [TCoordinator ElemMulti]
+    , modelRewardStructs :: [TRewardStruct ElemMulti]
     } deriving (Show)
 
 
@@ -114,6 +121,11 @@ type TAssignment   = Assignment LSomeExpr
 type TElem      = Elem TQuantifiedType LSomeExpr
 type TElemMulti = ElemMulti TQuantifiedType LSomeExpr
 type TLoop      = Loop TQuantifiedType LSomeExpr
+
+
+type TRewardStruct elem = RewardStruct elem TQuantifiedType LSomeExpr
+type TRewardStructItem  = RewardStructItem LSomeExpr
+type TRewardKind        = RewardKind LSomeExpr
 
 
 type TType    = Type LSomeExpr

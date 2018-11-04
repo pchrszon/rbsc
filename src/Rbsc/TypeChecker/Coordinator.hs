@@ -4,6 +4,7 @@
 
 module Rbsc.TypeChecker.Coordinator
     ( tcCoordinator
+    , tcPlayingConstraint
     ) where
 
 

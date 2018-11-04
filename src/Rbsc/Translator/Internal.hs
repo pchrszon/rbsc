@@ -127,7 +127,8 @@ notPlayedPrefix = "_not_"
 
 
 notPlayedActionIdent :: RoleName -> Name
-notPlayedActionIdent roleName = notPlayedPrefix <> trnsComponentName roleName
+notPlayedActionIdent roleName =
+    notPlayedPrefix <> trnsComponentName roleName
 
 
 trnsComponentName :: ComponentName -> Name
