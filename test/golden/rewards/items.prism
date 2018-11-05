@@ -28,7 +28,8 @@ endmodule
 
 rewards "test"
     r_0_s = 1 : 1.0;
-    ]a, _r_0[ true : 2.0;
+    ]a[ true : 2.0;
+    ]a, _r_0[ true : 3.0;
     ]_not_r_0[ true : r_0_s;
     ]_not_r_1[ true : r_1_s;
 endrewards

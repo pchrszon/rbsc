@@ -9,7 +9,7 @@ type N {
 system { n : N; }
 
 rewards "test" {
-    n.s = 0 := 1;
+    [a] true := 1;
 }
 
 rewards "test" {

@@ -14,5 +14,5 @@ endmodule
 
 rewards "test"
     n_s = 1 : 2.0;
-    n_s = 0 : 1.0;
+    ]a[ true : 1.0;
 endrewards

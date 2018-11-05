@@ -53,7 +53,7 @@ trnsRewardKind = \case
         act' <- traverse trnsActionExpr (maybeToList mAct)
         constrs' <- case mConstr of
             Just constr -> trnsPlayingConstraint constr
-            Nothing     -> return []
+            Nothing     -> return [[]]
         return (fmap (mkTransitionReward act') constrs')
     StateReward -> return [Prism.StateReward]
   where

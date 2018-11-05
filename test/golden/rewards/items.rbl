@@ -23,7 +23,8 @@ system {
 
 rewards "test" {
     r[0].s = 1 := 1;
-    [a][r[0]] true := 2;
+    [a] true := 2;
+    [a][r[0]] true := 3;
 
     forall r : R {
         [][!r] true := r.s;
