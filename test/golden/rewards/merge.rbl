@@ -1,0 +1,17 @@
+type N {
+    s : [0 .. 1] init 0;
+
+    [a] s = 0 -> (s' = 1);
+    [b] s = 1 -> (s' = 0);
+}
+
+
+system { n : N; }
+
+rewards "test" {
+    n.s = 0 := 1;
+}
+
+rewards "test" {
+    n.s = 1 := 2;
+}

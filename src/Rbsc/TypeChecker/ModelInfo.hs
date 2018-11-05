@@ -89,7 +89,6 @@ addDependency = \case
         DefLocal tyName decl -> addVariable (Local tyName) decl
         DefComponentType t   -> addComponentType t
         DefComponent c       -> addComponents c
-        DefRewardStruct      -> return ()
     DepFunctionSignature f -> addFunctionSignature f
 
 

@@ -1,0 +1,18 @@
+mdp
+
+module Desync
+    ]a[ true -> true;
+    ]b[ true -> true;
+endmodule
+
+module n_impl
+    n_s : [0..1] init 0;
+
+    ]a[ n_s = 0 -> (n_s' = 1);
+    ]b[ n_s = 1 -> (n_s' = 0);
+endmodule
+
+rewards "test"
+    n_s = 1 : 2.0;
+    n_s = 0 : 1.0;
+endrewards

@@ -87,7 +87,6 @@ sortDefinitions idents = do
             DefComponentType _                       -> "type"
             DefComponent (ComponentDef _ _ Nothing)  -> "component"
             DefComponent (ComponentDef _ _ (Just _)) -> "component array"
-            DefRewardStruct                          -> "reward structure"
         DepFunctionSignature _ -> "function"
 
 
@@ -110,7 +109,6 @@ insert def = case def of
     DefLocal tyName decl -> insertLocal tyName decl
     DefComponentType t   -> insertComponentType t
     DefComponent c       -> insertComponents c
-    DefRewardStruct      -> return ()
 
 
 insertConstant :: UConstant -> Analyzer ()

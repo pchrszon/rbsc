@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 
 -- | Top-level definitions.
@@ -73,7 +74,7 @@ toModel defs = do
         , modelSystem           = concat (def _DefSystem)
         , modelImpls            = impls
         , modelCoordinators     = def _DefCoordinator
-        , modelRewardStructs    = def _DefRewardStruct
+        , modelRewardStructs    = mergeRewardStructs (def _DefRewardStruct)
         }
   where
     def p = toListOf (traverse.p) defs
@@ -106,3 +107,11 @@ getModules defs = flip execStateT Map.empty $
             Just (Loc _ first) -> throwError
                 [locError rgn (DuplicateModule first)]
             Nothing -> at name ?= Loc body rgn
+
+
+mergeRewardStructs :: [URewardStruct] -> [URewardStruct]
+mergeRewardStructs =
+    fmap fromTuple . Map.assocs . Map.fromListWith (++) . fmap toTuple
+  where
+    toTuple RewardStruct{..} = (rsName, rsItems)
+    fromTuple = uncurry RewardStruct
