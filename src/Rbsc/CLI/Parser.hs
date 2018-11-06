@@ -76,6 +76,10 @@ options = Options
         ( long "no-warn"
        <> hidden
        <> help helpNoWarnings )
+    <*> switch
+        ( long "warn-no-sync"
+       <> hidden
+       <> help helpWarnNoSync )
     <*> flag NonVerbose Verbose
         ( short 'v'
        <> long "verbose"
@@ -91,6 +95,7 @@ helpExportDiagrams = "Export the component diagram as Graphviz dot"
 helpRecursionDepth = "The maximal recursion depth for evaluating expressions"
 helpNoColor        = "Do not use colored output"
 helpNoWarnings     = "Suppress warnings"
+helpWarnNoSync     = "Warn about unsynchronized actions"
 helpVerbose        = "Enable verbose output"
 
 

@@ -35,6 +35,9 @@ data Options = Options
       -- | Enable/disable warnings.
     , optShowWarnings   :: !Bool
 
+      -- | Enable/disable warnings about unsynchronized actions.
+    , optWarnNoSync     :: !Bool
+
       -- | Enable/disable verbose output
     , optVerbose        :: !Verbosity
     }

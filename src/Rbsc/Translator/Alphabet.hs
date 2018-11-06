@@ -22,6 +22,7 @@ module Rbsc.Translator.Alphabet
     , overrideActions
 
     , checkActionIndices
+    , checkSynchronizations
     ) where
 
 
@@ -45,6 +46,8 @@ import Rbsc.Report.Region
 import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed hiding (Type (..))
+
+import Rbsc.Util (renderPretty)
 
 
 -- | The action alphabet of a component.
@@ -134,3 +137,21 @@ numberOfIndices (Loc act rgn) = go 0 act
     go !i = \case
         IndexedAction act' _ -> go (succ i) act'
         act'                 -> (Loc act' rgn, i)
+
+
+-- | Check if there are actions that do not synchronize with any other
+-- module.
+checkSynchronizations :: Map ComponentName ModuleAlphabets -> Result ()
+checkSynchronizations mas = for_ (Map.assocs syncs) $ \case
+    (Loc act rgn, [_]) -> warn (UnsynchronizedAction (renderPretty act) rgn)
+    _ -> return ()
+  where
+    syncs = Map.fromListWith (++) actions
+
+    actions :: [(Loc Action, [(ComponentName, Name)])]
+    actions =
+        [ (actionName actionInfo, [(compName, name)])
+        | (compName, moduleAlphabet) <- Map.assocs mas
+        , (name, alph) <- Map.assocs moduleAlphabet
+        , actionInfo <- Set.toList alph
+        ]

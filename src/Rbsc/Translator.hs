@@ -72,6 +72,7 @@ translateModel model sys info = do
     bi <- generateBindingInfo sys as
 
     checkActionIndices mas
+    checkSynchronizations mas
 
     runTranslator info $ do
         desync   <- maybeToList <$> genDesyncModule as

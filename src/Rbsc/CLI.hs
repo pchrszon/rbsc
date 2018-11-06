@@ -7,8 +7,8 @@ module Rbsc.CLI
     ) where
 
 
-import Control.Lens
 import Control.Exception.Lens
+import Control.Lens
 import Control.Monad.Reader
 
 import           Data.Foldable
@@ -148,7 +148,11 @@ printErrors = printReports Error.toReport stderr
 printWarnings :: [Warning] -> App ()
 printWarnings ws = do
     showWarnings <- asks optShowWarnings
-    when showWarnings (printReports Warning.toReport stderr ws)
+    showNoSyncWarnings <- asks optWarnNoSync
+    let ws' = if showNoSyncWarnings
+                  then ws
+                  else filter (hasn't _UnsynchronizedAction) ws
+    when showWarnings (printReports Warning.toReport stderr ws')
 
 
 printReports :: (a -> Report) -> Handle -> [a] -> App ()

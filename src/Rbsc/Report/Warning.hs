@@ -1,9 +1,12 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 
 module Rbsc.Report.Warning where
 
+
+import Control.Lens
 
 import           Data.Text (Text, pack)
 import qualified Data.Text as Text
@@ -21,7 +24,10 @@ data Warning
     | InstantiationCycle [TypeName]
     | OutOfRangeUpdate !Region (Int, Int) !Int
     | InconsistentActionIndices !Region !Int !Region !Int
+    | UnsynchronizedAction !Text !Region
     deriving (Eq, Show)
+
+makePrisms ''Warning
 
 
 toReport :: Warning -> Report
@@ -62,6 +68,13 @@ toReport = \case
                 "the action has " <> indexText n1' <> " here ..."
             , hintPart rgn2' . Just $
                 "... but " <> indexText n2' <> " here"
+            ]
+
+    UnsynchronizedAction act rgn ->
+        warningReport "unsynchronized action"
+            [ hintPart rgn . Just $
+                "the action " <> act <>
+                " does not synchronize with any other action"
             ]
 
 
