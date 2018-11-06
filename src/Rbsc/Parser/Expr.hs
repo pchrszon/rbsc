@@ -201,7 +201,12 @@ hasPlayerFunction = specialFunction "has_player" (HasPlayer <$> expr)
 
 
 playerFunction :: Parser LExpr
-playerFunction = specialFunction "player" (Player <$> expr)
+playerFunction = do
+    start <- reserved "player"
+    arg <- optional ((,) <$> (symbol "(" *> expr) <*> symbol ")")
+    case arg of
+        Just (e, end) -> return (Loc (Player e) (start <> end))
+        Nothing -> return (Loc (Player (Loc Self start)) start)
 
 
 indexFunction :: Parser LExpr
