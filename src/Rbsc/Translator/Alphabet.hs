@@ -1,5 +1,7 @@
+{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
 
@@ -18,12 +20,15 @@ module Rbsc.Translator.Alphabet
 
     , OverrideActions
     , overrideActions
+
+    , checkActionIndices
     ) where
 
 
 import Control.Lens
 import Control.Monad.Except
 
+import           Data.Foldable
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe
@@ -37,6 +42,7 @@ import Rbsc.Data.Type
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed hiding (Type (..))
 
@@ -98,3 +104,33 @@ type OverrideActions = Map ComponentName (Set Action)
 -- | Get the override actions of all components from the given 'Alphabets'.
 overrideActions :: Alphabets -> OverrideActions
 overrideActions = Map.map (stripActionInfo . Set.filter isOverrideAction)
+
+
+-- | Check if the number of indices is consistent for each action. If not,
+-- an 'InconsistentActionIndices' warning is reported.
+checkActionIndices :: Map ComponentName ModuleAlphabets -> Result ()
+checkActionIndices mas = for_ (Map.elems actIndices) $ \case
+    ((n1, rgn1) : (n2, rgn2) : _) ->
+        warn (InconsistentActionIndices rgn1 n1 rgn2 n2)
+    _ -> return ()
+  where
+    actIndices :: Map Action [(Int, Region)]
+    actIndices = Map.map Map.assocs . Map.fromListWith Map.union $
+        fmap (toElem . numberOfIndices) (actions mas)
+
+    actions =
+        Set.toList
+            . Set.map actionName
+            . Set.unions
+            . concatMap Map.elems
+            . Map.elems
+
+    toElem (Loc act rgn, n) = (act, Map.singleton n rgn)
+
+
+numberOfIndices :: Loc Action -> (Loc Action, Int)
+numberOfIndices (Loc act rgn) = go 0 act
+  where
+    go !i = \case
+        IndexedAction act' _ -> go (succ i) act'
+        act'                 -> (Loc act' rgn, i)

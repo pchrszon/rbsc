@@ -71,6 +71,8 @@ translateModel model sys info = do
     let as = componentAlphabets mas
     bi <- generateBindingInfo sys as
 
+    checkActionIndices mas
+
     runTranslator info $ do
         desync   <- maybeToList <$> genDesyncModule as
         globals' <- trnsGlobalVars (modelGlobals model)

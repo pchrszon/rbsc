@@ -20,6 +20,7 @@ data Warning
     | NonCompartmentInRelation !Region
     | InstantiationCycle [TypeName]
     | OutOfRangeUpdate !Region (Int, Int) !Int
+    | InconsistentActionIndices !Region !Int !Region !Int
     deriving (Eq, Show)
 
 
@@ -52,6 +53,22 @@ toReport = \case
                 pack (show upper) <> "]"
             ]
 
+    InconsistentActionIndices rgn1 n1 rgn2 n2 ->
+        let ((rgn1', n1'), (rgn2', n2')) = if rgn1 < rgn2
+                then ((rgn1, n1), (rgn2, n2))
+                else ((rgn2, n2), (rgn1, n1))
+        in warningReport "inconsistent action indices"
+            [ hintPart rgn1' . Just $
+                "the action has " <> indexText n1' <> " here ..."
+            , hintPart rgn2' . Just $
+                "... but " <> indexText n2' <> " here"
+            ]
+
 
 warningReport :: Text -> [Part] -> Report
 warningReport title = hintReport ("warning: " <> title)
+
+
+indexText :: Int -> Text
+indexText 1 = "1 index"
+indexText n = pack (show n) <> " indices"
