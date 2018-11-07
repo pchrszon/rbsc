@@ -97,21 +97,25 @@ handleResults results = do
         then "1 system\n"
         else pack (show numResults) <> " systems\n"
 
+    w <- asks optPageWidth
+    let layoutOpts = LayoutOptions $
+            if w <= 0 then Unbounded else AvailablePerLine w 1.0
+
     for_ iresults $ \(i, (sys, model')) -> do
         putStrLnVerbose (renderPretty sys)
         when (fromInteger i < numResults - 1) (putStrLnVerbose "")
 
-        writeDoc (pretty model') i path
-        whenIsJust mSysPath (writeDoc (pretty sys) i)
-        whenIsJust mDiagramPath (writeDoc (visualizeSystem sys) i)
+        writeDoc layoutOpts (pretty model') i path
+        whenIsJust mSysPath (writeDoc layoutOpts (pretty sys) i)
+        whenIsJust mDiagramPath (writeDoc layoutOpts (visualizeSystem sys) i)
   where
     iresults = zip [0 :: Integer ..] results
 
     getOutputPath = fromMaybe "out.prism" <$> asks optOutput
 
-    writeDoc doc i path =
+    writeDoc opts doc i path =
         liftIO . withFile (addFileNameIndex path i) WriteMode $ \h ->
-            U.hPutDoc h doc
+            U.renderIO h (layoutPretty opts doc)
 
     addFileNameIndex path i
         | length results > 1 =

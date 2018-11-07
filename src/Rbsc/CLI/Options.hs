@@ -29,6 +29,9 @@ data Options = Options
       -- | The maximal recursion depth for evaluating expressions.
     , optRecursionDepth :: !RecursionDepth
 
+      -- | The page width used for file output.
+    , optPageWidth      :: !Int
+
       -- | Enable/disable colored output.
     , optShowColor      :: !Bool
 

@@ -68,6 +68,13 @@ options = Options
        <> showDefault
        <> hidden
        <> help helpRecursionDepth ))
+    <*> option auto
+        ( metavar "INT"
+       <> long "page-width"
+       <> value 120
+       <> showDefault
+       <> hidden
+       <> help helpPageWidth )
     <*> flag True False
         ( long "no-color"
        <> hidden
@@ -93,6 +100,7 @@ helpMultiActions   = "Allow multi-actions in generated code"
 helpExportSystems  = "Export the full system block"
 helpExportDiagrams = "Export the component diagram as Graphviz dot"
 helpRecursionDepth = "The maximal recursion depth for evaluating expressions"
+helpPageWidth      = "The page width used for file output"
 helpNoColor        = "Do not use colored output"
 helpNoWarnings     = "Suppress warnings"
 helpWarnNoSync     = "Warn about unsynchronized actions"
