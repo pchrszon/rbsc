@@ -5,13 +5,6 @@ module Rbsc.Syntax.Typed
       -- * Model
     , Model(..)
 
-      -- * Constants
-    , TConstant
-
-      -- * Functions
-    , TFunction
-    , TParameter
-
       -- * Variables
     , TVarDecl
 
@@ -40,10 +33,6 @@ module Rbsc.Syntax.Typed
     , TRewardStruct
     , TRewardStructItem
     , TRewardKind
-
-      -- * Types
-    , TType
-    , TVarType
 
       -- * Initial values
     , TInits
@@ -78,21 +67,13 @@ import Rbsc.Syntax.VarType        as Syntax
 
 -- | Typed abstract syntax of a model.
 data Model = Model
-    { modelConstants     :: [TConstant]
-    , modelGlobals       :: TInits
+    { modelGlobals       :: TInits
     , modelLabels        :: [TLabel]
     , modelSystem        :: [Loc (Expr Bool)]
     , modelImpls         :: Map TypeName [TNamedModuleBody ElemMulti]
     , modelCoordinators  :: [TCoordinator ElemMulti]
     , modelRewardStructs :: [TRewardStruct ElemMulti]
     } deriving (Show)
-
-
-type TConstant = Constant LSomeExpr
-
-
-type TFunction  = Function LSomeExpr
-type TParameter = Parameter LSomeExpr
 
 
 type TVarDecl = VarDecl LSomeExpr
@@ -126,10 +107,6 @@ type TLoop      = Loop TQuantifiedType LSomeExpr
 type TRewardStruct elem = RewardStruct elem TQuantifiedType LSomeExpr
 type TRewardStructItem  = RewardStructItem LSomeExpr
 type TRewardKind        = RewardKind LSomeExpr
-
-
-type TType    = Type LSomeExpr
-type TVarType = VarType LSomeExpr
 
 
 type LSomeExpr = Loc SomeExpr

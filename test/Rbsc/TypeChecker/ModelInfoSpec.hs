@@ -53,5 +53,4 @@ spec = describe "getModelInfo" $
 
 
 getModelInfo' :: Model -> Either [Error] ModelInfo
-getModelInfo' m =
-    fst <$> toEither (runReaderT (getModelInfo m) (10 :: RecursionDepth))
+getModelInfo' m = toEither (runReaderT (getModelInfo m) (10 :: RecursionDepth))

@@ -31,8 +31,7 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed   (HasConstants (..), SomeExpr (..),
-                                      TConstant, TType)
+import           Rbsc.Syntax.Typed   (HasConstants (..), SomeExpr (..))
 import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped (Enumeration (..), UConstant, UFunction,
                                       UType, UVarDecl, UVarType)
@@ -47,7 +46,6 @@ import qualified Rbsc.TypeChecker.Internal       as TC
 
 data BuilderState = BuilderState
     { _modelInfo        :: !ModelInfo
-    , _constantDefs     :: [TConstant]
     , _bsRecursionDepth :: RecursionDepth
     }
 
@@ -60,13 +58,11 @@ instance HasConstants BuilderState where
     constants = modelInfo.constants
 
 
--- | Construct the 'ModelInfo' for a given 'Model'. Since evaluation of
--- constants requires type checking the constant definitions, the checked
--- definitions are returned as well.
-getModelInfo ::
-       (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
+-- | Construct the 'ModelInfo' for a given 'Model'.
+getModelInfo
+    :: (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
     => U.Model
-    -> t Result (ModelInfo, [TConstant])
+    -> t Result ModelInfo
 getModelInfo m = do
     idents <- lift (fromEither (identifierDefs m))
     deps   <- lift (fromEither' (sortDefinitions idents))
@@ -74,7 +70,7 @@ getModelInfo m = do
     depth  <- view recursionDepth
     result <- lift (runBuilder (traverse addDependency deps) depth)
 
-    lift (validateComponentTypes (view (_1.componentTypes) result) m)
+    lift (validateComponentTypes (view componentTypes result) m)
 
     return result
 
@@ -93,17 +89,15 @@ addDependency = \case
 
 
 addConstant :: UConstant -> Builder ()
-addConstant (U.Constant (Loc name rgn) msTy e) = do
-    (msTy', SomeExpr e' ty) <- case msTy of
+addConstant (U.Constant (Loc name _) msTy e) = do
+    SomeExpr e' ty <- case msTy of
         Just sTy -> do
             -- if an explicit type annotation is given, check if type of
             -- the definition matches
-            (sTy', Some ty) <- fromSyntaxType sTy
+            Some ty <- fromSyntaxType sTy
             e' <- typeCheckExpr ty e
-            return (Just sTy', SomeExpr e' ty)
-        Nothing -> do
-            e' <- runTypeChecker (tcExpr e)
-            return (Nothing, e')
+            return (SomeExpr e' ty)
+        Nothing -> runTypeChecker (tcExpr e)
 
     Dict <- return (dictShow ty)
     v <- evalExpr (e' `withLocOf` e)
@@ -111,14 +105,11 @@ addConstant (U.Constant (Loc name rgn) msTy e) = do
     insertSymbol Global name (Some ty)
     insertConstant name (SomeExpr (T.Literal v ty) ty)
 
-    let c' = T.Constant (Loc name rgn) msTy' (SomeExpr e' ty `withLocOf` e)
-    modifying constantDefs (c' :)
-
 
 addFunctionSignature :: UFunction -> Builder ()
 addFunctionSignature (U.Function (Loc name _) params sTy _) = do
-    paramTys <- traverse (fmap snd . fromSyntaxType . U.paramType) params
-    tyResult <- snd <$> fromSyntaxType sTy
+    paramTys <- traverse (fromSyntaxType . U.paramType) params
+    tyResult <- fromSyntaxType sTy
     insertSymbol Global name (foldr mkTyFunc tyResult paramTys)
   where
     mkTyFunc (Some a) (Some b) = Some (a --> b)
@@ -127,13 +118,13 @@ addFunctionSignature (U.Function (Loc name _) params sTy _) = do
 addFunction :: UFunction -> Builder ()
 addFunction (U.Function (Loc name _) params sTy body) = do
     paramSyms <- traverse paramToSym params
-    tyResult  <- snd <$> fromSyntaxType sTy
+    tyResult  <- fromSyntaxType sTy
 
     f <- runTypeChecker (tcFunctionDef paramSyms tyResult body)
     insertConstant name f
   where
     paramToSym (U.Parameter n psTy) = do
-        ty <- snd <$> fromSyntaxType psTy
+        ty <- fromSyntaxType psTy
         return (unLoc n, ty)
 
 
@@ -159,8 +150,8 @@ addComponentType = \case
     toRoleRef (U.MultiRole (Loc tyName _) mBounds) = case mBounds of
         Nothing -> return (RoleRef tyName (1, 1))
         Just (lower, upper) -> do
-            lower' <- fst <$> evalIntExpr lower
-            upper' <- fst <$> evalIntExpr upper
+            lower' <- evalIntExpr lower
+            upper' <- evalIntExpr upper
             checkCardinalities lower upper lower' upper'
             return (RoleRef tyName (lower', upper'))
 
@@ -177,7 +168,7 @@ addComponents :: ComponentDef -> Builder ()
 addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
     -- add component array
     Just len -> do
-        len' <- fst <$> evalIntExpr len
+        len' <- evalIntExpr len
         if len' > 0
             then
                 let tyArray = TyArray len' tyComponent
@@ -189,27 +180,24 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
     tyComponent = TyComponent (Set.singleton tyName)
 
 
-fromSyntaxType :: UType -> Builder (TType, Some Type)
+fromSyntaxType :: UType -> Builder (Some Type)
 fromSyntaxType = \case
-    U.TyBool   -> return (T.TyBool  , Some TyBool)
-    U.TyInt    -> return (T.TyInt   , Some TyInt)
-    U.TyDouble -> return (T.TyDouble, Some TyDouble)
-    U.TyAction -> return (T.TyAction, Some TyAction)
+    U.TyBool   -> return (Some TyBool)
+    U.TyInt    -> return (Some TyInt)
+    U.TyDouble -> return (Some TyDouble)
+    U.TyAction -> return (Some TyAction)
     U.TyComponent tySet -> do
         compTys <- use (modelInfo.componentTypes)
         tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
-        return (T.TyComponent tySet, Some (TyComponent tySet'))
+        return (Some (TyComponent tySet'))
     U.TyArray size sTy -> do
-        (sizeVal, size') <- evalIntExpr size
-        (sTy', Some ty) <- fromSyntaxType sTy
-        return
-            ( T.TyArray size' sTy'
-            , Some (TyArray sizeVal ty)
-            )
+        sizeVal <- evalIntExpr size
+        Some ty <- fromSyntaxType sTy
+        return (Some (TyArray sizeVal ty))
     U.TyFunc sTyL sTyR -> do
-        (sTyL', Some tyL) <- fromSyntaxType sTyL
-        (sTyR', Some tyR) <- fromSyntaxType sTyR
-        return (T.TyFunc sTyL' sTyR', Some (tyL --> tyR))
+        Some tyL <- fromSyntaxType sTyL
+        Some tyR <- fromSyntaxType sTyR
+        return (Some (tyL --> tyR))
 
 
 fromSyntaxVarType :: UVarType -> Builder (Some Type, Maybe (Int, Int))
@@ -217,13 +205,13 @@ fromSyntaxVarType = \case
     U.VarTyBool ->
         return (Some TyBool, Nothing)
     U.VarTyInt (lower, upper) -> do
-        (lowerVal, _) <- evalIntExpr lower
-        (upperVal, _) <- evalIntExpr upper
+        lowerVal <- evalIntExpr lower
+        upperVal <- evalIntExpr upper
         return (Some TyInt, Just (lowerVal, upperVal))
     U.VarTyEnum (Enumeration names) ->
         return (Some TyInt, Just (0, length names - 1))
     U.VarTyArray size vTy -> do
-        (sizeVal, _) <- evalIntExpr size
+        sizeVal <- evalIntExpr size
         (Some ty, mRange) <- fromSyntaxVarType vTy
         return (Some (TyArray sizeVal ty), mRange)
 
@@ -231,19 +219,19 @@ fromSyntaxVarType = \case
 type Builder a = StateT BuilderState Result a
 
 
-runBuilder :: Builder a -> RecursionDepth -> Result (ModelInfo, [TConstant])
+runBuilder :: Builder a -> RecursionDepth -> Result ModelInfo
 runBuilder m depth = do
-    BuilderState mi defs _ <- execStateT m initial
-    return (mi, defs)
+    BuilderState mi _ <- execStateT m initial
+    return mi
   where
-    initial = BuilderState emptyModelInfo [] depth
+    initial = BuilderState emptyModelInfo depth
 
 
-evalIntExpr :: Loc U.Expr -> Builder (Int, Loc SomeExpr)
+evalIntExpr :: Loc U.Expr -> Builder Int
 evalIntExpr e = do
     e' <- typeCheckExpr TyInt e
     v  <- evalExpr (e' `withLocOf` e)
-    return (v, SomeExpr e' TyInt `withLocOf` e)
+    return v
 
 
 evalExpr :: Loc (T.Expr t) -> Builder t

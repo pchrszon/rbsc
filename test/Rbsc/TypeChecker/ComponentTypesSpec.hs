@@ -20,7 +20,6 @@ import Rbsc.Parser.TH
 import Rbsc.Report.Error
 import Rbsc.Report.Result
 
-import Rbsc.Syntax.Typed   (TConstant)
 import Rbsc.Syntax.Untyped (Model)
 
 import Rbsc.TypeChecker.ModelInfo
@@ -49,5 +48,5 @@ spec = describe "validateComponentTypes" $ do
         _NonRoleInCompartment
 
 
-getModelInfo' :: Model -> Either [Error] (ModelInfo, [TConstant])
+getModelInfo' :: Model -> Either [Error] ModelInfo
 getModelInfo' m = toEither (runReaderT (getModelInfo m) (10 :: RecursionDepth))

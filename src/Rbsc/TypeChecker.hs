@@ -40,19 +40,19 @@ typeCheck
     => U.Model
     -> t Result (T.Model, ModelInfo)
 typeCheck model = do
-    (info, consts') <- getModelInfo model
+    info <- getModelInfo model
     let compTys  = view MI.componentTypes info
         symTable = view MI.symbolTable info
         consts   = view MI.constants info
     depth  <- view recursionDepth
 
     model' <- lift
-        (runTypeChecker (tcModel model consts') compTys symTable consts depth)
+        (runTypeChecker (tcModel model) compTys symTable consts depth)
     return (model', info)
 
 
-tcModel :: U.Model -> [TConstant] -> TypeChecker T.Model
-tcModel U.Model{..} consts = T.Model consts
+tcModel :: U.Model -> TypeChecker T.Model
+tcModel U.Model{..} = T.Model
     <$> traverse tcVarDecl modelGlobals
     <*> traverse tcLabel modelLabels
     <*> traverse tcConstraint modelSystem

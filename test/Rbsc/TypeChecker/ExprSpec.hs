@@ -123,7 +123,6 @@ typeCheck ty e = toEither $ do
 
 modelInfo :: ModelInfo
 modelInfo =
-    let Right (info, _) =
-            toEither
-                (runReaderT (getModelInfo testModel) (10 :: RecursionDepth))
-    in info
+    let Right info = toEither
+            (runReaderT (getModelInfo testModel) (10 :: RecursionDepth))
+    in  info
