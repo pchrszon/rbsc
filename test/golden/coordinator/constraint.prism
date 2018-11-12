@@ -9,7 +9,7 @@ module Desync
     ]a[ true -> true;
 endmodule
 
-module r_impl
+module r_R_impl
     r_s : [0..1] init 0;
 
     ]a, _r[ r_s = 0 -> (r_s' = 1);

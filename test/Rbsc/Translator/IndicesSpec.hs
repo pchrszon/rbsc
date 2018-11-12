@@ -76,7 +76,7 @@ testCommand = let T.ModuleBody _ [T.Elem cmd] = testModuleBody in cmd
 
 testModuleBody :: T.TModuleBody T.Elem
 testModuleBody =
-    let Right [T.NamedModuleBody _ r] =
+    let Right [T.ModuleInstance _ _ r] =
             toEither . flip runReaderT (Info (view _2 typedTestModel) 10) $
                 instantiateComponent
                     (view _1 typedTestModel)

@@ -6,7 +6,7 @@ module Desync
     ]a_2[ true -> true;
 endmodule
 
-module n_impl
+module n_N_impl
     n_i : [0..2] init 0;
     n_arr_0 : bool;
     n_arr_1 : bool;

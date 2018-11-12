@@ -56,6 +56,7 @@ spec = describe "sortDefinitions" $ do
             , "N"
             , "sig_playerIn"
             , "playerIn"
+            , "N_impl"
             ]
 
     it "detects cyclic definitions" $
@@ -71,7 +72,7 @@ spec = describe "sortDefinitions" $ do
 dependencies :: Model -> Either [Error] [Name]
 dependencies m = do
     idents <- identifierDefs m
-    (: []) +++ fmap getName $ sortDefinitions idents
+    (: []) +++ fmap getName $ sortDefinitions m idents
 
 
 getName :: Dependency -> Name
@@ -81,11 +82,13 @@ getName = \case
         DefFunction f        -> unLoc (functionName f)
         DefLabel             -> "label"
         DefGlobal decl       -> unLoc (declName decl)
-        DefLocal tyName decl ->
+        DefLocal tyName _ decl ->
             getTypeName tyName <> "_" <> unLoc (declName decl)
         DefComponentType t -> getTypeName . unLoc $ case t of
             TypeDefNatural nt     -> ntdName nt
             TypeDefRole rt        -> rtdName rt
             TypeDefCompartment ct -> ctdName ct
         DefComponent c -> unLoc (compDefName c)
+        DefModule m    -> unLoc (modName m)
     DepFunctionSignature f -> "sig_" <> unLoc (functionName f)
+    DepModuleInstantiation mi -> unLoc (modName (midModule mi))

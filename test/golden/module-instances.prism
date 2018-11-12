@@ -1,0 +1,38 @@
+mdp
+
+module Desync
+    ]enq_l_1[ true -> true;
+    ]enq_l_2[ true -> true;
+    ]enq_s_1[ true -> true;
+endmodule
+
+module l_fifo
+    l_cell_0 : [0..2];
+    l_cell_1 : [0..2];
+    l_cell_2 : [0..2];
+    l_cell_3 : [0..2];
+    l_cell_4 : [0..2];
+
+    ]enq_l_1[ l_cell_0 = 0 -> (l_cell_0' = 1);
+    ]enq_l_1[ l_cell_0 > 0 & l_cell_1 = 0 -> (l_cell_1' = 1);
+    ]enq_l_1[ l_cell_0 > 0 & l_cell_1 > 0 & l_cell_2 = 0 -> (l_cell_2' = 1);
+    ]enq_l_1[ l_cell_0 > 0 & l_cell_1 > 0 & l_cell_2 > 0 & l_cell_3 = 0 ->
+        (l_cell_3' = 1);
+    ]enq_l_1[ l_cell_0 > 0 & l_cell_1 > 0 & l_cell_2 > 0 & l_cell_3 > 0 & l_cell_4 = 0 ->
+        (l_cell_4' = 1);
+    ]enq_l_2[ l_cell_0 = 0 -> (l_cell_0' = 2);
+    ]enq_l_2[ l_cell_0 > 0 & l_cell_1 = 0 -> (l_cell_1' = 2);
+    ]enq_l_2[ l_cell_0 > 0 & l_cell_1 > 0 & l_cell_2 = 0 -> (l_cell_2' = 2);
+    ]enq_l_2[ l_cell_0 > 0 & l_cell_1 > 0 & l_cell_2 > 0 & l_cell_3 = 0 ->
+        (l_cell_3' = 2);
+    ]enq_l_2[ l_cell_0 > 0 & l_cell_1 > 0 & l_cell_2 > 0 & l_cell_3 > 0 & l_cell_4 = 0 ->
+        (l_cell_4' = 2);
+endmodule
+
+module s_fifo
+    s_cell_0 : [0..1];
+    s_cell_1 : [0..1];
+
+    ]enq_s_1[ s_cell_0 = 0 -> (s_cell_0' = 1);
+    ]enq_s_1[ s_cell_0 > 0 & s_cell_1 = 0 -> (s_cell_1' = 1);
+endmodule

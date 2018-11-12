@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase       #-}
-{-# LANGUAGE RecordWildCards  #-}
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 
 -- | This module provides functions to extract all identifiers and their
@@ -23,6 +24,7 @@ module Rbsc.TypeChecker.Identifiers
     , ComponentDef(..)
 
     , identifierDefs
+    , implModuleName
     ) where
 
 
@@ -53,9 +55,10 @@ data IdentifierDef
     | DefFunction UFunction -- ^ the identifier represents a function
     | DefLabel -- ^ the identifier represents a label
     | DefGlobal UVarDecl -- ^ the identifier represents a global variable
-    | DefLocal !TypeName UVarDecl -- ^ the identifier represents a local variable
+    | DefLocal !TypeName !Name UVarDecl -- ^ the identifier represents a local variable (annotated with type name and module name)
     | DefComponentType ComponentTypeDef -- ^ the identifier represents a component type
     | DefComponent ComponentDef -- ^ the identifier represents a component or a component array
+    | DefModule UModule -- ^ the identifier represents a module
     deriving (Eq, Ord, Show)
 
 
@@ -107,8 +110,9 @@ identifierDefs Model{..} = runBuilder $ do
     insertComponentTypes rtdName TypeDefRole modelRoleTypes
     insertComponentTypes ctdName TypeDefCompartment modelCompartmentTypes
     insertComponents modelSystem
-    insertLocalVars modelImpls
     insertCoordinatorVars modelCoordinators
+    insertModules modelModules
+    insertLocalVars modelImpls
 
 
 insertConstants :: [UConstant] -> Builder ()
@@ -148,13 +152,32 @@ insertComponents es = for_ es $ \case
     _ -> return ()
 
 
-insertLocalVars :: Map TypeName [UNamedModuleBody] -> Builder ()
-insertLocalVars = traverse_ insertVarsForType . Map.assocs
+insertModules :: [UModule] -> Builder ()
+insertModules = traverse_ (insert Global <$> modName <*> DefModule)
+
+
+insertLocalVars :: [UImplementation] -> Builder ()
+insertLocalVars = traverse_ insertFromImpl
   where
-    insertVarsForType (tyName, bodies) =
-        for_ bodies $ \(NamedModuleBody _ body) ->
-            for_ (bodyVars body) $
-                insertVarDecl (Local tyName) (DefLocal tyName)
+    insertFromImpl Implementation{..} = case implBody of
+        ImplSingle body -> do
+            let name = implModuleName implTypeName
+                m = Module name [] body
+            insert Global name (DefModule m)
+            insertFromBody (unLoc implTypeName) (unLoc name) body
+        ImplModules refs -> for_ refs $ \(ModuleRef (Loc name rgn) _) ->
+            use (identifiers.at (ScopedName Global name)) >>= \case
+                Just (Loc (DefModule m) _) ->
+                    insertFromBody (unLoc implTypeName) name (modBody m)
+                _ -> throw' (locError rgn UndefinedModule)
+
+    insertFromBody tyName moduleName ModuleBody{..} = traverse_
+        (insertVarDecl (Local tyName) (DefLocal tyName moduleName)) bodyVars
+
+
+-- | Derive the module name for an anonymous module.
+implModuleName :: Loc TypeName -> Loc Name
+implModuleName (Loc tyName rgn) = Loc (getTypeName tyName <> "_impl") rgn
 
 
 insertVarDecl :: Scope -> (UVarDecl -> IdentifierDef) -> UVarDecl -> Builder ()

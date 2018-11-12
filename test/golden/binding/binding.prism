@@ -7,7 +7,7 @@ module Desync
     ]d[ true -> true;
 endmodule
 
-module core_impl
+module core_Core_impl
     core_s : [0..2] init 0;
 
     ]a[ core_s = 0 -> (core_s' = 1);
@@ -17,7 +17,7 @@ module core_impl
     ]b, _ovr_right[ true -> true;
 endmodule
 
-module left_impl
+module left_Left_impl
     left_s : [0..2] init 0;
 
     ]a, _left, _ovr_left[ left_s = 0 -> (left_s' = 1);
@@ -26,7 +26,7 @@ module left_impl
     ]a, _not_left[ true -> true;
 endmodule
 
-module outer_impl
+module outer_Outer_impl
     outer_s : [0..2] init 0;
 
     ]a, _outer, _ovr_outer[ outer_s = 0 -> (outer_s' = 1);
@@ -34,7 +34,7 @@ module outer_impl
     ]a, _not_outer[ true -> true;
 endmodule
 
-module right_impl
+module right_Right_impl
     right_s : [0..1] init 0;
 
     ]b, _right, _ovr_right[ right_s = 0 -> (right_s' = 1);

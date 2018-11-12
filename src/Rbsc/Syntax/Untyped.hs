@@ -25,9 +25,10 @@ module Rbsc.Syntax.Untyped
       -- * Implementation
     , UImplementation
     , UImplBody
+    , UModuleRef
     , UModule
     , UModuleBody
-    , UNamedModuleBody
+    , UModuleInstance
     , UCommand
     , UUpdate
     , UAssignment
@@ -52,9 +53,6 @@ module Rbsc.Syntax.Untyped
     ) where
 
 
-import Data.Map.Strict (Map)
-
-
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name          as Syntax
 
@@ -73,6 +71,8 @@ import Rbsc.Syntax.Untyped.Expr   as Syntax
 import Rbsc.Syntax.VarDecl        as Syntax
 import Rbsc.Syntax.VarType        as Syntax
 
+import Rbsc.Syntax.Typed (LSomeExpr)
+
 
 -- | Untyped abstract syntax of a model.
 data Model = Model
@@ -85,7 +85,8 @@ data Model = Model
     , modelRoleTypes        :: [RoleTypeDef]
     , modelCompartmentTypes :: [UCompartmentTypeDef]
     , modelSystem           :: [LExpr]
-    , modelImpls            :: Map TypeName [UNamedModuleBody]
+    , modelModules          :: [UModule]
+    , modelImpls            :: [UImplementation]
     , modelCoordinators     :: [UCoordinator]
     , modelRewardStructs    :: [URewardStruct]
     } deriving (Show)
@@ -110,9 +111,10 @@ type ULabel = Label LExpr
 
 type UImplementation  = Implementation ElemMulti UVarDecls UQuantifiedType LExpr
 type UImplBody        = ImplBody ElemMulti UVarDecls UQuantifiedType LExpr
+type UModuleRef       = ModuleRef LExpr
 type UModule          = Module ElemMulti UVarDecls UQuantifiedType LExpr
 type UModuleBody      = ModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
-type UNamedModuleBody = NamedModuleBody ElemMulti UVarDecls UQuantifiedType LExpr
+type UModuleInstance  = ModuleInstance ElemMulti UVarDecls UQuantifiedType LExpr (Name, LSomeExpr)
 
 type UCoordinator       = Coordinator ElemMulti UVarDecls UQuantifiedType LExpr
 type UCoordCommand      = CoordCommand ElemMulti UQuantifiedType LExpr

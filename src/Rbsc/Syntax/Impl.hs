@@ -9,12 +9,14 @@
 module Rbsc.Syntax.Impl
     ( Implementation(..)
     , ImplBody(..)
+    , ModuleRef(..)
 
     , Module(..)
     , ModuleBody(..)
-    , NamedModuleBody(..)
-    , bodyName
-    , namedBody
+    , ModuleInstance(..)
+    , miName
+    , miArgs
+    , miBody
 
     , Command(..)
     , cmdGuardLens
@@ -29,7 +31,9 @@ module Rbsc.Syntax.Impl
 
 import Control.Lens
 
+import Data.Function
 import Data.List.NonEmpty (NonEmpty)
+import Data.Ord
 
 
 import Rbsc.Data.Action
@@ -37,6 +41,7 @@ import Rbsc.Data.Name
 
 import Rbsc.Report.Region
 
+import Rbsc.Syntax.Function
 import Rbsc.Syntax.Typed.Expr
 
 
@@ -59,7 +64,7 @@ deriving instance
 -- provide the implementation.
 data ImplBody elem vars ty expr
     = ImplSingle (ModuleBody elem vars ty expr)
-    | ImplModules (NonEmpty (Loc Name))
+    | ImplModules (NonEmpty (ModuleRef expr))
 
 deriving instance
          (Show vars, Show ty, Show expr) =>
@@ -70,11 +75,25 @@ deriving instance
          Show (ImplBody Elem vars ty expr)
 
 
+-- | Reference to a module with optional arguments for instantiation.
+data ModuleRef expr = ModuleRef
+    { modRefName :: Loc Name
+    , modRefArgs :: [expr]
+    } deriving (Show)
+
+
 -- | A module describing the operational behavior of a component.
 data Module elem vars ty expr = Module
-    { modName :: Loc Name
-    , modBody :: ModuleBody elem vars ty expr
+    { modName   :: Loc Name
+    , modParams :: [Parameter expr]
+    , modBody   :: ModuleBody elem vars ty expr
     }
+
+instance Eq (Module elem vars ty expr) where
+    (==) = (==) `on` modName
+
+instance Ord (Module elem vars ty expr) where
+    compare = comparing modName
 
 deriving instance
          (Show vars, Show ty, Show expr) =>
@@ -99,18 +118,21 @@ deriving instance
          Show (ModuleBody Elem vars ty expr)
 
 
-data NamedModuleBody elem vars ty expr = NamedModuleBody
-    { _bodyName  :: !Name
-    , _namedBody :: ModuleBody elem vars ty expr
+-- | A module body together with its arguments.
+data ModuleInstance elem vars ty expr arg = ModuleInstance
+    { _miName :: !Name
+    , _miArgs :: [arg]
+    , _miBody :: ModuleBody elem vars ty expr
     }
 
 deriving instance
-         (Show vars, Show ty, Show expr) =>
-         Show (NamedModuleBody ElemMulti vars ty expr)
+         (Show vars, Show ty, Show expr, Show arg) =>
+         Show (ModuleInstance ElemMulti vars ty expr arg)
 
 deriving instance
-         (Show vars, Show ty, Show expr) =>
-         Show (NamedModuleBody Elem vars ty expr)
+         (Show vars, Show ty, Show expr, Show arg) =>
+         Show (ModuleInstance Elem vars ty expr arg)
+
 
 -- | A guarded command.
 data Command elem ty expr = Command
@@ -207,5 +229,5 @@ instance (HasExprs ty, HasExprs expr, HasExprs a) =>
         Loop loopVar <$> exprs f loopType <*> traverse (exprs f) loopBody
 
 
-makeLenses ''NamedModuleBody
+makeLenses ''ModuleInstance
 makeLensesFor [("cmdGuard", "cmdGuardLens")] ''Command

@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE LambdaCase #-}
 
 
 -- | Type checker for 'Model's.
@@ -12,6 +12,8 @@ module Rbsc.TypeChecker
 
 import Control.Lens
 import Control.Monad.Reader
+
+import Data.Map.Strict (Map)
 
 
 import Rbsc.Config
@@ -40,23 +42,23 @@ typeCheck
     => U.Model
     -> t Result (T.Model, ModelInfo)
 typeCheck model = do
-    info <- getModelInfo model
+    (info, insts) <- getModelInfo model
     let compTys  = view MI.componentTypes info
         symTable = view MI.symbolTable info
         consts   = view MI.constants info
     depth  <- view recursionDepth
 
     model' <- lift
-        (runTypeChecker (tcModel model) compTys symTable consts depth)
+        (runTypeChecker (tcModel insts model) compTys symTable consts depth)
     return (model', info)
 
 
-tcModel :: U.Model -> TypeChecker T.Model
-tcModel U.Model{..} = T.Model
+tcModel :: Map TypeName [UModuleInstance] -> U.Model -> TypeChecker T.Model
+tcModel insts U.Model{..} = T.Model
     <$> traverse tcVarDecl modelGlobals
     <*> traverse tcLabel modelLabels
     <*> traverse tcConstraint modelSystem
-    <*> tcImpls modelImpls
+    <*> tcModuleInstances insts
     <*> traverse tcCoordinator modelCoordinators
     <*> traverse tcRewardStruct modelRewardStructs
 

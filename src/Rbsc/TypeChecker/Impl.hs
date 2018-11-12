@@ -4,7 +4,7 @@
 
 
 module Rbsc.TypeChecker.Impl
-    ( tcImpls
+    ( tcModuleInstances
     , tcVarDecl
 
     , tcUpdate
@@ -38,18 +38,24 @@ import qualified Rbsc.Syntax.Untyped as U
 import Rbsc.TypeChecker.Expr
 import Rbsc.TypeChecker.Internal
 
-import Rbsc.Util (renderPretty)
+import Rbsc.Util (renderPretty, withConstants)
 
 
-tcImpls ::
-       Map TypeName [UNamedModuleBody]
-    -> TypeChecker (Map TypeName [TNamedModuleBody ElemMulti])
-tcImpls = Map.traverseWithKey tc
+tcModuleInstances
+    :: Map TypeName [UModuleInstance]
+    -> TypeChecker (Map TypeName [TModuleInstance ElemMulti])
+tcModuleInstances = Map.traverseWithKey tc
   where
-    tc :: TypeName
-       -> [UNamedModuleBody]
-       -> TypeChecker [TNamedModuleBody ElemMulti]
-    tc tyName bs = localScope tyName ((traverse.namedBody) tcModuleBody bs)
+    tc  :: TypeName
+        -> [UModuleInstance]
+        -> TypeChecker [TModuleInstance ElemMulti]
+    tc tyName mis = localScope tyName (traverse tcModuleInstance mis)
+
+
+tcModuleInstance :: UModuleInstance -> TypeChecker (TModuleInstance ElemMulti)
+tcModuleInstance mi = do
+    body' <- withConstants (view miArgs mi) (tcModuleBody (view miBody mi))
+    return (set miBody body' mi)
 
 
 tcModuleBody :: UModuleBody -> TypeChecker (TModuleBody ElemMulti)

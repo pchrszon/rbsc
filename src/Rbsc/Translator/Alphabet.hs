@@ -82,12 +82,12 @@ type ModuleAlphabets = Map Name Alphabet
 -- each module of each component.
 moduleAlphabets
     :: MonadError Error m
-    => Map ComponentName [TNamedModuleBody Elem]
+    => Map ComponentName [TModuleInstance Elem]
     -> m (Map ComponentName ModuleAlphabets)
-moduleAlphabets = traverse (fmap Map.fromList . traverse fromNamedModuleBody)
+moduleAlphabets = traverse (fmap Map.fromList . traverse fromModuleInstance)
   where
-    fromNamedModuleBody body =
-        (,) (view bodyName body) <$> alphabet (view namedBody body)
+    fromModuleInstance inst =
+        (,) (view miName inst) <$> alphabet (view miBody inst)
 
 
 -- | Mapping of component names to their alphabet.

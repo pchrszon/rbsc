@@ -39,23 +39,26 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 
 import Rbsc.Translator.Indices
 
+import Rbsc.Util (withConstants)
+
 
 -- | Instantiate the 'ModuleBody's for all 'Component's in the given
 -- 'System'.
-instantiateComponents ::
-       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
+instantiateComponents
+    :: (MonadEval r m, HasSymbolTable r, HasRangeTable r)
     => Model
     -> System
-    -> m (Map ComponentName [TNamedModuleBody Elem])
+    -> m (Map ComponentName [TModuleInstance Elem])
 instantiateComponents m sys =
     fmap Map.fromList (traverse inst (toComponents sys))
   where
     inst comp = do
         bodies <- instantiateComponent m comp
-        bodies' <- for bodies $ \(NamedModuleBody name body) -> do
-            body' <-
-                reduceModuleBody =<< removeVariableIndicesInModule comp body
-            return (NamedModuleBody name body')
+        bodies' <- for bodies $ \(ModuleInstance name args body) ->
+            withConstants args $ do
+                body' <-
+                    reduceModuleBody =<< removeVariableIndicesInModule comp body
+                return (ModuleInstance name args body')
         return (view compName comp, bodies')
 
 
@@ -96,24 +99,25 @@ reduceRewardStruct RewardStruct {..} = RewardStruct rsName
 
 -- | Instantiate all 'ModuleBody's for the given 'Component'.
 instantiateComponent
-    :: MonadEval r m
+    :: (MonadEval r m, HasSymbolTable r)
     => Model
     -> Component
-    -> m [TNamedModuleBody Elem]
+    -> m [TModuleInstance Elem]
 instantiateComponent m comp =
-    traverse (instantiateModuleBody comp) bodies
+    traverse (instantiateModuleBody comp) insts
   where
-    bodies = fromMaybe [] (Map.lookup (view compTypeName comp) (modelImpls m))
+    insts = fromMaybe [] (Map.lookup (view compTypeName comp) (modelImpls m))
 
 
-instantiateModuleBody ::
-       MonadEval r m
+instantiateModuleBody
+    :: (MonadEval r m, HasSymbolTable r)
     => Component
-    -> TNamedModuleBody ElemMulti
-    -> m (TNamedModuleBody Elem)
-instantiateModuleBody comp (NamedModuleBody name body) = do
-    body' <- substituteSelf comp body
-    NamedModuleBody name <$> unrollModuleBody body'
+    -> TModuleInstance ElemMulti
+    -> m (TModuleInstance Elem)
+instantiateModuleBody comp (ModuleInstance name args body) =
+    withConstants args $ do
+        body' <- substituteSelf comp body
+        ModuleInstance name args <$> unrollModuleBody body'
 
 
 unrollModuleBody ::

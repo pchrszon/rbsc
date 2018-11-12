@@ -65,6 +65,15 @@ spec = describe "identifierDefs" $ do
                 (TypeDefNatural (NaturalTypeDef (dummyLoc "N"))))
             , (ScopedName Global "K", DefComponentType
                 (TypeDefNatural (NaturalTypeDef (dummyLoc "K"))))
+            , (ScopedName Global "N_impl", DefModule
+                (Module (dummyLoc "N_impl") []
+                    (ModuleBody
+                        [ VarDecl (dummyLoc "x")
+                            (VarTyEnum (Enumeration [dummyLoc "FIRST", dummyLoc "SECOND"]))
+                            Nothing
+                        ] [])))
+            , (ScopedName Global "K_impl", DefModule
+                (Module (dummyLoc "K_impl") [] (ModuleBody [VarDecl (dummyLoc "y") VarTyBool Nothing] [])))
             , (ScopedName Global "n", DefConstant
                 (Constant (dummyLoc "n") (Just TyInt) (dummyLoc (LitInt 5))))
             , (ScopedName Global "f", DefFunction
@@ -84,9 +93,9 @@ spec = describe "identifierDefs" $ do
                     (dummyLoc "c")
                     (dummyLoc "Comp")
                     Nothing))
-            , (ScopedName (Local "N") "x", DefLocal "N"
-                (VarDecl (dummyLoc "x") VarTyBool Nothing))
-            , (ScopedName (Local "K") "y", DefLocal "K"
+            , (ScopedName (Local "N") "x", DefLocal "N" "N_impl"
+                (VarDecl (dummyLoc "x") (VarTyEnum (Enumeration [dummyLoc "FIRST", dummyLoc "SECOND"])) Nothing))
+            , (ScopedName (Local "K") "y", DefLocal "K" "K_impl"
                 (VarDecl (dummyLoc "y") VarTyBool Nothing))
             , (ScopedName Global "z", DefGlobal
                 (VarDecl (dummyLoc "z") VarTyBool Nothing))

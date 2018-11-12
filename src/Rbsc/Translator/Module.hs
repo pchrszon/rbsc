@@ -3,7 +3,9 @@
 {-# LANGUAGE OverloadedStrings     #-}
 
 
-module Rbsc.Translator.Module where
+module Rbsc.Translator.Module
+    ( trnsModules
+    ) where
 
 
 import Control.Lens
@@ -36,22 +38,22 @@ trnsModules
     -> BindingInfo
     -> Map ComponentName ModuleAlphabets
     -> Alphabets
-    -> Map ComponentName [TNamedModuleBody Elem]
+    -> Map ComponentName [TModuleInstance Elem]
     -> Translator [Prism.Module]
-trnsModules sys bi mas as bodiess = do
+trnsModules sys bi mas as instss = do
     compTys <- view componentTypes
     let oas = overrideActions as
 
-    fmap concat . for (Map.assocs bodiess) $ \(name, bodies) ->
+    fmap concat . for (Map.assocs instss) $ \(name, insts) ->
         case view (instances . at name) sys of
             Just typeName -> do
                 let isRole = has (at typeName._Just._RoleType) compTys
                     cmas   = Map.findWithDefault Map.empty name mas
-                for bodies $ \body -> do
+                for insts $ \inst -> do
                     let alph = Map.findWithDefault Set.empty
-                                                   (view bodyName body)
+                                                   (view miName inst)
                                                    cmas
-                    trnsModule bi as alph oas isRole typeName name body
+                    trnsModule bi as alph oas isRole typeName name inst
             Nothing -> error $ "trnsModules: undefined component " ++ show name
 
 
@@ -63,9 +65,9 @@ trnsModule
     -> Bool
     -> TypeName
     -> ComponentName
-    -> TNamedModuleBody Elem
+    -> TModuleInstance Elem
     -> Translator Prism.Module
-trnsModule bi as alph oas isRole typeName compName (NamedModuleBody moduleName body) = do
+trnsModule bi as alph oas isRole typeName compName (ModuleInstance moduleName _ body) = do
     ident <- trnsQualified (QlMember (QlName (trnsComponentName compName)) moduleName)
     vars' <- trnsLocalVars typeName compName (bodyVars body)
 

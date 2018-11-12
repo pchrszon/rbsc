@@ -1,6 +1,6 @@
 mdp
 
-module n_impl
+module n_N_impl
     n_loc : [0..2] init 0;
 
     [] n_loc = 0 -> (n_loc' = 1);

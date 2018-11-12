@@ -1,0 +1,21 @@
+module fifo(enqueue : action, capacity : int, elems : int) {
+    cell : array capacity of [0 .. elems];
+
+    forall elem : [1 .. elems] {
+        forall c : [0 .. capacity - 1] {
+            [enqueue[elem]] (forall i : [0 .. c - 1]. cell[i] > 0) & cell[c] = 0 -> (cell[c]' = elem);
+        }
+    }
+}
+
+
+type Small;
+impl Small(fifo(action enq_s, 2, 1));
+
+type Large;
+impl Large(fifo(action enq_l, 5, 2));
+
+system {
+    s : Small;
+    l : Large;
+}

@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TemplateHaskell       #-}
 
 
@@ -14,7 +15,10 @@ import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 
-import qualified Data.Set as Set
+import           Data.Foldable
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+import qualified Data.Set        as Set
 
 
 import Rbsc.Config
@@ -31,10 +35,13 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed   (HasConstants (..), SomeExpr (..))
+import           Rbsc.Syntax.Typed   (HasConstants (..), LSomeExpr,
+                                      SomeExpr (..))
 import qualified Rbsc.Syntax.Typed   as T
-import           Rbsc.Syntax.Untyped (Enumeration (..), UConstant, UFunction,
-                                      UType, UVarDecl, UVarType)
+import           Rbsc.Syntax.Untyped (Enumeration (..), LExpr,
+                                      ModuleInstance (..), Parameter (..),
+                                      UConstant, UFunction, UModuleInstance,
+                                      UParameter, UType, UVarDecl, UVarType)
 import qualified Rbsc.Syntax.Untyped as U
 
 import           Rbsc.TypeChecker.ComponentTypes
@@ -46,6 +53,7 @@ import qualified Rbsc.TypeChecker.Internal       as TC
 
 data BuilderState = BuilderState
     { _modelInfo        :: !ModelInfo
+    , _moduleInstances  :: Map TypeName (Map Name [UModuleInstance])
     , _bsRecursionDepth :: RecursionDepth
     }
 
@@ -62,15 +70,15 @@ instance HasConstants BuilderState where
 getModelInfo
     :: (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
     => U.Model
-    -> t Result ModelInfo
+    -> t Result (ModelInfo, Map TypeName [UModuleInstance])
 getModelInfo m = do
     idents <- lift (fromEither (identifierDefs m))
-    deps   <- lift (fromEither' (sortDefinitions idents))
+    deps   <- lift (fromEither' (sortDefinitions m idents))
 
     depth  <- view recursionDepth
     result <- lift (runBuilder (traverse addDependency deps) depth)
 
-    lift (validateComponentTypes (view componentTypes result) m)
+    lift (validateComponentTypes (view (_1.componentTypes) result) m)
 
     return result
 
@@ -78,14 +86,17 @@ getModelInfo m = do
 addDependency :: Dependency -> Builder ()
 addDependency = \case
     DepDefinition def -> case def of
-        DefConstant c        -> addConstant c
-        DefFunction f        -> addFunction f
-        DefLabel             -> return ()
-        DefGlobal decl       -> addVariable Global decl
-        DefLocal tyName decl -> addVariable (Local tyName) decl
-        DefComponentType t   -> addComponentType t
-        DefComponent c       -> addComponents c
-    DepFunctionSignature f -> addFunctionSignature f
+        DefConstant c  -> addConstant c
+        DefFunction f  -> addFunction f
+        DefLabel       -> return ()
+        DefGlobal decl -> addVariable Global decl
+        DefLocal tyName moduleName decl ->
+            addLocalVariable tyName moduleName decl
+        DefComponentType t -> addComponentType t
+        DefComponent c     -> addComponents c
+        DefModule _        -> return ()
+    DepFunctionSignature f    -> addFunctionSignature f
+    DepModuleInstantiation mi -> addModuleInstance mi
 
 
 addConstant :: UConstant -> Builder ()
@@ -126,6 +137,50 @@ addFunction (U.Function (Loc name _) params sTy body) = do
     paramToSym (U.Parameter n psTy) = do
         ty <- fromSyntaxType psTy
         return (unLoc n, ty)
+
+
+addLocalVariable :: TypeName -> Name -> UVarDecl -> Builder ()
+addLocalVariable tyName moduleName (U.VarDecl (Loc name _) vTy _) = do
+    args <- getArguments
+    (ty, mRange) <- withConstants args (fromSyntaxVarType vTy)
+
+    insertSymbol (Local tyName) name ty
+    insertRange (Local tyName) name mRange
+  where
+    getArguments :: Builder [(Name, LSomeExpr)]
+    getArguments = do
+        mi <- use (moduleInstances.at tyName._Just.at moduleName)
+        return $ case mi of
+            -- There can only be one module instance for a given local
+            -- variable, since local variables names are unique per
+            -- component type. If there would be more than one module
+            -- instantiation for the same module, their local variables
+            -- would clash.
+            Just [inst] -> view U.miArgs inst
+            Just _      -> error $
+                "addLocalVariable: more than one instance for " ++
+                show tyName ++ "." ++ show name
+            Nothing     -> []
+
+    -- | Temporarily add a list of constants to the 'ModelInfo'. The given
+    -- 'Builder' action should not make any changes to the symbol table or
+    -- the list of constants, as they will be lost (read access is fine
+    -- however).
+    withConstants :: [(Name, LSomeExpr)] -> Builder a -> Builder a
+    withConstants cs m = do
+        symTable <- use (modelInfo.symbolTable)
+        consts   <- use (modelInfo.constants)
+
+        for_ cs $ \(constName, Loc e@(SomeExpr _ ty) _) -> do
+            modelInfo.symbolTable.at (ScopedName Global constName) ?= Some ty
+            modelInfo.constants.at constName ?= e
+
+        res <- m
+
+        modelInfo.symbolTable .= symTable
+        modelInfo.constants   .= consts
+
+        return res
 
 
 addVariable :: Scope -> UVarDecl -> Builder ()
@@ -180,6 +235,40 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
     tyComponent = TyComponent (Set.singleton tyName)
 
 
+addModuleInstance :: ModuleInstantiationDep -> Builder ()
+addModuleInstance ModuleInstantiationDep {..} = do
+    checkArity
+    let args = zip midArgs (U.modParams midModule)
+    args' <- traverse evalArgument args
+
+    let moduleName = unLoc (U.modName midModule)
+        inst       = ModuleInstance moduleName args' (U.modBody midModule)
+
+    modifying moduleInstances $
+        Map.insertWith (Map.unionWith (++))
+            midTypeName
+            (Map.singleton moduleName [inst])
+  where
+    checkArity = do
+        let numArgs   = length midArgs
+            numParams = length (U.modParams midModule)
+        if numArgs == numParams
+            then return ()
+            else throw midRegion (WrongNumberOfArguments numParams numArgs)
+
+
+    evalArgument :: (LExpr, UParameter) -> Builder (Name, LSomeExpr)
+    evalArgument (arg, param) = do
+        let name = unLoc (paramName param)
+
+        Some ty <- fromSyntaxType (paramType param)
+        arg'    <- typeCheckExpr ty arg
+        val     <- evalExpr (arg' `withLocOf` arg)
+        Dict    <- return (dictShow ty)
+
+        return (name, SomeExpr (T.Literal val ty) ty `withLocOf` arg)
+
+
 fromSyntaxType :: UType -> Builder (Some Type)
 fromSyntaxType = \case
     U.TyBool   -> return (Some TyBool)
@@ -219,12 +308,16 @@ fromSyntaxVarType = \case
 type Builder a = StateT BuilderState Result a
 
 
-runBuilder :: Builder a -> RecursionDepth -> Result ModelInfo
+runBuilder
+    :: Builder a
+    -> RecursionDepth
+    -> Result (ModelInfo, Map TypeName [UModuleInstance])
 runBuilder m depth = do
-    BuilderState mi _ <- execStateT m initial
-    return mi
+    BuilderState mi insts _ <- execStateT m initial
+    let insts' = Map.map (concat . Map.elems) insts
+    return (mi, insts')
   where
-    initial = BuilderState emptyModelInfo depth
+    initial = BuilderState emptyModelInfo Map.empty depth
 
 
 evalIntExpr :: Loc U.Expr -> Builder Int

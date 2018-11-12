@@ -16,7 +16,7 @@ module Rbsc.Syntax.Typed
     , TImplBody
     , TModule
     , TModuleBody
-    , TNamedModuleBody
+    , TModuleInstance
     , TCommand
     , TUpdate
     , TAssignment
@@ -70,7 +70,7 @@ data Model = Model
     { modelGlobals       :: TInits
     , modelLabels        :: [TLabel]
     , modelSystem        :: [Loc (Expr Bool)]
-    , modelImpls         :: Map TypeName [TNamedModuleBody ElemMulti]
+    , modelImpls         :: Map TypeName [TModuleInstance ElemMulti]
     , modelCoordinators  :: [TCoordinator ElemMulti]
     , modelRewardStructs :: [TRewardStruct ElemMulti]
     } deriving (Show)
@@ -86,7 +86,7 @@ type TImplementation       = Implementation ElemMulti TInits TQuantifiedType LSo
 type TImplBody             = ImplBody ElemMulti TInits TQuantifiedType LSomeExpr
 type TModule               = Module ElemMulti TInits TQuantifiedType LSomeExpr
 type TModuleBody elem      = ModuleBody elem TInits TQuantifiedType LSomeExpr
-type TNamedModuleBody elem = NamedModuleBody elem TInits TQuantifiedType LSomeExpr
+type TModuleInstance elem  = ModuleInstance elem TInits TQuantifiedType LSomeExpr (Name, LSomeExpr)
 
 type TCoordinator elem  = Coordinator elem TInits TQuantifiedType LSomeExpr
 type TCoordCommand elem = CoordCommand elem TQuantifiedType LSomeExpr

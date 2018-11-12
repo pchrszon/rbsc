@@ -8,7 +8,7 @@ module Desync
     ]n_act_2[ true -> true;
 endmodule
 
-module n_impl
+module n_N_impl
     n_x_0 : bool init false;
     n_x_1 : bool init false;
 

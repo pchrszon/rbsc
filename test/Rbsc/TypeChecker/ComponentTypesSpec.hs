@@ -49,4 +49,5 @@ spec = describe "validateComponentTypes" $ do
 
 
 getModelInfo' :: Model -> Either [Error] ModelInfo
-getModelInfo' m = toEither (runReaderT (getModelInfo m) (10 :: RecursionDepth))
+getModelInfo' m =
+    toEither (runReaderT (fst <$> getModelInfo m) (10 :: RecursionDepth))

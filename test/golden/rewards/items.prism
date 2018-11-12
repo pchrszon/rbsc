@@ -5,21 +5,21 @@ module Desync
     ]b[ true -> true;
 endmodule
 
-module n_impl
+module n_N_impl
     n_s : [0..2] init 0;
 
     ]a[ n_s = 0 -> (n_s' = 1);
     ]b[ n_s = 0 -> (n_s' = 2);
 endmodule
 
-module r_0_impl
+module r_0_R_impl
     r_0_s : [0..1] init 0;
 
     ]a, _r_0[ r_0_s = 0 -> (r_0_s' = 1);
     ]a, _not_r_0[ true -> true;
 endmodule
 
-module r_1_impl
+module r_1_R_impl
     r_1_s : [0..1] init 0;
 
     ]b, _r_1[ r_1_s = 0 -> (r_1_s' = 1);

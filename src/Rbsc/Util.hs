@@ -1,5 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TupleSections    #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TupleSections         #-}
 
 
 -- | Various utility functions.
@@ -8,6 +9,7 @@ module Rbsc.Util
     , inverseLookup
     , appendIndex
     , whenIsJust
+    , withConstants
     , topoSort
     , regions
     ) where
@@ -16,6 +18,7 @@ module Rbsc.Util
 import Control.Lens
 
 import Control.Monad.Except
+import Control.Monad.Reader
 import Control.Monad.State.Strict
 
 import           Data.Foldable
@@ -28,6 +31,16 @@ import qualified Data.Set                              as Set
 import           Data.Text                             (Text, append, pack)
 import           Data.Text.Prettyprint.Doc
 import           Data.Text.Prettyprint.Doc.Render.Text
+
+
+import Rbsc.Data.Scope
+import Rbsc.Data.Some
+import Rbsc.Data.Type
+
+import Rbsc.Report.Region
+
+import Rbsc.Syntax.Typed      (LSomeExpr)
+import Rbsc.Syntax.Typed.Expr
 
 
 -- | Render a 'Pretty' value to 'Text'.
@@ -50,6 +63,24 @@ appendIndex base i = base `append` pack (show i)
 whenIsJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
 whenIsJust (Just x) m = m x
 whenIsJust Nothing  _ = return ()
+
+
+-- | Locally add a list of constants to the constant table and the symbol table.
+withConstants
+    :: (MonadReader r m, HasSymbolTable r, HasConstants r)
+    => [(Name, LSomeExpr)]
+    -> m a
+    -> m a
+withConstants args = local
+    ( over symbolTable (Map.union argSymbols)
+    . over constants   (Map.union argConsts)
+    )
+  where
+    argConsts  = Map.fromList (fmap mkConst args)
+    argSymbols = Map.fromList (fmap mkSymbol args)
+
+    mkConst (name, e) = (name, unLoc e)
+    mkSymbol (name, Loc (SomeExpr _ ty) _) = (ScopedName Global name, Some ty)
 
 
 -- | @topoSort nodes outgoingEdges@ sorts the @nodes@ topologically. If

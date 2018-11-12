@@ -19,6 +19,7 @@ import Rbsc.Data.ComponentType
 
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Expr
+import Rbsc.Parser.Function
 import Rbsc.Parser.Lexer
 import Rbsc.Parser.VarDecl
 
@@ -37,8 +38,14 @@ implementation = Implementation
     <*> implementationBody
   where
     implementationBody =
-        ImplModules <$> (parens (commaSepNonEmpty identifier) <* semi) <|>
+        ImplModules <$> (parens (commaSepNonEmpty moduleRef) <* semi) <|>
         ImplSingle  <$> braces moduleBody
+
+
+moduleRef :: Parser UModuleRef
+moduleRef = ModuleRef
+    <$> identifier
+    <*> option [] (parens (expr `sepBy` comma))
 
 
 moduleDef :: Parser Definition
@@ -46,7 +53,10 @@ moduleDef = DefModule <$> modul <?> "module definition"
 
 
 modul :: Parser UModule
-modul = Module <$> (reserved "module" *> identifier) <*> braces moduleBody
+modul = Module
+    <$> (reserved "module" *> identifier)
+    <*> option [] (parens (parameter `sepBy` comma))
+    <*> braces moduleBody
 
 
 moduleBody :: Parser UModuleBody

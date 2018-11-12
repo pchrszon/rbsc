@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE MultiWayIf        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
 
@@ -9,6 +10,7 @@
 -- in the model.
 module Rbsc.TypeChecker.Dependencies
     ( Dependency(..)
+    , ModuleInstantiationDep(..)
     , sortDefinitions
     ) where
 
@@ -19,10 +21,12 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 
 import           Data.Foldable
+import           Data.Function
 import           Data.List.NonEmpty (NonEmpty (..))
 import           Data.Map.Strict    (Map)
 import qualified Data.Map.Strict    as Map
 import           Data.Maybe
+import           Data.Ord
 import           Data.Set           (Set)
 import qualified Data.Set           as Set
 
@@ -40,12 +44,41 @@ import Rbsc.TypeChecker.Identifiers
 import Rbsc.Util
 
 
+-- | A dependency graph.
+--
+-- Each key maps to a set of other definitions it depends on.
+type DependencyGraph = Map LDependency (Set LDependency)
+
+
+type LDependency = Loc Dependency
+
+
 -- | A @Dependency@ corresponds to an 'IdentifierDef'. Each @Dependency@
 -- may itself be dependend on other dependencies.
 data Dependency
     = DepDefinition IdentifierDef
     | DepFunctionSignature UFunction
+    | DepModuleInstantiation ModuleInstantiationDep
     deriving (Eq, Ord, Show)
+
+
+type InstantiationId = Int
+
+
+-- | Represents a module instantiation (i.e., a 'ModuleRef').
+data ModuleInstantiationDep = ModuleInstantiationDep
+    { midId       :: !InstantiationId
+    , midRegion   :: !Region
+    , midTypeName :: !TypeName
+    , midModule   :: UModule
+    , midArgs     :: [LExpr]
+    } deriving (Show)
+
+instance Eq ModuleInstantiationDep where
+    (==) = (==) `on` midId
+
+instance Ord ModuleInstantiationDep where
+    compare = comparing midId
 
 
 data AnalyzerInfo = AnalyzerInfo
@@ -59,14 +92,24 @@ data AnalyzerInfo = AnalyzerInfo
 makeLenses ''AnalyzerInfo
 
 
+data AnalyzerState = AnalyzerState
+    { _dependencies    :: DependencyGraph
+    , _instantiationId :: !InstantiationId
+    }
+
+makeLenses ''AnalyzerState
+
+
 -- | Sort all identifier definitions such that each definition only refers
 -- to definitions that are before it in the list. If such an ordering of the
 -- definitions cannot be given (because the definitions contain a cycle),
 -- then a 'CyclicDefinition' error is returned.
-sortDefinitions :: Identifiers -> Either Error [Dependency]
-sortDefinitions idents = do
-    depGraph <- runAnalyzer idents
-                            (traverse_ (insert . unLoc) (Map.elems idents))
+sortDefinitions :: Model -> Identifiers -> Either Error [Dependency]
+sortDefinitions model idents = do
+    depGraph <- runAnalyzer idents $ do
+        traverse_ (insert . unLoc) (Map.elems idents)
+        traverse_ genModuleInstantiations (modelImpls model)
+
     case topoSort (Map.keys depGraph) (lookupEdges depGraph) of
         Right deps     -> return (fmap unLoc deps)
         Left  depCycle -> throwError (buildError depCycle)
@@ -83,32 +126,62 @@ sortDefinitions idents = do
             DefFunction _                            -> "function"
             DefLabel                                 -> "label"
             DefGlobal _                              -> "global variable"
-            DefLocal _ _                             -> "local variable"
+            DefLocal {}                              -> "local variable"
             DefComponentType _                       -> "type"
             DefComponent (ComponentDef _ _ Nothing)  -> "component"
             DefComponent (ComponentDef _ _ (Just _)) -> "component array"
-        DepFunctionSignature _ -> "function"
+            DefModule _                              -> "module"
+        DepFunctionSignature _   -> "function"
+        DepModuleInstantiation _ -> "module instantiation"
 
 
--- | A dependency graph.
---
--- Each key maps to a set of other definitions it depends on.
-type DependencyGraph = Map LDependency (Set LDependency)
+genModuleInstantiations :: UImplementation -> Analyzer ()
+genModuleInstantiations Implementation{..} = case implBody of
+    ImplSingle body -> do
+        let name = implModuleName implTypeName
+            m = Module name [] body
+        genModuleInstantiation rgn tyName m []
+    ImplModules refs -> for_ refs $ \(ModuleRef (Loc name refRgn) args) -> do
+        m <- getModule name
+        genModuleInstantiation refRgn tyName m args
+  where
+    Loc tyName rgn = implTypeName
 
 
-type LDependency = Loc Dependency
+genModuleInstantiation
+    :: Region -> TypeName -> UModule -> [LExpr] -> Analyzer ()
+genModuleInstantiation rgn tyName m args = do
+    i <- nextInstantiationId
+    let dep =
+            DepModuleInstantiation (ModuleInstantiationDep i rgn tyName m args)
+        paramTys = fmap paramType (modParams m)
+
+    newDependency dep rgn $ do
+        paramIdents <- Set.unions <$> traverse identsInType paramTys
+        argIdents   <- Set.unions <$> traverse identsInExpr args
+        dependOnIdentifiers (Set.union paramIdents argIdents)
+
+    let paramSet = moduleParameters m
+
+    for_ (bodyVars (modBody m)) $ \decl -> do
+        idents <- identsInVarType (declType decl)
+        unless (Set.disjoint paramSet (Set.map unLoc idents)) $ do
+            let dep' = DepDefinition (DefLocal tyName (unLoc (modName m)) decl)
+                lDep = Loc dep' (getLoc (declName decl))
+            local (set currentDependency (Just lDep)) (dependOn dep rgn)
 
 
 -- | Insert an 'IdentifierDef' into the dependency graph.
 insert :: IdentifierDef -> Analyzer ()
 insert def = case def of
-    DefConstant c        -> insertConstant c
-    DefFunction f        -> insertFunction f
-    DefLabel             -> return ()
-    DefGlobal g          -> insertGlobal g
-    DefLocal tyName decl -> insertLocal tyName decl
-    DefComponentType t   -> insertComponentType t
-    DefComponent c       -> insertComponents c
+    DefConstant c      -> insertConstant c
+    DefFunction f      -> insertFunction f
+    DefLabel           -> return ()
+    DefGlobal g        -> insertGlobal g
+    DefLocal t m decl  -> insertLocal t m decl
+    DefComponentType t -> insertComponentType t
+    DefComponent c     -> insertComponents c
+    DefModule _        -> return ()
 
 
 insertConstant :: UConstant -> Analyzer ()
@@ -138,19 +211,32 @@ insertGlobal decl@(VarDecl (Loc _ rgn) vTy _) =
         dependOnIdentifiers identsTy
 
 
-insertLocal :: TypeName -> UVarDecl -> Analyzer ()
-insertLocal tyName decl@(VarDecl (Loc _ rgn) vTy _) =
-    newDependency (DepDefinition (DefLocal tyName decl)) rgn $ do
-        identsTy <- identsInVarType vTy
-        dependOnIdentifiers identsTy
+insertLocal :: TypeName -> Name -> UVarDecl -> Analyzer ()
+insertLocal tyName moduleName decl@(VarDecl (Loc _ rgn) vTy _) = do
+    m <- getModule moduleName
+    newDependency (DepDefinition (DefLocal tyName moduleName decl)) rgn .
+        local (set parameters (moduleParameters m)) $ do
+            identsTy <- identsInVarType vTy
+            dependOnIdentifiers identsTy
+
+
+getModule :: Name -> Analyzer UModule
+getModule moduleName =
+    view (identifiers.at (ScopedName Global moduleName)) >>= \case
+        Just (Loc (DefModule m) _) -> return m
+        _ -> error $ "getModule: module " ++ show moduleName ++ " not found"
+
+
+moduleParameters :: UModule -> Set Name
+moduleParameters = Set.fromList . fmap (unLoc . paramName) . modParams
 
 
 insertComponentType :: ComponentTypeDef -> Analyzer ()
 insertComponentType t =
     newDependency (DepDefinition (DefComponentType t)) rgn $ do
         locals <- getLocalVars
-        for_ locals $ \decl ->
-            dependOn (DepDefinition (DefLocal tyName decl)) rgn
+        for_ locals $ \def ->
+            dependOn (DepDefinition def) rgn
 
         case t of
             TypeDefCompartment (CompartmentTypeDef _ multiRoleLists) ->
@@ -169,14 +255,15 @@ insertComponentType t =
         TypeDefRole rt        -> rtdName rt
         TypeDefCompartment ct -> ctdName ct
 
-    getLocalVars :: Analyzer [UVarDecl]
+    getLocalVars :: Analyzer [IdentifierDef]
     getLocalVars =
-        mapMaybe (getLocalVar . unLoc) . Map.elems <$> view identifiers
+        filter isLocalVar . fmap unLoc . Map.elems <$> view identifiers
 
-    getLocalVar :: IdentifierDef -> Maybe UVarDecl
-    getLocalVar = \case
-        DefLocal tyName' decl | tyName' == tyName -> Just decl
-        _ -> Nothing
+    isLocalVar :: IdentifierDef -> Bool
+    isLocalVar = \case
+        DefLocal tyName' _ _ -> tyName' == tyName
+        _ -> False
+
 
 insertComponents :: ComponentDef -> Analyzer ()
 insertComponents c@(ComponentDef (Loc _ rgn) tyName mLen) =
@@ -330,12 +417,12 @@ parameterSet = Set.fromList . fmap (unLoc . paramName) . toList . functionParams
 
 
 type Analyzer a
-     = ReaderT AnalyzerInfo (StateT DependencyGraph (Either Error)) a
+     = ReaderT AnalyzerInfo (StateT AnalyzerState (Either Error)) a
 
 
 runAnalyzer :: Identifiers -> Analyzer () -> Either Error DependencyGraph
-runAnalyzer idents m =
-    execStateT (runReaderT m info) Map.empty
+runAnalyzer idents m = view dependencies <$>
+    execStateT (runReaderT m info) (AnalyzerState Map.empty 0)
   where
     info  = AnalyzerInfo idents Set.empty funcs Nothing False
     funcs = Map.fromAscList (mapMaybe getFunc (Map.toAscList idents))
@@ -350,7 +437,7 @@ runAnalyzer idents m =
 newDependency :: Dependency -> Region -> Analyzer a -> Analyzer a
 newDependency dep rgn m = do
     let lDep = Loc dep rgn
-    modify (Map.insertWith Set.union lDep Set.empty)
+    modifying dependencies (Map.insertWith Set.union lDep Set.empty)
     local (currentDependency ?~ lDep) m
 
 
@@ -358,8 +445,16 @@ newDependency dep rgn m = do
 -- given dependency @dep@.
 dependOn :: Dependency -> Region -> Analyzer ()
 dependOn dep rgn = view currentDependency >>= \case
-    Just this ->
-        modify (Map.insertWith Set.union this (Set.singleton (Loc dep rgn)))
-    Nothing   -> error $
+    Just this -> modifying dependencies
+        (Map.insertWith Set.union this (Set.singleton (Loc dep rgn)))
+    Nothing -> error $
         "dependOn: not inside a dependency\narguments: " ++ show dep ++ ", " ++
         show rgn
+
+
+-- | Returns the next unused ID for a module instantiation.
+nextInstantiationId :: Analyzer InstantiationId
+nextInstantiationId = do
+    i <- use instantiationId
+    modifying instantiationId succ
+    return i

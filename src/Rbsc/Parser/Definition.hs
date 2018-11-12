@@ -2,8 +2,8 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 
 -- | Top-level definitions.
@@ -16,19 +16,13 @@ module Rbsc.Parser.Definition
 
 
 import Control.Lens
-import Control.Monad.Except
-import Control.Monad.State.Strict
 
-import           Data.Foldable
-import           Data.Map.Strict  (Map)
-import qualified Data.Map.Strict  as Map
-import           Data.Traversable
+import qualified Data.Map.Strict as Map
 import           Data.Void
 
 import Text.Megaparsec
 
 
-import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..))
 
 import Rbsc.Syntax.Untyped
@@ -59,54 +53,24 @@ makePrisms ''Definition
 
 
 -- | Extract a 'Model' from a list of definitions.
-toModel :: MonadError [Error] m => [Definition] -> m Model
-toModel defs = do
-    impls <- getImplementations defs
-    return Model
-        { modelConstants        = def _DefConstant
-        , modelEnumumerations   = def _DefEnumeration
-        , modelFunctions        = def _DefFunction
-        , modelGlobals          = def _DefGlobal
-        , modelLabels           = def _DefLabel
-        , modelNaturalTypes     = def _DefNaturalType
-        , modelRoleTypes        = def _DefRoleType
-        , modelCompartmentTypes = def _DefCompartmentType
-        , modelSystem           = concat (def _DefSystem)
-        , modelImpls            = impls
-        , modelCoordinators     = def _DefCoordinator
-        , modelRewardStructs    = mergeRewardStructs (def _DefRewardStruct)
-        }
+toModel :: [Definition] -> Model
+toModel defs = Model
+    { modelConstants        = def _DefConstant
+    , modelEnumumerations   = def _DefEnumeration
+    , modelFunctions        = def _DefFunction
+    , modelGlobals          = def _DefGlobal
+    , modelLabels           = def _DefLabel
+    , modelNaturalTypes     = def _DefNaturalType
+    , modelRoleTypes        = def _DefRoleType
+    , modelCompartmentTypes = def _DefCompartmentType
+    , modelSystem           = concat (def _DefSystem)
+    , modelModules          = def _DefModule
+    , modelImpls            = def _DefImplementation
+    , modelCoordinators     = def _DefCoordinator
+    , modelRewardStructs    = mergeRewardStructs (def _DefRewardStruct)
+    }
   where
     def p = toListOf (traverse.p) defs
-
-
-getImplementations ::
-       MonadError [Error] m
-    => [Definition]
-    -> m (Map TypeName [UNamedModuleBody])
-getImplementations defs = do
-    mods <- getModules defs
-    let impls = toListOf (traverse._DefImplementation) defs
-    Map.unions <$> traverse (fromImpl mods) impls
-  where
-    fromImpl mods (Implementation (Loc tyName _) body) =
-        fmap (Map.singleton tyName) $ case body of
-            ImplSingle b -> return [NamedModuleBody "impl" b]
-            ImplModules ms ->
-                for (toList ms) $ \(Loc name rgn) ->
-                    case Map.lookup name mods of
-                        Just b  -> return (NamedModuleBody name (unLoc b))
-                        Nothing -> throwError [locError rgn UndefinedModule]
-
-
-getModules ::
-       MonadError [Error] m => [Definition] -> m (Map Name (Loc UModuleBody))
-getModules defs = flip execStateT Map.empty $
-    forOf_ (traverse._DefModule) defs $ \(Module (Loc name rgn) body) ->
-        use (at name) >>= \case
-            Just (Loc _ first) -> throwError
-                [locError rgn (DuplicateModule first)]
-            Nothing -> at name ?= Loc body rgn
 
 
 mergeRewardStructs :: [URewardStruct] -> [URewardStruct]

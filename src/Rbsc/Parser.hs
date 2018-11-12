@@ -58,9 +58,7 @@ parse path content = fmap getResult $ do
         Right errorOrDefs -> do
             let (errors, defs) = partitionEithers errorOrDefs
             if null errors
-                then do
-                    model <- toModel defs
-                    return (model, sourceMap)
+                then return (toModel defs, sourceMap)
                 else throwError (fmap (fromParseError sourceMap) errors)
   where
     getResult :: Either [Error] (Model, SourceMap) -> (Result Model, SourceMap)
