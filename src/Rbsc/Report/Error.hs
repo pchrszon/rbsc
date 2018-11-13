@@ -42,7 +42,6 @@ locError rgn desc = LocError (MkLocError rgn desc)
 data LocErrorDesc
     -- syntax errors
     = ParseError !Text
-    | DuplicateModule !Region
     | UndefinedModule
 
     -- identifier errors
@@ -50,7 +49,7 @@ data LocErrorDesc
     | DuplicateType !Region
     | NonRoleInCompartment
     | UndefinedIdentifier
-    | DuplicateIdentifier !Region
+    | DuplicateIdentifier !Name !Region
     | CyclicDefinition !Text [Region]
 
     -- semantic errors
@@ -114,12 +113,6 @@ locReport rgn = \case
     ParseError err ->
         errorReport "syntax error" [errorPart rgn (Just err)]
 
-    DuplicateModule first ->
-        errorReport "duplicate module definition"
-            [ errorPart rgn (Just "a module of the same name already exists")
-            , hintPart first (Just "first definition was here")
-            ]
-
     UndefinedModule ->
         errorReport "undefined module" [errorPart rgn Nothing]
 
@@ -141,8 +134,8 @@ locReport rgn = \case
     UndefinedIdentifier ->
         errorReport "undefined identifier" [errorPart rgn Nothing]
 
-    DuplicateIdentifier first ->
-        errorReport "duplicate definition"
+    DuplicateIdentifier name first ->
+        errorReport ("duplicate definition of " <> name)
             [ errorPart rgn
                 (Just "an identifier with this name already exists")
             , hintPart first (Just "first definition was here")
