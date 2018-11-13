@@ -20,8 +20,9 @@ import Text.Megaparsec (eof)
 
 import           Data.Data
 import           Data.Generics
-import           Data.Text     (Text)
-import qualified Data.Text     as Text
+import           Data.Map.Strict as Map
+import           Data.Text       (Text)
+import qualified Data.Text       as Text
 
 import Language.Haskell.TH       hiding (Loc, Body)
 import Language.Haskell.TH.Quote
@@ -61,7 +62,8 @@ model = QuasiQuoter
 expr :: QuasiQuoter
 expr = QuasiQuoter
     { quoteExp = \str -> do
-        let (result, _) = runIdentity (run exprParser "splice" (Text.pack str))
+        let (result, _) =
+                runIdentity (run exprParser "splice" (Text.pack str) Map.empty)
         case result of
             Left err -> fail (show err)
             Right e -> dataToExpQ (const Nothing `extQ` handleText) e
@@ -82,7 +84,7 @@ handleText = Just . appE (varE 'Text.pack) . litE . StringL . Text.unpack
 
 parseIO :: String -> IO Model
 parseIO str = do
-    (result, _) <- parse "splice" (Text.pack str)
+    (result, _) <- parse "splice" (Text.pack str) []
     case toEither result of
         Left errors -> throwIO (userError (unlines (printErrors errors)))
         Right m     -> return m

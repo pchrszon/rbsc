@@ -5,6 +5,9 @@ module Rbsc.CLI.Options
     ) where
 
 
+import Data.Text (Text)
+
+
 import Rbsc.Config
 
 
@@ -16,6 +19,9 @@ data Options = Options
       -- | The output path. If multiple systems are generated, an index is
       -- added between the file name and the file extension.
     , optOutput         :: Maybe FilePath
+
+      -- | A list of constant definitions.
+    , optConstants      :: [Text]
 
       -- | Enable/disable the generation of multi-action code.
     , optMultiActions   :: Bool

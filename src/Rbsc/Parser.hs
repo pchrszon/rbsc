@@ -32,6 +32,7 @@ import Rbsc.Parser.Constant
 import Rbsc.Parser.Coordinator
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Enumeration
+import Rbsc.Parser.Expr
 import Rbsc.Parser.Function
 import Rbsc.Parser.Global
 import Rbsc.Parser.Impl
@@ -49,17 +50,18 @@ import Rbsc.Syntax.Untyped
 
 
 -- | Parse a source file.
-parse :: MonadIO m => FilePath -> Text -> m (Result Model, SourceMap)
-parse path content = fmap getResult $ do
-    (result, sourceMap) <- run modelFile path content
+parse :: MonadIO m => FilePath -> Text -> [Text] -> m (Result Model, SourceMap)
+parse path content constArgContents =
+    fmap getResult . withConstants $ \args -> do
+        (result, sourceMap) <- run modelFile path content args
 
-    return $ case result of
-        Left  err         -> Left [fromParseError sourceMap err]
-        Right errorOrDefs -> do
-            let (errors, defs) = partitionEithers errorOrDefs
-            if null errors
-                then return (toModel defs, sourceMap)
-                else throwError (fmap (fromParseError sourceMap) errors)
+        return $ case result of
+            Left  err         -> Left [fromParseError sourceMap err]
+            Right errorOrDefs -> do
+                let (errors, defs) = partitionEithers errorOrDefs
+                if null errors
+                    then return (toModel defs, sourceMap)
+                    else throwError (fmap (fromParseError sourceMap) errors)
   where
     getResult :: Either [Error] (Model, SourceMap) -> (Result Model, SourceMap)
     getResult r =
@@ -69,6 +71,13 @@ parse path content = fmap getResult $ do
     getSourceMap = \case
         Right (_, sourceMap) -> sourceMap
         Left  _              -> Map.empty
+
+    withConstants m = do
+        results <- traverse parseCliConst constArgContents
+        let (errors, args) = partitionEithers results
+        if null errors
+            then m (Map.fromList args)
+            else return (Left errors)
 
 
 modelFile :: MonadIO m => ParserT m [ErrorOrDef]
@@ -141,6 +150,17 @@ parseIncludeFile path = do
     popPosition
 
     return result
+
+
+parseCliConst :: Monad m => Text -> m (Either Error (Name, LExpr))
+parseCliConst = run' cliConstantDef "<command line>"
+  where
+    cliConstantDef = (,) <$> (unLoc <$> identifier) <*> (equals *> expr)
+
+    run' :: Monad m => ParserT m a -> FilePath -> Text -> m (Either Error a)
+    run' p path content = do
+        (result, sourceMap) <- run p path content Map.empty
+        return (over _Left (fromParseError sourceMap) result)
 
 
 fromParseError ::

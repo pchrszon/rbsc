@@ -45,12 +45,17 @@ options = Options
         ( metavar "FILE"
        <> short 'o'
        <> help helpOutputFile ))
+    <*> many (strOption
+        ( metavar "CONST=EXPRESSION"
+       <> short 'c'
+       <> long "const"
+       <> hidden
+       <> help helpConstant ))
     <*> switch
         ( short 'm'
        <> long "multi-actions"
        <> hidden
-       <> help helpMultiActions
-        )
+       <> help helpMultiActions )
     <*> optional (strOption
         ( metavar "FILE"
        <> long "export-systems"
@@ -96,6 +101,7 @@ options = Options
 
 helpModelFile      = "The model file (pass - to read from stdin)"
 helpOutputFile     = "The output file(s)"
+helpConstant       = "Define a constant value"
 helpMultiActions   = "Allow multi-actions in generated code"
 helpExportSystems  = "Export the full system block"
 helpExportDiagrams = "Export the component diagram as Graphviz dot"

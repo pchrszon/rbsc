@@ -15,6 +15,7 @@ module Rbsc.Parser.Lexer
     , ParserState(..)
     , currentSource
     , sources
+    , constArgs
     , initialState
 
     , SourceMap
@@ -67,14 +68,22 @@ import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as Lexer
 
 
+import Rbsc.Data.Name
+
 import           Rbsc.Report.Region (Loc (..), Region)
 import qualified Rbsc.Report.Region as Region
 
 import Rbsc.Parser.Reserved
 
+import Rbsc.Syntax.Untyped (LExpr)
+
 
 -- | Stores the contents of each encountered source file.
 type SourceMap = Map FilePath Text
+
+
+-- | A set of constant definitions which has been provided on the command line.
+type ConstArgs = Map Name LExpr
 
 
 -- | The parser monad.
@@ -92,17 +101,18 @@ run :: Monad m
     => ParserT m a
     -> FilePath
     -> Text
+    -> ConstArgs
     -> m (Either (ParseError Char Void) a, SourceMap)
-run p path content = do
+run p path content consts = do
     (result, parserState) <-
-        runStateT (runParserT p path content) (initialState path content)
+        runStateT (runParserT p path content) (initialState path content consts)
     return (result, _sources parserState)
 
 
 -- | @testRun@ applies a parser to a given input and shows the results.
 testRun :: ParserT IO a -> Text -> IO (Either String a)
 testRun p content = do
-    (result, _) <- run p "" content
+    (result, _) <- run p "" content Map.empty
     return (over _Left parseErrorPretty result)
 
 
@@ -111,12 +121,13 @@ testRun p content = do
 data ParserState = ParserState
     { _currentSource :: !Text
     , _sources       :: !SourceMap
+    , _constArgs     :: !ConstArgs
     }
 
 
 -- | Create an initial 'ParserState' from the content and path of the
 -- top-level source file.
-initialState :: FilePath -> Text -> ParserState
+initialState :: FilePath -> Text -> ConstArgs -> ParserState
 initialState path source = ParserState source (Map.singleton path source)
 
 

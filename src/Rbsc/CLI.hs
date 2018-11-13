@@ -68,7 +68,9 @@ runApp = runReaderT
 rbsc :: App ()
 rbsc = do
     (path, content) <- readModel
-    (parseResult, sourceMap) <- parse path content
+
+    consts <- asks optConstants
+    (parseResult, sourceMap) <- parse path content consts
 
     handling _ErrorCall (lift . errorHandler sourceMap) $ do
         depth        <- asks optRecursionDepth
