@@ -400,6 +400,12 @@ identsInExpr = go False Set.empty
                     return (Set.singleton (name `withLocOf` e))
         HasType e' tyName ->
             Set.insert (fmap getTypeName tyName) <$> go inAction bound e'
+        Count _ e' -> Set.union
+            <$> identsInComponentTypeSet AllComponents
+            <*> go inAction bound e'
+        Player e' -> Set.union
+            <$> identsInComponentTypeSet AllComponents
+            <*> go inAction bound e'
         Quantified _ name qdTy e' -> do
             idents <- case qdTy of
                 QdTypeComponent tySet ->

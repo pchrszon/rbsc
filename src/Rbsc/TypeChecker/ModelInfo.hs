@@ -4,6 +4,8 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TemplateHaskell       #-}
 
+{-# LANGUAGE OverloadedStrings #-}
+
 
 -- | Construction of the symbol table and evaluation of constants.
 module Rbsc.TypeChecker.ModelInfo
@@ -323,8 +325,7 @@ runBuilder m depth = do
 evalIntExpr :: Loc U.Expr -> Builder Int
 evalIntExpr e = do
     e' <- typeCheckExpr TyInt e
-    v  <- evalExpr (e' `withLocOf` e)
-    return v
+    evalExpr (e' `withLocOf` e)
 
 
 evalExpr :: Loc (T.Expr t) -> Builder t
