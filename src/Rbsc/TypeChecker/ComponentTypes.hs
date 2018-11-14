@@ -25,20 +25,11 @@ validateComponentTypes types model
     | null errors = return ()
     | otherwise   = throwMany errors
   where
-    errors =
-        validateRoleTypes (modelRoleTypes model) ++
-        validateCompartmentTypes (modelCompartmentTypes model)
-
-    validateRoleTypes = concatMap $ \(RoleTypeDef _ playerTyNames) ->
-        mapMaybe exists playerTyNames
+    errors = validateCompartmentTypes (modelCompartmentTypes model)
 
     validateCompartmentTypes = concatMap $
         \(CompartmentTypeDef _ multiRoleLists) ->
             concatMap (mapMaybe checkIfRoleType) multiRoleLists
-
-    exists (Loc tyName rgn)
-        | Map.member tyName types = Nothing
-        | otherwise = Just (locError rgn UndefinedType)
 
     checkIfRoleType (MultiRole (Loc tyName rgn) _) =
         case Map.lookup tyName types of

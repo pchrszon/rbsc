@@ -4,8 +4,6 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TemplateHaskell       #-}
 
-{-# LANGUAGE OverloadedStrings #-}
-
 
 -- | Construction of the symbol table and evaluation of constants.
 module Rbsc.TypeChecker.ModelInfo

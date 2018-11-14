@@ -239,15 +239,19 @@ insertComponentType t =
             dependOn (DepDefinition def) rgn
 
         case t of
+            TypeDefRole (RoleTypeDef _ playerTys) ->
+                traverse_ checkIfExists playerTys
             TypeDefCompartment (CompartmentTypeDef _ multiRoleLists) ->
                 for_ multiRoleLists $ \multiRoles ->
-                    for_ multiRoles $ \(MultiRole _ mBounds) -> case mBounds of
-                        Just (lower, upper) -> do
-                            identsLower <- identsInExpr lower
-                            identsUpper <- identsInExpr upper
-                            dependOnIdentifiers identsLower
-                            dependOnIdentifiers identsUpper
-                        Nothing -> return ()
+                    for_ multiRoles $ \(MultiRole mName mBounds) -> do
+                        checkIfExists mName
+                        case mBounds of
+                            Just (lower, upper) -> do
+                                identsLower <- identsInExpr lower
+                                identsUpper <- identsInExpr upper
+                                dependOnIdentifiers identsLower
+                                dependOnIdentifiers identsUpper
+                            Nothing -> return ()
             _ -> return ()
   where
     Loc tyName rgn = case t of
@@ -263,6 +267,11 @@ insertComponentType t =
     isLocalVar = \case
         DefLocal tyName' _ _ -> tyName' == tyName
         _ -> False
+
+    checkIfExists :: Loc TypeName -> Analyzer ()
+    checkIfExists (Loc (TypeName tyName') rgn') = do
+        exists <- Map.member (ScopedName Global tyName') <$> view identifiers
+        unless exists (throw rgn' UndefinedType)
 
 
 insertComponents :: ComponentDef -> Analyzer ()
