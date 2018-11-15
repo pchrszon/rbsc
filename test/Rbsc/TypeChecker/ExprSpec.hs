@@ -115,6 +115,7 @@ typeCheck ty e = toEither $ do
     te <- runTypeChecker
             (tcExpr e)
             (view componentTypes modelInfo)
+            (view typeSets modelInfo)
             (view symbolTable modelInfo)
             (view constants modelInfo)
             10

@@ -16,6 +16,9 @@ module Rbsc.Data.ComponentType
     , ComponentTypes
     , HasComponentTypes(..)
 
+    , TypeSets
+    , HasTypeSets(..)
+
     , isRoleType
     , isCompartmentType
 
@@ -67,6 +70,14 @@ class HasComponentTypes a where
     componentTypes :: Lens' a ComponentTypes
 
 
+-- | User-defined sets of component types indexed by their name.
+type TypeSets = Map TypeName (Set TypeName)
+
+
+class HasTypeSets a where
+    typeSets :: Lens' a TypeSets
+
+
 isRoleType :: ComponentTypes -> TypeName -> Bool
 isRoleType compTys tyName = has (at tyName._Just._RoleType) compTys
 
@@ -88,14 +99,19 @@ data ComponentTypeSet
 
 -- | Convert a 'ComponentTypeSet' into a list of 'TypeName's. If one of the
 -- types does not exist, an 'UndefinedType' error is thrown.
-normalizeTypeSet ::
-       ComponentTypes -> ComponentTypeSet -> Either Error (Set TypeName)
-normalizeTypeSet compTys =
+normalizeTypeSet
+    :: ComponentTypes
+    -> TypeSets
+    -> ComponentTypeSet
+    -> Either Error (Set TypeName)
+normalizeTypeSet compTys tySets =
     \case
         AllComponents   -> return (Map.keysSet compTys)
         AllNaturals     -> return (filterType _NaturalType)
         AllRoles        -> return (filterType _RoleType)
         AllCompartments -> return (filterType _CompartmentType)
+        ComponentTypeSet (toList -> [Loc tyName _])
+            | Just tyNames <- Map.lookup tyName tySets -> return tyNames
         ComponentTypeSet (toList -> tyNames) -> do
             traverse_ exists tyNames
             return (Set.fromList (fmap unLoc tyNames))

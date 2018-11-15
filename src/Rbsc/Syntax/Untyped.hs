@@ -84,6 +84,7 @@ data Model = Model
     , modelNaturalTypes     :: [NaturalTypeDef]
     , modelRoleTypes        :: [RoleTypeDef]
     , modelCompartmentTypes :: [UCompartmentTypeDef]
+    , modelTypeSets         :: [TypeSetDef]
     , modelSystem           :: [LExpr]
     , modelModules          :: [UModule]
     , modelImpls            :: [UImplementation]

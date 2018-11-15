@@ -40,8 +40,9 @@ import           Rbsc.Syntax.Typed   (HasConstants (..), LSomeExpr,
 import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped (Enumeration (..), LExpr,
                                       ModuleInstance (..), Parameter (..),
-                                      UConstant, UFunction, UModuleInstance,
-                                      UParameter, UType, UVarDecl, UVarType)
+                                      TypeSetDef (..), UConstant, UFunction,
+                                      UModuleInstance, UParameter, UType,
+                                      UVarDecl, UVarType)
 import qualified Rbsc.Syntax.Untyped as U
 
 import           Rbsc.TypeChecker.ComponentTypes
@@ -93,6 +94,7 @@ addDependency = \case
         DefLocal tyName moduleName decl ->
             addLocalVariable tyName moduleName decl
         DefComponentType t -> addComponentType t
+        DefTypeSet s       -> addTypeSet s
         DefComponent c     -> addComponents c
         DefModule _        -> return ()
     DepFunctionSignature f    -> addFunctionSignature f
@@ -219,6 +221,11 @@ addComponentType = \case
         | otherwise = return ()
 
 
+addTypeSet :: TypeSetDef -> Builder ()
+addTypeSet (TypeSetDef (Loc name _) tyNames) =
+    modelInfo.typeSets.at name ?= Set.fromList (fmap unLoc (toList tyNames))
+
+
 addComponents :: ComponentDef -> Builder ()
 addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
     -- add component array
@@ -277,7 +284,8 @@ fromSyntaxType = \case
     U.TyAction -> return (Some TyAction)
     U.TyComponent tySet -> do
         compTys <- use (modelInfo.componentTypes)
-        tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
+        tySetDefs <- use (modelInfo.typeSets)
+        tySet' <- lift (fromEither' (normalizeTypeSet compTys tySetDefs tySet))
         return (Some (TyComponent tySet'))
     U.TyArray size sTy -> do
         sizeVal <- evalIntExpr size
@@ -338,11 +346,12 @@ typeCheckExpr ty e = runTypeChecker (e `hasType` ty)
 
 runTypeChecker :: TC.TypeChecker a -> Builder a
 runTypeChecker m = do
-    compTys  <- use (modelInfo.componentTypes)
-    symTable <- use (modelInfo.symbolTable)
-    consts   <- use (modelInfo.constants)
-    depth    <- use recursionDepth
-    lift (TC.runTypeChecker m compTys symTable consts depth)
+    compTys   <- use (modelInfo.componentTypes)
+    tySetDefs <- use (modelInfo.typeSets)
+    symTable  <- use (modelInfo.symbolTable)
+    consts    <- use (modelInfo.constants)
+    depth     <- use recursionDepth
+    lift (TC.runTypeChecker m compTys tySetDefs symTable consts depth)
 
 
 insertSymbol :: Scope -> Name -> Some Type -> Builder ()

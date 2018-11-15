@@ -88,7 +88,8 @@ modelFile =
 definitions :: Parser [ErrorOrDef]
 definitions = fmap leftToList . withRecoveryOn (semi <|> symbol "}") $
     componentTypeDef <|> (fmap (: []) . choice $
-    [ constantDef
+    [ typeSetDef
+    , constantDef
     , enumerationDef
     , functionDef
     , systemDef

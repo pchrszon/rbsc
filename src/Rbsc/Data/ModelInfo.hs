@@ -8,6 +8,7 @@ module Rbsc.Data.ModelInfo
     , emptyModelInfo
 
     , componentTypes
+    , typeSets
     , symbolTable
     , constants
 
@@ -30,6 +31,7 @@ import Rbsc.Syntax.Typed.Expr
 -- and the values of constants defined in the model.
 data ModelInfo = ModelInfo
     { _miComponentTypes :: !ComponentTypes
+    , _miTypeSets       :: !TypeSets
     , _miSymbolTable    :: !SymbolTable
     , _miRangeTable     :: !RangeTable
     , _miConstants      :: !Constants
@@ -39,6 +41,9 @@ makeLenses ''ModelInfo
 
 instance HasComponentTypes ModelInfo where
     componentTypes = miComponentTypes
+
+instance HasTypeSets ModelInfo where
+    typeSets = miTypeSets
 
 instance HasSymbolTable ModelInfo where
     symbolTable = miSymbolTable
@@ -52,4 +57,4 @@ instance HasConstants ModelInfo where
 
 -- | Empty @ModelInfo@.
 emptyModelInfo :: ModelInfo
-emptyModelInfo = ModelInfo mempty mempty mempty mempty
+emptyModelInfo = ModelInfo mempty mempty mempty mempty mempty

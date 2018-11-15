@@ -1,0 +1,34 @@
+type First;
+impl First(step);
+
+
+type Second;
+impl Second(step);
+
+
+module step {
+    s : [0 .. 1] init 0;
+
+    [self.a] s = 0 -> (s' = 1);
+}
+
+
+type Monitor {
+    c : [0 .. 2] init 0;
+
+    forall n : Nats {
+        [n.a] true -> (c' = min(c + 1, 2));
+    }
+}
+
+
+system {
+    fst : First;
+    snd : Second;
+    m : Monitor;
+}
+
+
+typedef Nats = {First, Second};
+
+label "done" = forall n : Nats. n.s = 1;

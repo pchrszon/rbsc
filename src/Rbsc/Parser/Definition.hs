@@ -42,6 +42,7 @@ data Definition
     | DefNaturalType NaturalTypeDef
     | DefRoleType RoleTypeDef
     | DefCompartmentType UCompartmentTypeDef
+    | DefTypeSet TypeSetDef
     | DefSystem [Loc Expr]
     | DefImplementation UImplementation
     | DefModule UModule
@@ -63,6 +64,7 @@ toModel defs = Model
     , modelNaturalTypes     = def _DefNaturalType
     , modelRoleTypes        = def _DefRoleType
     , modelCompartmentTypes = def _DefCompartmentType
+    , modelTypeSets         = def _DefTypeSet
     , modelSystem           = concat (def _DefSystem)
     , modelModules          = def _DefModule
     , modelImpls            = def _DefImplementation

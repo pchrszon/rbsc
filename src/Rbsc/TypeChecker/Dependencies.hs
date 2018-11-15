@@ -128,6 +128,7 @@ sortDefinitions model idents = do
             DefGlobal _                              -> "global variable"
             DefLocal {}                              -> "local variable"
             DefComponentType _                       -> "type"
+            DefTypeSet _                             -> "type definition"
             DefComponent (ComponentDef _ _ Nothing)  -> "component"
             DefComponent (ComponentDef _ _ (Just _)) -> "component array"
             DefModule _                              -> "module"
@@ -180,6 +181,7 @@ insert def = case def of
     DefGlobal g        -> insertGlobal g
     DefLocal t m decl  -> insertLocal t m decl
     DefComponentType t -> insertComponentType t
+    DefTypeSet s       -> insertTypeSet s
     DefComponent c     -> insertComponents c
     DefModule _        -> return ()
 
@@ -240,11 +242,11 @@ insertComponentType t =
 
         case t of
             TypeDefRole (RoleTypeDef _ playerTys) ->
-                traverse_ checkIfExists playerTys
+                traverse_ checkIfTypeExists playerTys
             TypeDefCompartment (CompartmentTypeDef _ multiRoleLists) ->
                 for_ multiRoleLists $ \multiRoles ->
                     for_ multiRoles $ \(MultiRole mName mBounds) -> do
-                        checkIfExists mName
+                        checkIfTypeExists mName
                         case mBounds of
                             Just (lower, upper) -> do
                                 identsLower <- identsInExpr lower
@@ -268,10 +270,19 @@ insertComponentType t =
         DefLocal tyName' _ _ -> tyName' == tyName
         _ -> False
 
-    checkIfExists :: Loc TypeName -> Analyzer ()
-    checkIfExists (Loc (TypeName tyName') rgn') = do
-        exists <- Map.member (ScopedName Global tyName') <$> view identifiers
-        unless exists (throw rgn' UndefinedType)
+
+insertTypeSet :: TypeSetDef -> Analyzer ()
+insertTypeSet def@(TypeSetDef (Loc _ rgn) tyNames) =
+    newDependency (DepDefinition (DefTypeSet def)) rgn $ do
+        traverse_ checkIfTypeExists tyNames
+        let idents = Set.fromList (fmap (fmap getTypeName) (toList tyNames))
+        dependOnIdentifiers idents
+
+
+checkIfTypeExists :: Loc TypeName -> Analyzer ()
+checkIfTypeExists (Loc (TypeName tyName') rgn') = do
+    exists <- Map.member (ScopedName Global tyName') <$> view identifiers
+    unless exists (throw rgn' UndefinedType)
 
 
 insertComponents :: ComponentDef -> Analyzer ()

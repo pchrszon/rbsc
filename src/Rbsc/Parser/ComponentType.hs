@@ -6,6 +6,7 @@
 -- | Parsers for user-defined natural types, role types and compartment types.
 module Rbsc.Parser.ComponentType
     ( componentTypeDef
+    , typeSetDef
     ) where
 
 
@@ -14,8 +15,8 @@ import Text.Megaparsec
 
 import Rbsc.Parser.Definition
 import Rbsc.Parser.Expr
-import Rbsc.Parser.Lexer
 import Rbsc.Parser.Impl
+import Rbsc.Parser.Lexer
 
 import Rbsc.Syntax.Untyped
 
@@ -86,3 +87,14 @@ cardinalities = brackets $ do
     optional (operator ".." *> expr) >>= \case
         Just upper -> return (lower, upper)
         Nothing    -> return (lower, lower)
+
+
+-- | Parser for a type set definition.
+typeSetDef :: Parser Definition
+typeSetDef = DefTypeSet <$> typeSet <?> "type set definition"
+
+
+typeSet :: Parser TypeSetDef
+typeSet = TypeSetDef
+    <$> (reserved "typedef" *> identifier)
+    <*> (equals *> braces (commaSepNonEmpty identifier) <* semi)

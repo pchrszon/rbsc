@@ -88,6 +88,7 @@ getName = \case
             TypeDefNatural nt     -> ntdName nt
             TypeDefRole rt        -> rtdName rt
             TypeDefCompartment ct -> ctdName ct
+        DefTypeSet s   -> getTypeName (unLoc (tsdName s))
         DefComponent c -> unLoc (compDefName c)
         DefModule m    -> unLoc (modName m)
     DepFunctionSignature f -> "sig_" <> unLoc (functionName f)

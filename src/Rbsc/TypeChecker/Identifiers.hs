@@ -57,6 +57,7 @@ data IdentifierDef
     | DefGlobal UVarDecl -- ^ the identifier represents a global variable
     | DefLocal !TypeName !Name UVarDecl -- ^ the identifier represents a local variable (annotated with type name and module name)
     | DefComponentType ComponentTypeDef -- ^ the identifier represents a component type
+    | DefTypeSet TypeSetDef -- ^ the identifier represents a type set
     | DefComponent ComponentDef -- ^ the identifier represents a component or a component array
     | DefModule UModule -- ^ the identifier represents a module
     deriving (Eq, Ord, Show)
@@ -109,6 +110,7 @@ identifierDefs Model{..} = runBuilder $ do
     insertComponentTypes ntdName TypeDefNatural modelNaturalTypes
     insertComponentTypes rtdName TypeDefRole modelRoleTypes
     insertComponentTypes ctdName TypeDefCompartment modelCompartmentTypes
+    insertTypeSets modelTypeSets
     insertComponents modelSystem
     insertCoordinatorVars modelCoordinators
     insertModules modelModules
@@ -139,6 +141,11 @@ insertComponentTypes getName con =
     traverse_
         (insert Global <$> (fmap getTypeName . getName) <*>
          (DefComponentType . con))
+
+
+insertTypeSets :: [TypeSetDef] -> Builder ()
+insertTypeSets =
+    traverse_ (insert Global <$> (fmap getTypeName . tsdName) <*> DefTypeSet)
 
 
 insertComponents :: [LExpr] -> Builder ()

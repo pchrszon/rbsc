@@ -240,8 +240,7 @@ tcExpr (Loc e rgn) = case e of
 
     U.Count tySet inner -> do
         tyComponent <- getTyComponent
-        compTys <- view componentTypes
-        tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
+        tySet' <- normalizeTypeSet' tySet
         inner' <- inner `hasType` tyComponent
         T.Count tySet' inner' `withType` TyInt
 
@@ -397,8 +396,7 @@ tcQuantifiedType ::
        QuantifiedType ComponentTypeSet (Loc U.Expr)
     -> TypeChecker (T.TQuantifiedType, Some Type)
 tcQuantifiedType (QdTypeComponent tySet) = do
-    compTys <- view componentTypes
-    tySet' <- lift (fromEither' (normalizeTypeSet compTys tySet))
+    tySet' <- normalizeTypeSet' tySet
     return (QdTypeComponent tySet', Some (TyComponent tySet'))
 tcQuantifiedType (QdTypeInt (lower, upper)) = do
     lower' <- lower `hasType` TyInt
@@ -421,6 +419,13 @@ quantifierType = \case
     T.Exists  -> TyBool
     T.Sum     -> TyInt
     T.Product -> TyInt
+
+
+normalizeTypeSet' :: ComponentTypeSet -> TypeChecker (Set TypeName)
+normalizeTypeSet' tySet = do
+    compTys <- view componentTypes
+    tySetDefs <- view typeSets
+    lift (fromEither' (normalizeTypeSet compTys tySetDefs tySet))
 
 
 -- | Assume that a given untyped expression has a given 'Type'.

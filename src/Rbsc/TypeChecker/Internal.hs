@@ -82,6 +82,7 @@ data TcContext
 -- | The information provided to the type checker.
 data TcInfo = TcInfo
     { _tciComponentTypes :: !ComponentTypes     -- ^ 'ComponentType' defined in the model
+    , _tciTypeSets       :: !TypeSets           -- ^ the user defined component type sets
     , _tciSymbolTable    :: !SymbolTable        -- ^ the 'SymbolTable'
     , _tciConstants      :: !Constants          -- ^ the defined constants
     , _tciRecursionDepth :: !RecursionDepth     -- ^ the maximum recursion depth
@@ -94,6 +95,9 @@ makeLenses ''TcInfo
 
 instance HasComponentTypes TcInfo where
     componentTypes = tciComponentTypes
+
+instance HasTypeSets TcInfo where
+    typeSets = tciTypeSets
 
 instance HasSymbolTable TcInfo where
     symbolTable = tciSymbolTable
@@ -109,12 +113,13 @@ instance HasRecursionDepth TcInfo where
 runTypeChecker
     :: TypeChecker a
     -> ComponentTypes
+    -> TypeSets
     -> SymbolTable
     -> Constants
     -> RecursionDepth
     -> Result a
-runTypeChecker m types symTable consts depth =
-    runReaderT m (TcInfo types symTable consts depth [] Global NoContext)
+runTypeChecker m types tySets symTable consts depth =
+    runReaderT m (TcInfo types tySets symTable consts depth [] Global NoContext)
 
 
 -- | Looks up the type of a given identifier in the symbol table. First,

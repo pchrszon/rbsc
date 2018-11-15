@@ -32,6 +32,7 @@ reservedWords =
     , "role"
     , "compartment"
     , "type"
+    , "typedef"
     , "true"
     , "false"
     , "forall"

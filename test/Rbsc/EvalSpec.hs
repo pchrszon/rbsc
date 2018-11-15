@@ -232,6 +232,7 @@ eval' ty e = do
     e' <- toEither
         (   runTypeChecker (tcExpr e)
                            (view componentTypes testModelInfo)
+                           (view typeSets testModelInfo)
                            (view symbolTable testModelInfo)
                            (view constants testModelInfo)
                            10
@@ -247,6 +248,7 @@ evalAct e = do
     e' <- toEither
         (   runTypeChecker (tcAction e)
                            (view componentTypes testModelInfo)
+                           (view typeSets testModelInfo)
                            (view symbolTable testModelInfo)
                            (view constants testModelInfo)
                            10
@@ -262,6 +264,7 @@ reduce' ty e = do
     e' <- toEither
         (   runTypeChecker (tcExpr e)
                            (view componentTypes testModelInfo)
+                           (view typeSets testModelInfo)
                            (view symbolTable testModelInfo)
                            (view constants testModelInfo)
                            10

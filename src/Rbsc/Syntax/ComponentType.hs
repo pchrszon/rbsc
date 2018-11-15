@@ -4,10 +4,12 @@ module Rbsc.Syntax.ComponentType
     , RoleTypeDef(..)
     , CompartmentTypeDef(..)
     , MultiRole(..)
+    , TypeSetDef(..)
     ) where
 
 
 import Data.Function
+import Data.List.NonEmpty
 import Data.Ord
 
 
@@ -52,3 +54,16 @@ data MultiRole expr = MultiRole
     { mrName   :: Loc TypeName
     , mrBounds :: Maybe (expr, expr)
     } deriving (Show)
+
+
+-- | A definition of a component type set.
+data TypeSetDef = TypeSetDef
+    { tsdName  :: Loc TypeName
+    , tsdTypes :: NonEmpty (Loc TypeName)
+    } deriving (Show)
+
+instance Eq TypeSetDef where
+    (==) = (==) `on` tsdName
+
+instance Ord TypeSetDef where
+    compare = comparing tsdName

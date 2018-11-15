@@ -1,0 +1,27 @@
+mdp
+
+label "done" = fst_s = 1 & snd_s = 1;
+
+module Desync
+    ]fst_a[ true -> true;
+    ]snd_a[ true -> true;
+endmodule
+
+module fst_step
+    fst_s : [0..1] init 0;
+
+    ]fst_a[ fst_s = 0 -> (fst_s' = 1);
+endmodule
+
+module m_Monitor_impl
+    m_c : [0..2] init 0;
+
+    ]fst_a[ true -> (m_c' = min(m_c + 1, 2));
+    ]snd_a[ true -> (m_c' = min(m_c + 1, 2));
+endmodule
+
+module snd_step
+    snd_s : [0..1] init 0;
+
+    ]snd_a[ snd_s = 0 -> (snd_s' = 1);
+endmodule

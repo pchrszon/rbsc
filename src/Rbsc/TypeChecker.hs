@@ -43,13 +43,14 @@ typeCheck
     -> t Result (T.Model, ModelInfo)
 typeCheck model = do
     (info, insts) <- getModelInfo model
-    let compTys  = view MI.componentTypes info
-        symTable = view MI.symbolTable info
-        consts   = view MI.constants info
+    let compTys   = view MI.componentTypes info
+        tySetDefs = view MI.typeSets info
+        symTable  = view MI.symbolTable info
+        consts    = view MI.constants info
     depth  <- view recursionDepth
 
-    model' <- lift
-        (runTypeChecker (tcModel insts model) compTys symTable consts depth)
+    model' <- lift (runTypeChecker (tcModel insts model)
+        compTys tySetDefs symTable consts depth)
     return (model', info)
 
 
