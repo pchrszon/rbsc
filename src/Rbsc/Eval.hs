@@ -275,17 +275,17 @@ toLiteral e = case e of
     Member (Literal comp _) name TyAction ->
         return (Literal (LocalAction (view compName comp) name) TyAction)
 
-    Index (Literal arr (TyArray _ innerTy)) (LitIndex i rgn) ->
+    Index (Literal arr (TyArray _ innerTy)) _ (LitIndex i rgn) ->
         case Array.index arr i of
             Just x  -> return (Literal x innerTy)
             Nothing -> throw rgn (IndexOutOfBounds (Array.size arr) i)
 
-    Index (LitArray arr) (LitIndex i rgn)
+    Index (LitArray arr) _ (LitIndex i rgn)
         | i >= NonEmpty.length arr ->
             throw rgn (IndexOutOfBounds (NonEmpty.length arr) i)
         | otherwise -> return (arr NonEmpty.!! i)
 
-    Index (ActionArray (Literal act _)) (LitIndex i _) ->
+    Index (ActionArray (Literal act _)) _ (LitIndex i _) ->
         return (Literal (IndexedAction act i) TyAction)
 
     HasType (Literal comp _) tyName ->

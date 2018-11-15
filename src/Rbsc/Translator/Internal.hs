@@ -160,10 +160,10 @@ indexedExprs e = go id
 
 
 addIndex :: Int -> LSomeExpr -> LSomeExpr
-addIndex i (Loc (SomeExpr e (TyArray _ innerTy)) rgn) =
+addIndex i (Loc (SomeExpr e (TyArray s innerTy)) rgn) =
     case dictShow innerTy of
         Dict ->
-            let e' = Index e (Loc (Literal (fromIntegral i) TyInt) rgn)
+            let e' = Index e (Just s) (Loc (Literal (fromIntegral i) TyInt) rgn)
             in Loc (SomeExpr e' innerTy) rgn
 addIndex _ _ = error "trnsVarDecl: not an array"
 

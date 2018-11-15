@@ -51,6 +51,9 @@ trnsExpr mComp rgn = go
     go e = do
         symTable <- view symbolTable
         case e of
+            Index _ (Just size) (Loc (Literal i TyInt) rgn')
+                | i < 0 || i >= size -> throw rgn' (IndexOutOfBounds size i)
+
             (trnsIdent symTable -> Just qname) ->
                 Prism.Ident <$> trnsQualified qname
 
@@ -96,6 +99,9 @@ trnsExpr mComp rgn = go
             IfThenElse c t e' ->
                 Prism.Ite <$> go c <*> go t <*> go e'
 
+            Index _ _ (Loc _ rgn') ->
+                throw rgn' NotConstant
+
             e' ->
                 throw rgn (TranslationNotSupported (pack (show e')))
 
@@ -110,7 +116,7 @@ trnsExpr mComp rgn = go
             let name' = trnsComponentName (view compName comp)
             in Just (QlMember (QlName name') name)
 
-        Index (trnsIdent symTable -> Just qname) (Loc (Literal i _) _) ->
+        Index (trnsIdent symTable -> Just qname) _ (Loc (Literal i _) _) ->
             Just (QlIndex qname i)
 
         _ -> Nothing
@@ -154,7 +160,7 @@ trnsEq mComp rgn eOp = go
 
     idx :: Type t -> Expr (Array t) -> Int -> Expr t
     idx ty e i = case dictShow ty of
-        Dict -> Index e (Loc (Literal (fromIntegral i) TyInt) rgn)
+        Dict -> Index e Nothing (Loc (Literal (fromIntegral i) TyInt) rgn)
 
 
 trnsFunction :: TypedFunction t -> Prism.Function

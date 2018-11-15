@@ -184,12 +184,12 @@ tcExpr (Loc e rgn) = case e of
         SomeExpr inner' ty <- tcExpr inner
         idx' <- idx `hasType` TyInt
         case ty of
-            TyArray _ elemTy -> do
+            TyArray s elemTy -> do
                 Dict <- return (dictShow elemTy)
-                T.Index inner' (idx' `withLocOf` idx) `withType` elemTy
+                T.Index inner' (Just s) (idx' `withLocOf` idx) `withType` elemTy
             TyAction ->
-                T.Index (T.ActionArray inner') (idx' `withLocOf` idx) `withType`
-                TyAction
+                T.Index (T.ActionArray inner') Nothing (idx' `withLocOf` idx)
+                `withType` TyAction
             _ -> throw (getLoc inner) (NotAnArray (renderPretty ty))
 
     U.Call f args -> do

@@ -115,7 +115,7 @@ buildSystem model = do
         HasType (Identifier name _) tyName ->
             system.instances.at (ComponentName name Nothing) .= Just tyName
 
-        HasType (Index (Identifier name _) idx) tyName -> do
+        HasType (Index (Identifier name _) _ idx) tyName -> do
             -- upper bound is already checked in TypeChecker.ModelInfo
             idx' <- eval idx
             arr <- for [0 .. idx' - 1] $ \i -> do
@@ -180,6 +180,7 @@ componentLiteral = \case
 
     Index
         (Identifier name (TyArray _ (TyComponent' tyName)))
+        _
         (Loc (Literal idx _) _) ->
             Just (ComponentName name (Just idx), tyName)
 

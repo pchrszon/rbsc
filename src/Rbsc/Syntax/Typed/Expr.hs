@@ -79,7 +79,7 @@ data Expr t where
     RelOp          :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool
     LogicOp        :: LogicOp -> Expr Bool -> Expr Bool -> Expr Bool
     Member         :: Expr Component -> Name -> Type t -> Expr t
-    Index          :: Show t => Expr (Array t) -> Loc (Expr Int) -> Expr t
+    Index          :: Show t => Expr (Array t) -> Maybe Int -> Loc (Expr Int) -> Expr t
     Apply          :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
     IfThenElse     :: Expr Bool -> Expr t -> Expr t -> Expr t
     HasType        :: Expr Component -> TypeName -> Expr Bool
@@ -268,7 +268,7 @@ plateExpr f = \case
     RelOp rOp l r      -> RelOp rOp <$> f l <*> f r
     LogicOp lOp l r    -> LogicOp lOp <$> f l <*> f r
     Member e name ty   -> Member <$> f e <*> pure name <*> pure ty
-    Index e idx        -> Index <$> f e <*> traverse f idx
+    Index e mSize idx  -> Index <$> f e <*> pure mSize <*> traverse f idx
     Apply g e          -> Apply <$> f g <*> f e
     IfThenElse c t e   -> IfThenElse <$> f c <*> f t <*> f e
     HasType e tyName   -> HasType <$> f e <*> pure tyName

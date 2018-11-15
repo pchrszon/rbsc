@@ -157,8 +157,8 @@ indexExprs getUpdates cmd =
         concatMap (fmap getElem . updAssignments . getElem) (getUpdates cmd)
 
     indexExpr (Some e) = case e of
-        Index _ (Loc idx _) -> Just (Some idx)
-        _                   -> Nothing
+        Index _ _ (Loc idx _) -> Just (Some idx)
+        _                     -> Nothing
 
     assignmentIndexExprs (Assignment _ idxs _) = fmap fromLSomeExpr idxs
 
