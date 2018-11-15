@@ -6,7 +6,6 @@
 module Rbsc.TypeChecker.ExprSpec (spec) where
 
 
-import Control.Lens
 import Control.Monad.Reader
 
 import Test.Hspec
@@ -112,13 +111,7 @@ testModel =
 
 typeCheck :: Type t -> Loc U.Expr -> Either [Error] String
 typeCheck ty e = toEither $ do
-    te <- runTypeChecker
-            (tcExpr e)
-            (view componentTypes modelInfo)
-            (view typeSets modelInfo)
-            (view symbolTable modelInfo)
-            (view constants modelInfo)
-            10
+    te <- runTypeChecker (tcExpr e) modelInfo 10
     show <$> extract ty (getLoc e) te
 
 

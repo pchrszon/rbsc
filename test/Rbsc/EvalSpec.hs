@@ -230,14 +230,7 @@ testModelInfo =
 eval' :: Type t -> Loc U.Expr -> Either [Error] t
 eval' ty e = do
     e' <- toEither
-        (   runTypeChecker (tcExpr e)
-                           (view componentTypes testModelInfo)
-                           (view typeSets testModelInfo)
-                           (view symbolTable testModelInfo)
-                           (view constants testModelInfo)
-                           10
-        >>= extract ty (getLoc e)
-        )
+        (runTypeChecker (tcExpr e) testModelInfo 10 >>= extract ty (getLoc e))
     over _Left
          (: [])
          (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
@@ -246,12 +239,7 @@ eval' ty e = do
 evalAct :: Loc U.Expr -> Either [Error] Action
 evalAct e = do
     e' <- toEither
-        (   runTypeChecker (tcAction e)
-                           (view componentTypes testModelInfo)
-                           (view typeSets testModelInfo)
-                           (view symbolTable testModelInfo)
-                           (view constants testModelInfo)
-                           10
+        (   runTypeChecker (tcAction e) testModelInfo 10
         >>= extract TyAction (getLoc e)
         )
     over _Left
@@ -262,14 +250,7 @@ evalAct e = do
 reduce' :: Type t -> Loc U.Expr -> Either [Error] String
 reduce' ty e = do
     e' <- toEither
-        (   runTypeChecker (tcExpr e)
-                           (view componentTypes testModelInfo)
-                           (view typeSets testModelInfo)
-                           (view symbolTable testModelInfo)
-                           (view constants testModelInfo)
-                           10
-        >>= extract ty (getLoc e)
-        )
+        (runTypeChecker (tcExpr e) testModelInfo 10 >>= extract ty (getLoc e))
     e'' <- over
         _Left
         (: [])

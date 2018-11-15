@@ -20,6 +20,7 @@ module Rbsc.TypeChecker.Internal
     , TcContext(..)
 
     , runTypeChecker
+    , runTypeChecker'
 
     , getIdentifierType
     , lookupBoundVar
@@ -54,6 +55,7 @@ import Rbsc.Config
 
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Name
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
@@ -110,7 +112,17 @@ instance HasRecursionDepth TcInfo where
 
 
 -- | Run a type checker action.
-runTypeChecker
+runTypeChecker :: TypeChecker a -> ModelInfo -> RecursionDepth -> Result a
+runTypeChecker m info = runTypeChecker' m
+    (view componentTypes info)
+    (view typeSets info)
+    (view symbolTable info)
+    (view constants info)
+
+
+-- | Run a type checker action. Since the type checker does not need a full
+-- 'ModelInfo', use this function to supply only the necessary information.
+runTypeChecker'
     :: TypeChecker a
     -> ComponentTypes
     -> TypeSets
@@ -118,7 +130,7 @@ runTypeChecker
     -> Constants
     -> RecursionDepth
     -> Result a
-runTypeChecker m types tySets symTable consts depth =
+runTypeChecker' m types tySets symTable consts depth =
     runReaderT m (TcInfo types tySets symTable consts depth [] Global NoContext)
 
 

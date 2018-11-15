@@ -346,12 +346,9 @@ typeCheckExpr ty e = runTypeChecker (e `hasType` ty)
 
 runTypeChecker :: TC.TypeChecker a -> Builder a
 runTypeChecker m = do
-    compTys   <- use (modelInfo.componentTypes)
-    tySetDefs <- use (modelInfo.typeSets)
-    symTable  <- use (modelInfo.symbolTable)
-    consts    <- use (modelInfo.constants)
-    depth     <- use recursionDepth
-    lift (TC.runTypeChecker m compTys tySetDefs symTable consts depth)
+    info  <- use modelInfo
+    depth <- use recursionDepth
+    lift (TC.runTypeChecker m info depth)
 
 
 insertSymbol :: Scope -> Name -> Some Type -> Builder ()
