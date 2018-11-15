@@ -168,15 +168,6 @@ spec = do
             `shouldThrowError`
             _NotACompartment
 
-        it "detects invalid component array sizes" $
-            buildSystem'
-                [model|
-                    natural type N;
-                    system { n[-1] : N; }
-                |]
-            `shouldThrowError`
-            _InvalidUpperBound
-
 
     describe "checkCompartmentUpperBounds" $
         it "detects overfull compartments" $

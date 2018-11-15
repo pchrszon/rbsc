@@ -231,11 +231,9 @@ addComponents (ComponentDef (Loc name _) (Loc tyName _) mLen) = case mLen of
     -- add component array
     Just len -> do
         len' <- evalIntExpr len
-        if len' > 0
-            then
-                let tyArray = TyArray len' tyComponent
-                in insertSymbol Global name (Some tyArray)
-            else throw (getLoc len) (InvalidUpperBound len')
+        let tyArray = TyArray (max 0 len') tyComponent
+        insertSymbol Global name (Some tyArray)
+
     -- add single component
     Nothing -> insertSymbol Global name (Some tyComponent)
   where

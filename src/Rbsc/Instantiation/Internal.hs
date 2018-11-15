@@ -116,7 +116,6 @@ buildSystem model = do
             system.instances.at (ComponentName name Nothing) .= Just tyName
 
         HasType (Index (Identifier name _) _ idx) tyName -> do
-            -- upper bound is already checked in TypeChecker.ModelInfo
             idx' <- eval idx
             arr <- for [0 .. idx' - 1] $ \i -> do
                 let name' = ComponentName name (Just i)

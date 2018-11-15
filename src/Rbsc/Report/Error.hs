@@ -77,7 +77,6 @@ data LocErrorDesc
     -- evaluation errors
     | DivisionByZero
     | NotConstant
-    | InvalidUpperBound !Int
     | IndexOutOfBounds !Int !Int
     | ExceededDepth
     | HasNoPlayer !Name
@@ -301,13 +300,6 @@ locReport rgn = \case
 
     NotConstant ->
         errorReport "expression is not constant" [ errorPart rgn Nothing ]
-
-    InvalidUpperBound len ->
-        errorReport "invalid array size"
-            [ errorPart rgn . Just $
-                "array must have at least size 1, but the given size is " <>
-                Text.pack (show len)
-            ]
 
     IndexOutOfBounds size idx ->
         errorReport "index out of bounds"
