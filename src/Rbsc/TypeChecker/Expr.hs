@@ -141,6 +141,7 @@ tcExpr (Loc e rgn) = case e of
             binaryCast <$> tcExpr l <*> tcExpr r
         Dict <- isNumType tyL (getLoc l)
         _    <- isNumType tyR (getLoc r)
+        Dict <- isEqType tyL (getLoc l)
         Refl <- expect tyL (getLoc r) tyR
         T.ArithOp aOp l' r' `withType` tyL
 

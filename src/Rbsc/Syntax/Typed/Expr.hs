@@ -73,7 +73,7 @@ data Expr t where
     IsPlayed       :: Loc (Expr Component) -> Expr Bool
     Not            :: Expr Bool -> Expr Bool
     Negate         :: Num t => Expr t -> Expr t
-    ArithOp        :: Num t => ArithOp -> Expr t -> Expr t -> Expr t
+    ArithOp        :: (Eq t, Num t) => ArithOp -> Expr t -> Expr t -> Expr t
     Divide         :: Region -> Expr Double -> Expr Double -> Expr Double
     EqOp           :: Eq t => EqOp -> Type t -> Expr t -> Expr t -> Expr Bool
     RelOp          :: Ord t => RelOp -> Expr t -> Expr t -> Expr Bool

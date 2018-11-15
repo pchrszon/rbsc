@@ -1,0 +1,11 @@
+mdp
+
+module n_N_impl
+    n_b : bool;
+    n_x : [0..1];
+
+    [] n_b -> true;
+    [] n_b -> true;
+    [] n_x > 0 -> true;
+    [] n_x > 0 -> true;
+endmodule

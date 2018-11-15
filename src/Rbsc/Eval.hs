@@ -221,8 +221,23 @@ toLiteral e = case e of
     Negate (Literal x ty) ->
         return (Literal (negate x) ty)
 
+    ArithOp aOp l (Literal 0 _) | aOp == Add || aOp == Sub ->
+        return l
+
+    ArithOp Add (Literal 0 _) r ->
+        return r
+
+    ArithOp Mul l (Literal 1 _) ->
+        return l
+
+    ArithOp Mul (Literal 1 _) r ->
+        return r
+
     ArithOp aOp (Literal l ty) (Literal r _) ->
         return (Literal (arithOp aOp l r) ty)
+
+    Divide _ l (Literal 1 _) ->
+        return l
 
     Divide rgn (Literal l _) (Literal r _)
         | r == 0.0  -> throw rgn DivisionByZero

@@ -1,0 +1,11 @@
+type N {
+    b : bool;
+    x : [0 .. 1];
+
+    [] b & true -> true;
+    [] b | false -> true;
+    [] x + 0 > 0 -> true;
+    [] x - 0 > 0 -> true;
+}
+
+system { n : N; }
