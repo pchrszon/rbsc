@@ -12,15 +12,17 @@ module Rbsc.Report.Error where
 import Control.Lens
 import Control.Monad.Except
 
-import           Data.Text (Text, pack)
-import qualified Data.Text as Text
+import Data.String
+
+import Data.Text                 (Text, pack)
+import Data.Text.Prettyprint.Doc hiding (list)
 
 
 import Rbsc.Data.Name
 
 import           Rbsc.Report        hiding (errorReport)
 import qualified Rbsc.Report        as Report
-import           Rbsc.Report.Region
+import           Rbsc.Report.Region hiding (line)
 
 
 data Error
@@ -110,7 +112,7 @@ toReport = \case
 locReport :: Region -> LocErrorDesc -> Report
 locReport rgn = \case
     ParseError err ->
-        errorReport "syntax error" [errorPart rgn (Just err)]
+        errorReport "syntax error" [errorPart rgn (Just (pretty err))]
 
     UndefinedModule ->
         errorReport "undefined module" [errorPart rgn Nothing]
@@ -143,43 +145,48 @@ locReport rgn = \case
     CyclicDefinition construct rgns ->
         errorReport "cyclic definition" $
             errorPart rgn (Just $
-                "this " <> construct <> " is defined in terms of itself") :
+                "this" <+> pretty construct <+>
+                "is defined in terms of itself") :
             fmap (`hintPart` Nothing) rgns
 
     TypeError expected actual ->
         errorReport "type mismatch"
             [ errorPart rgn . Just $
-                "expression has type: " <> actual <>
-                "\nexpected type: " <> list "or" expected
+                "expression has type:" <+> prettyIdent actual <> line <>
+                "expected type:" <+> list "or" (prettyIdents expected)
             ]
 
     NotComparable ty ->
         errorReport "uncomparable values"
             [ errorPart rgn . Just $
-                "values of type " <> ty <> " are not comparable"
+                "values of type" <+> prettyIdent ty <+> "are not comparable"
             ]
 
     UndefinedMember [tyName] name ->
         errorReport "undefined local variable"
             [ errorPart rgn . Just $
-                "local variable " <> name <> " is undefined for type " <>
-                getTypeName tyName
+                "local variable" <+> prettyIdent name <+>
+                "is undefined for type" <+> prettyIdent (getTypeName tyName)
             ]
 
     UndefinedMember tyNames name ->
         errorReport "undefined local variable"
             [ errorPart rgn . Just $
-                "local variable " <> name <> " is undefined for the types " <>
-                list "and" (fmap getTypeName tyNames)
+                "local variable" <+> prettyIdent name <+>
+                "is undefined for the types " <>
+                list "and" (fmap (prettyIdent . getTypeName) tyNames)
             ]
 
     ConflictingMemberTypes name firstTyName firstTy secondTyName secondTy ->
         errorReport "conflicting variable types"
             [ errorPart rgn . Just $
-                "local variable " <> name <> " of component type " <>
-                getTypeName firstTyName <> " has type " <> firstTy <>
-                ",\nbut " <> name <> " of component type " <>
-                getTypeName secondTyName <> " has type " <> secondTy
+                "local variable" <+> prettyIdent name <+>
+                "of component type " <>
+                prettyIdent (getTypeName firstTyName) <+> "has type" <+>
+                prettyIdent firstTy <> "," <> line <>
+                "but" <+> prettyIdent name <+> "of component type" <+>
+                prettyIdent (getTypeName secondTyName) <+> "has type" <+>
+                prettyIdent secondTy
             ]
 
     SelfOutsideImpl ->
@@ -191,35 +198,37 @@ locReport rgn = \case
     NotAnArray actual ->
         errorReport "not an array"
             [ errorPart rgn . Just $
-                "expression has type: " <> actual <>
-                "\nexpected type: array"
+                "expression has type:" <+> prettyIdent actual <> line <>
+                "expected type: array"
             ]
 
     NotAFunction ty ->
         errorReport "not a function"
             [ errorPart rgn . Just $
-                "this is not a function\nexpression has type: " <> ty
+                "this is not a function" <> line <> "expression has type:" <+>
+                prettyIdent ty
             ]
 
     WrongNumberOfArguments expected actual ->
         errorReport "wrong number of arguments"
             [ errorPart rgn . Just $
-                "arguments given: " <> Text.pack (show actual) <>
-                "\nexpected: " <> Text.pack (show expected)
+                "arguments given:" <+> pretty actual <> line <>
+                "expected:" <+> pretty expected
             ]
 
     NotARole ->
         errorReport "component is not a role"
             [ errorPart rgn . Just $
-                "only roles can be bound to players and\n" <>
+                "only roles can be bound to players and" <> line <>
                 "be contained in compartments"
             ]
 
     CannotBePlayed ty tyName ->
         errorReport "component is not a role"
             [ errorPart rgn . Just $
-                "component has type: " <> ty <>
-                "\nbut " <> Text.pack (show tyName) <> " is not a role type"
+                "component has type:" <+> prettyIdent ty <> line <>
+                "but" <+> prettyIdent (getTypeName tyName) <+>
+                "is not a role type"
             ]
 
     NoPossiblePlayers ->
@@ -236,9 +245,9 @@ locReport rgn = \case
     InvalidBinding roleTyName playerTyName ->
         errorReport "invalid binding"
             [ errorPart rgn . Just $
-                "a role of type " <> getTypeName roleTyName <>
-                " cannot be bound to a player of type " <>
-                getTypeName playerTyName
+                "a role of type" <+> prettyIdent (getTypeName roleTyName) <+>
+                "cannot be bound to a player of type" <+>
+                prettyIdent (getTypeName playerTyName)
             ]
 
     RoleAlreadyBound first ->
@@ -251,16 +260,16 @@ locReport rgn = \case
     InvalidLowerBound lower ->
         errorReport "invalid cardinalities"
             [ errorPart rgn . Just $
-                "lower bound must be greater or equal 0, " <>
-                "but the given bound is " <> pack (show lower)
+                "lower bound must be greater or equal 0," <+>
+                "but the given bound is" <+> pretty lower
             ]
 
     InvalidCardinalities lower upper ->
         errorReport "invalid cardinalities"
             [ errorPart rgn . Just $
-                "lower bound must be greater than the upper bound, " <>
-                "but the given bounds are [" <> pack (show lower) <> " .. " <>
-                pack (show upper)
+                "lower bound must be greater than the upper bound," <+>
+                "but the given bounds are [" <> pretty lower <+> ".." <+>
+                pretty upper
             ]
 
     InvalidOverrideAction ->
@@ -273,16 +282,17 @@ locReport rgn = \case
         errorReport
             ("roles " <> first <> " and " <> second <> " bound to " <>
                 core <> " are incompatible")
-            [ errorPart rgn . Just $ "the overriding action " <> act <> " ..."
+            [ errorPart rgn . Just $
+                "the overriding action" <+> prettyIdent act <+> "..."
             , errorPart secondRgn (Just "... is also used here")
             ]
 
     EmptyGenArray l u ->
         errorReport "empty array"
             [ errorPart rgn . Just $
-                "this array is empty" <>
-                "\nits bounds are [" <> pack (show l) <> ".." <>
-                pack (show u) <> "]"
+                "this array is empty" <> line <>
+                "its bounds are [" <> pretty l <+> ".." <+>
+                pretty u <> "]"
             ]
 
     IllegalGlobalUpdate ->
@@ -304,8 +314,8 @@ locReport rgn = \case
     IndexOutOfBounds size idx ->
         errorReport "index out of bounds"
             [ errorPart rgn . Just $
-                "array has size " <> pack (show size) <> " but the index is " <>
-                pack (show idx)
+                "array has size" <+> pretty size <+> "but the index is" <+>
+                pretty idx
             ]
 
     ExceededDepth ->
@@ -317,26 +327,26 @@ locReport rgn = \case
     HasNoPlayer name ->
         errorReport "component has no player"
             [ errorPart rgn . Just $
-                "the component " <> name <> " does not have a player"
+                "the component" <+> prettyIdent name <+>
+                "does not have a player"
             ]
 
     NonIndexedComponent name ->
         errorReport "component is not an array element"
             [ errorPart rgn . Just $
-                "component " <> name <> " does not have an index"
+                "component" <+> prettyIdent name <+> "does not have an index"
             ]
 
 
     TranslationNotSupported node ->
         errorReport "translation not supported"
-            [ errorPart rgn . Just $
-                "could not translate " <> node
+            [ errorPart rgn . Just $ "could not translate" <+> pretty node
             ]
 
     IllegalPlayingConstraint ->
         errorReport "illegal playing constraint"
             [ errorPart rgn . Just $
-                "role-playing constraints are not allowed\n" <>
+                "role-playing constraints are not allowed" <> line <>
                 "outside of coordinator commands"
             ]
 
@@ -374,8 +384,9 @@ errorReport :: Text -> [Part] -> Report
 errorReport title = Report.errorReport ("error: " <> title)
 
 
-list :: Text -> [Text] -> Text
-list _ []     = Text.empty
+-- list :: Doc ann -> [Doc ann] -> Doc ann
+list :: (Monoid a, IsString a) => a -> [a] -> a
+list _ []     = mempty
 list _ [x]    = x
 list c [x, y] = x <> " " <> c <> " " <> y
 list c (x:xs) = x <> ", " <> list c xs

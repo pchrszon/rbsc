@@ -11,7 +11,11 @@ module Rbsc.Report
     , Part
     , errorPart
     , hintPart
+
     , render
+
+    , prettyIdent
+    , prettyIdents
     ) where
 
 
@@ -35,7 +39,7 @@ data Report = Report !MessageType !Text [Part]
 data Part = Part
     { _type    :: !MessageType
     , _region  :: !Region
-    , _message :: Maybe Text
+    , _message :: Maybe (Doc AnsiStyle)
     }
 
 
@@ -56,17 +60,27 @@ hintReport = Report Hint
 
 
 -- | Create a 'Part' referencing an error.
-errorPart :: Region -> Maybe Text -> Part
+errorPart :: Region -> Maybe (Doc AnsiStyle) -> Part
 errorPart = Part Error
 
 
 -- | Create a 'Part' showing a hint.
-hintPart :: Region -> Maybe Text -> Part
+hintPart :: Region -> Maybe (Doc AnsiStyle) -> Part
 hintPart = Part Hint
 
 
 instance Pretty Report where
     pretty = unAnnotate . render
+
+
+-- | Render an identifier.
+prettyIdent :: Text -> Doc AnsiStyle
+prettyIdent = annotate bold . pretty
+
+
+-- | Render a list of identifiers.
+prettyIdents :: [Text] -> [Doc AnsiStyle]
+prettyIdents = fmap prettyIdent
 
 
 errorTitleStyle :: AnsiStyle
@@ -135,7 +149,7 @@ renderPart marginWidth (Part partType region message, path) =
         (zip relevantLines (Region.split region))
 
     partMessage = maybe emptyDoc
-        ((space <>) . annotate messageStyle . hang 0 . pretty) message
+        ((space <>) . annotate messageStyle . hang 0) message
 
     messageStyle =
         case partType of

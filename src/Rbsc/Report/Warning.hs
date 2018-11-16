@@ -8,14 +8,15 @@ module Rbsc.Report.Warning where
 
 import Control.Lens
 
-import           Data.Text (Text, pack)
-import qualified Data.Text as Text
+import           Data.Text                 (Text)
+import qualified Data.Text                 as Text
+import           Data.Text.Prettyprint.Doc
 
 
 import Rbsc.Data.Name
 
 import Rbsc.Report
-import Rbsc.Report.Region
+import Rbsc.Report.Region hiding (line)
 
 
 data Warning
@@ -35,14 +36,14 @@ toReport = \case
     NonRoleInRelation rgn ->
         warningReport "expression is always false"
             [ hintPart rgn . Just $
-                "this expression is always false\n" <>
+                "this expression is always false" <> line <>
                 "(the left-hand side does not have a role type)"
             ]
 
     NonCompartmentInRelation rgn ->
         warningReport "expression is always false"
             [ hintPart rgn . Just $
-                "this expression is always false\n" <>
+                "this expression is always false" <> line <>
                 "(the right-hand side does not have a compartment type)"
             ]
 
@@ -54,9 +55,9 @@ toReport = \case
     OutOfRangeUpdate rgn (lower, upper) actual ->
         warningReport "out-of-range update"
             [ hintPart rgn . Just $
-                "expression evaluates to " <> pack (show actual) <>
-                ", but variable has range [" <> pack (show lower) <> ".." <>
-                pack (show upper) <> "]"
+                "expression evaluates to" <+> pretty actual <>
+                ", but variable has range [" <> pretty lower <+> ".." <+>
+                pretty upper <> "]"
             ]
 
     InconsistentActionIndices rgn1 n1 rgn2 n2 ->
@@ -65,16 +66,16 @@ toReport = \case
                 else ((rgn2, n2), (rgn1, n1))
         in warningReport "inconsistent action indices"
             [ hintPart rgn1' . Just $
-                "the action has " <> indexText n1' <> " here ..."
+                "the action has" <+> indexText n1' <+> "here ..."
             , hintPart rgn2' . Just $
-                "... but " <> indexText n2' <> " here"
+                "... but" <+> indexText n2' <+> " here"
             ]
 
     UnsynchronizedAction act rgn ->
         warningReport "unsynchronized action"
             [ hintPart rgn . Just $
-                "the action " <> act <>
-                " does not synchronize with any other action"
+                "the action" <+> prettyIdent act <+>
+                "does not synchronize with any other action"
             ]
 
 
@@ -82,6 +83,6 @@ warningReport :: Text -> [Part] -> Report
 warningReport title = hintReport ("warning: " <> title)
 
 
-indexText :: Int -> Text
+indexText :: Int -> Doc ann
 indexText 1 = "1 index"
-indexText n = pack (show n) <> " indices"
+indexText n = pretty n <+> "indices"
