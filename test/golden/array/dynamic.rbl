@@ -1,0 +1,11 @@
+type N {
+    arr : array 3 of bool init [true, false, true];
+}
+
+global i : [0 .. 2] init 0;
+
+system {
+    n : N;
+}
+
+label "test" = n.arr[i];

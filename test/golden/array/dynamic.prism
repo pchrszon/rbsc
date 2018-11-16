@@ -1,0 +1,11 @@
+mdp
+
+label "test" = i = 0 ? n_arr_0 : i = 1 ? n_arr_1 : n_arr_2;
+
+global i : [0..2] init 0;
+
+module n_N_impl
+    n_arr_0 : bool init true;
+    n_arr_1 : bool init false;
+    n_arr_2 : bool init true;
+endmodule

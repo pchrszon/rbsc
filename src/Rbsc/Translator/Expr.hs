@@ -93,14 +93,31 @@ trnsExpr mComp rgn = go
             LogicOp lOp l r ->
                 Prism.BinaryOp <$> go l <*> pure (trnsLogicOp lOp) <*> go r
 
+            -- Index with a static index is already resolved at this point,
+            -- so 'idx' is not a Literal.
+            -- 'inner' cannot be an Action, since all indexed actions with
+            -- a dynamic index are already rejected by the module instantiation.
+            Index (trnsIdent symTable -> Just qname) (Just size) (Loc idx _) -> do
+                let indexeds    = fmap (QlIndex qname) [0 .. size - 2]
+                    indexedLast = QlIndex qname (size - 1)
+                    conds       = fmap (idx `equal`) [0 .. size - 2]
+
+                indexeds' <-
+                    traverse (fmap Prism.Ident . trnsQualified) indexeds
+                indexedLast' <- Prism.Ident <$> trnsQualified indexedLast
+                conds'       <- traverse go conds
+
+                return (foldr
+                    (uncurry Prism.Ite) indexedLast' (zip conds' indexeds'))
+
+            Index _ _ (Loc _ rgn') ->
+                throw rgn' NotConstant
+
             Apply f arg ->
                 trnsApply f [Some arg]
 
             IfThenElse c t e' ->
                 Prism.Ite <$> go c <*> go t <*> go e'
-
-            Index _ _ (Loc _ rgn') ->
-                throw rgn' NotConstant
 
             e' ->
                 throw rgn (TranslationNotSupported (pack (show e')))
@@ -128,6 +145,9 @@ trnsExpr mComp rgn = go
             Prism.Func (trnsFunction l) <$> traverse (\(Some e) -> go e) args
         Apply f' arg -> trnsApply f' (Some arg : args)
         _ -> throw rgn (TranslationNotSupported (pack (show f)))
+
+    equal :: Expr Int -> Int -> Expr Bool
+    equal e i = EqOp Eq TyInt e (Literal i TyInt)
 
 
 trnsEq
