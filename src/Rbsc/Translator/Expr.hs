@@ -12,6 +12,7 @@ module Rbsc.Translator.Expr
 
 
 import Control.Lens
+import Control.Monad.Trans
 
 import Data.Text        (pack)
 import Data.Traversable
@@ -29,6 +30,7 @@ import Rbsc.Eval
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed hiding (Type (..))
 
@@ -97,7 +99,9 @@ trnsExpr mComp rgn = go
             -- so 'idx' is not a Literal.
             -- 'inner' cannot be an Action, since all indexed actions with
             -- a dynamic index are already rejected by the module instantiation.
-            Index (trnsIdent symTable -> Just qname) (Just size) (Loc idx _) -> do
+            Index (trnsIdent symTable -> Just qname) (Just size) (Loc idx rgn') -> do
+                lift (lift (warn (DynamicArrayAccess rgn')))
+
                 let indexeds    = fmap (QlIndex qname) [0 .. size - 2]
                     indexedLast = QlIndex qname (size - 1)
                     conds       = fmap (idx `equal`) [0 .. size - 2]

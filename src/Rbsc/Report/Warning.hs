@@ -26,6 +26,7 @@ data Warning
     | OutOfRangeUpdate !Region (Int, Int) !Int
     | InconsistentActionIndices !Region !Int !Region !Int
     | UnsynchronizedAction !Text !Region
+    | DynamicArrayAccess !Region
     deriving (Eq, Show)
 
 makePrisms ''Warning
@@ -76,6 +77,13 @@ toReport = \case
             [ hintPart rgn . Just $
                 "the action" <+> prettyIdent act <+>
                 "does not synchronize with any other action"
+            ]
+
+    DynamicArrayAccess rgn ->
+        warningReport "dynamic array access"
+            [ hintPart rgn . Just $
+                "this index depends on one or more variables" <> line <>
+                "the bounds are not checked"
             ]
 
 
