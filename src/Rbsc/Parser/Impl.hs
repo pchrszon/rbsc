@@ -121,7 +121,14 @@ elemMultis p c = c elemMulti
         , ElemSingle <$> p
         ]
 
-    loop = label "forall" $ Loop
-        <$> (reserved "forall" *> identifier)
-        <*> option (QdTypeComponent AllComponents) (colon *> quantifiedType)
-        <*> braces (elemMultis p c)
+    loop = do
+        l <- Loop
+            <$> (reserved "forall" *> identifier)
+            <*> option (QdTypeComponent AllComponents) (colon *> quantifiedType)
+
+        mGuard <- optional (dot *> expr)
+        body   <- braces (elemMultis p c)
+
+        return $ case mGuard of
+            Just g  -> l [ElemIf g body]
+            Nothing -> l body

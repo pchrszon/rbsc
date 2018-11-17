@@ -1,0 +1,13 @@
+type N {
+    forall i : [0 .. 3]. mod(i, 2) = 0 {
+        [a[i]] true -> true;
+    }
+
+    forall c. c = self {
+        [c.b] true -> true;
+    }
+}
+
+system {
+    n : N;
+}
