@@ -82,6 +82,11 @@ spec = do
             `shouldBe`
             Right True
 
+        it "evaluates nested generated arrays" $
+            eval' TyBool [expr| [ [ i * k || i : [1 .. 2] ] || k : [2 .. 3] ] = [ [2, 4], [3, 6] ] |]
+            `shouldBe`
+            Right True
+
         it "evaluates built-in functions" $
             eval' TyInt [expr| min(2, x) |]
             `shouldBe`

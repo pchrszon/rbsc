@@ -179,6 +179,8 @@ instantiateUnder o (Scoped body) (SomeExpr s ty) = runReader (go body) o
                     Nothing   -> error "instantiate: type error"
                 else
                     return (Bound i' ty')
+        GenArray gen l u ->
+            GenArray <$> local succ (go gen) <*> pure l <*> pure u
         Lambda ty' (Scoped body') ->
             Lambda ty' . Scoped <$> local succ (go body')
         Quantified q qdTy (Scoped body') -> Quantified q
