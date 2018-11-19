@@ -1,5 +1,9 @@
 mdp
 
+module Desync
+    ]r_a[ true -> true;
+endmodule
+
 module coordinator
     y : [0..1] init 0;
     x : [0..1] init 0;
@@ -8,10 +12,6 @@ module coordinator
     ]r_a, _r[ x = 0 -> (x' = 1);
     ]r_a, _r[ true -> true;
     ]_r, _not_r[ true -> true;
-endmodule
-
-module Desync
-    ]r_a[ true -> true;
 endmodule
 
 module r_R_impl

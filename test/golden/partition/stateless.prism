@@ -1,5 +1,9 @@
 mdp
 
+module Desync
+    ]a[ true -> true;
+endmodule
+
 module coordinator
     ]a, _r_0, _not_r_1[ true -> true;
     ]a, _not_r_0, _r_1[ true -> true;
@@ -12,10 +16,6 @@ module coordinator2
     ]a, _not_r_2, _r_3[ true -> true;
     ]a, _not_r_2, _not_r_3[ true -> true;
     ]_r_2, _not_r_2, _r_3, _not_r_3[ true -> true;
-endmodule
-
-module Desync
-    ]a[ true -> true;
 endmodule
 
 module n_0_step

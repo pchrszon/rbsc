@@ -91,7 +91,7 @@ translateModel model sys info = do
             , Prism.modelConstants     = []
             , Prism.modelGlobalVars    = fmap Prism.GlobalVar globals'
             , Prism.modelModules       =
-                concat [coordinators', desync, modules']
+                concat [desync, coordinators', modules']
             , Prism.modelInitStates    = Nothing
             , Prism.modelRewardStructs = rewardStructs'
             }

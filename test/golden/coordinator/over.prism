@@ -1,15 +1,15 @@
 mdp
 
+module Desync
+    ]a[ true -> true;
+endmodule
+
 module coordinator
     ]a, _r_0, _r_1[ true -> true;
     ]a, _not_r_0, _r_1[ true -> true;
     ]a, _r_0, _r_1[ true -> true;
     ]a, _r_0, _not_r_1[ true -> true;
     ]_r_0, _not_r_0, _r_1, _not_r_1[ true -> true;
-endmodule
-
-module Desync
-    ]a[ true -> true;
 endmodule
 
 module n_N_impl
