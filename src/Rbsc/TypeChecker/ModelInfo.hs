@@ -113,7 +113,7 @@ addConstant (U.Constant (Loc name _) msTy e) = do
         Nothing -> runTypeChecker (tcExpr e)
 
     Dict <- return (dictShow ty)
-    v <- evalExpr (e' `withLocOf` e)
+    v <- evalConstDefExpr (e' `withLocOf` e)
 
     insertSymbol Global name (Some ty)
     insertConstant name (SomeExpr (T.Literal v ty) ty)
@@ -336,6 +336,12 @@ evalExpr :: Loc (T.Expr t) -> Builder t
 evalExpr e = do
     env <- get
     runReaderT (eval e) env
+
+
+evalConstDefExpr :: Loc (T.Expr t) -> Builder t
+evalConstDefExpr e = do
+    env <- get
+    runReaderT (evalConstDef e) env
 
 
 typeCheckExpr :: Type t -> Loc U.Expr -> Builder (T.Expr t)

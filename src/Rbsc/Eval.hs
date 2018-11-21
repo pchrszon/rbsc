@@ -12,6 +12,7 @@
 module Rbsc.Eval
     ( MonadEval
     , eval
+    , evalConstDef
     , reduce
     , componentConsts
     ) where
@@ -68,12 +69,22 @@ makeLenses ''ReducerInfo
 
 -- | Evaluate an expression under a given set of constants.
 eval :: MonadEval r m => Loc (Expr t) -> m t
-eval e = do
+eval = eval' False
+
+
+-- | Evaluate a constant definition under a given set of constants.
+evalConstDef :: MonadEval r m => Loc (Expr t) -> m t
+evalConstDef = eval' True
+
+
+eval' :: MonadEval r m => Bool -> Loc (Expr t) -> m t
+eval' inConst e = do
     depth <- view recursionDepth
     cs    <- view constants
-    case evalInternal cs depth e of
+    case evalInternal cs depth inConst e of
         Left err -> throwError err
         Right x  -> return x
+
 
 
 -- | Reduce an expression as far as possible by evaluating constant
@@ -82,21 +93,27 @@ reduce :: MonadEval r m => Loc (Expr t) -> m (Loc (Expr t))
 reduce e = do
     depth <- view recursionDepth
     cs    <- view constants
-    case reduceInternal cs depth e of
+    case reduceInternal cs depth False e of
         Left err -> throwError err
         Right e' -> return e'
 
 
 type Reducer a = ReaderT ReducerInfo (Either Error) a
 
-runReducer ::
-       Reducer a -> Constants -> RecursionDepth -> Region -> Either Error a
-runReducer m cs depth rgn = runReaderT m (ReducerInfo cs depth rgn)
+runReducer
+    :: Reducer a
+    -> Constants
+    -> RecursionDepth
+    -> Region
+    -> Either Error a
+runReducer m cs depth rgn =
+    runReaderT m (ReducerInfo cs depth rgn)
 
 
-evalInternal :: Constants -> RecursionDepth -> Loc (Expr t) -> Either Error t
-evalInternal cs depth e = do
-    Loc e' _ <- reduceInternal cs depth e
+evalInternal
+    :: Constants -> RecursionDepth -> Bool -> Loc (Expr t) -> Either Error t
+evalInternal cs depth inConst e = do
+    Loc e' _ <- reduceInternal cs depth inConst e
     case e' of
         Literal x _ -> return x
         _           -> throw (getLoc e) NotConstant
@@ -105,9 +122,10 @@ evalInternal cs depth e = do
 reduceInternal ::
        Constants
     -> RecursionDepth
+    -> Bool
     -> Loc (Expr t)
     -> Either Error (Loc (Expr t))
-reduceInternal cs depth (Loc e rgn) =
+reduceInternal cs depth inConst (Loc e rgn) =
     Loc <$> runReducer (go e) cs depth rgn <*> pure rgn
   where
     go :: Expr t -> Reducer (Expr t)
@@ -164,7 +182,10 @@ reduceInternal cs depth (Loc e rgn) =
             let es = NonEmpty.fromList (fmap toIntExpr [l .. u])
             go (LitArray (fmap (instantiate (Scoped gen)) es))
 
-        Quantified q (QdTypeComponent tySet) sc -> do
+        -- When evaluating a constant definition, the set of components is
+        -- not fixed yet, so any quantification over components is not
+        -- constant.
+        Quantified q (QdTypeComponent tySet) sc | not inConst -> do
             comps <- componentConsts tySet <$> view riConstants
             go (quantifier q (fmap (instantiate sc) comps))
 
