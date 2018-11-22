@@ -66,6 +66,10 @@ options = Options
        <> long "export-diagrams"
        <> hidden
        <> help helpExportDiagrams ))
+    <*> switch
+        ( long "print-consts"
+       <> hidden
+       <> help helpPrintConsts )
     <*> (RecursionDepth <$> option auto
         ( metavar "INT"
        <> long "recursion-depth"
@@ -105,6 +109,7 @@ helpConstant       = "Define a constant value"
 helpMultiActions   = "Allow multi-actions in generated code"
 helpExportSystems  = "Export the full system block"
 helpExportDiagrams = "Export the component diagram as Graphviz dot"
+helpPrintConsts    = "Print all defined constants"
 helpRecursionDepth = "The maximal recursion depth for evaluating expressions"
 helpPageWidth      = "The page width used for file output"
 helpNoColor        = "Do not use colored output"

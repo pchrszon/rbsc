@@ -13,6 +13,8 @@ import Control.Monad.Reader
 
 import           Data.Foldable
 import           Data.List                                 (intersperse)
+import           Data.List.NonEmpty                        (NonEmpty)
+import qualified Data.List.NonEmpty                        as NonEmpty
 import           Data.Maybe
 import           Data.Text                                 (Text, pack)
 import qualified Data.Text.IO                              as Text
@@ -32,6 +34,7 @@ import Rbsc.CLI.Parser
 
 import Rbsc.Config
 
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.System
 
 import Rbsc.Parser
@@ -43,7 +46,8 @@ import           Rbsc.Report.Result
 import           Rbsc.Report.Warning (Warning)
 import           Rbsc.Report.Warning as Warning
 
-import Rbsc.Syntax.Untyped (Model)
+import Rbsc.Syntax.Typed.Expr (prettyConstants)
+import Rbsc.Syntax.Untyped    (Model)
 
 import Rbsc.Translator
 import Rbsc.Translator.Convert
@@ -89,11 +93,14 @@ rbsc = do
                 printErrors errors
 
 
-handleResults :: [(System, Prism.Model)] -> App ()
+handleResults :: NonEmpty (System, ModelInfo, Prism.Model) -> App ()
 handleResults results = do
     path         <- getOutputPath
     mSysPath     <- asks optExportSystems
     mDiagramPath <- asks optExportDiagrams
+
+    hasPrintConsts <- asks optPrintConstants
+    when hasPrintConsts (printConsts (view _2 (NonEmpty.head results)))
 
     putStrLnVerbose $ "Generated " <> if numResults == 1
         then "1 system\n"
@@ -103,7 +110,7 @@ handleResults results = do
     let layoutOpts = LayoutOptions $
             if w <= 0 then Unbounded else AvailablePerLine w 1.0
 
-    for_ iresults $ \(i, (sys, model')) -> do
+    for_ iresults $ \(i, (sys, _, model')) -> do
         putStrLnVerbose (renderPretty sys)
         when (fromInteger i < numResults - 1) (putStrLnVerbose "")
 
@@ -111,13 +118,16 @@ handleResults results = do
         whenIsJust mSysPath (writeDoc layoutOpts (pretty sys) i)
         whenIsJust mDiagramPath (writeDoc layoutOpts (visualizeSystem sys) i)
   where
-    iresults = zip [0 :: Integer ..] results
+    iresults = zip [0 :: Integer ..] (toList results)
 
     getOutputPath = fromMaybe "out.prism" <$> asks optOutput
 
     writeDoc opts doc i path =
         liftIO . withFile (addFileNameIndex path i) WriteMode $ \h ->
             U.renderIO h (layoutPretty opts doc)
+
+    printConsts = liftIO . Text.putStrLn . renderDefault . vsep .
+        prettyConstants . view constants
 
     addFileNameIndex path i
         | length results > 1 =
@@ -127,7 +137,8 @@ handleResults results = do
 
     numResults = length results
 
-    renderPretty = U.renderStrict . layoutPretty defaultLayoutOptions . pretty
+    renderPretty  = renderDefault . pretty
+    renderDefault = U.renderStrict . layoutPretty defaultLayoutOptions
 
 
 readModel :: App (FilePath, Text)
@@ -137,14 +148,17 @@ readModel = asks optInput >>= \case
 
 
 translate
-    :: RecursionDepth -> Bool -> Result Model -> Result [(System, Prism.Model)]
+    :: RecursionDepth
+    -> Bool
+    -> Result Model
+    -> Result (NonEmpty (System, ModelInfo, Prism.Model))
 translate depth multiActions parseResult = do
     model   <- parseResult
     results <- translateModels depth model
 
     return $ if multiActions
         then results
-        else fmap (over _2 convertToSingleActions) results
+        else fmap (over _3 convertToSingleActions) results
 
 
 printErrors :: [Error] -> App ()

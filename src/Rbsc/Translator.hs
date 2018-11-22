@@ -12,9 +12,10 @@ import Control.Lens
 import Control.Monad.Reader
 
 import           Data.Foldable
-import qualified Data.Map.Strict  as Map
+import           Data.List.NonEmpty (NonEmpty)
+import qualified Data.Map.Strict    as Map
 import           Data.Maybe
-import qualified Data.Set         as Set
+import qualified Data.Set           as Set
 import           Data.Traversable
 
 import qualified Language.Prism as Prism
@@ -25,6 +26,7 @@ import Rbsc.Config
 import Rbsc.Data.Action
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Info
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.System
 
 import Rbsc.Instantiation
@@ -48,7 +50,10 @@ import Rbsc.Translator.Variable
 import Rbsc.TypeChecker
 
 
-translateModels :: RecursionDepth -> U.Model -> Result [(System, Prism.Model)]
+translateModels
+    :: RecursionDepth
+    -> U.Model
+    -> Result (NonEmpty (System, ModelInfo, Prism.Model))
 translateModels depth model = do
     (typedModel, sysInfos) <- flip runReaderT depth $ do
         (typedModel, mi) <- typeCheck model
@@ -57,7 +62,7 @@ translateModels depth model = do
 
     for sysInfos $ \(sys, mi) -> do
         model' <- translateModel typedModel sys (Info mi depth)
-        return (sys, model')
+        return (sys, mi, model')
 
 
 translateModel :: Model -> System -> Info -> Result Prism.Model

@@ -24,13 +24,16 @@ data Options = Options
     , optConstants      :: [Text]
 
       -- | Enable/disable the generation of multi-action code.
-    , optMultiActions   :: Bool
+    , optMultiActions   :: !Bool
 
       -- | Export the full system block for each generated system instance.
     , optExportSystems  :: Maybe FilePath
 
       -- | Export the component instance diagrams.
     , optExportDiagrams :: Maybe FilePath
+
+      -- | Print all constant values.
+    , optPrintConstants :: !Bool
 
       -- | The maximal recursion depth for evaluating expressions.
     , optRecursionDepth :: !RecursionDepth

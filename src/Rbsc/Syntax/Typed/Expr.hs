@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving  #-}
@@ -18,6 +19,7 @@ module Rbsc.Syntax.Typed.Expr
     , Constants
     , HasConstants(..)
     , isConstant
+    , prettyConstants
 
     , HasExprs(..)
 
@@ -40,11 +42,13 @@ import Control.Applicative
 import Control.Lens
 import Control.Monad.Reader
 
-import           Data.List.NonEmpty (NonEmpty)
-import           Data.Map.Strict    (Map)
-import qualified Data.Map.Strict    as Map
+import           Data.Foldable
+import           Data.List.NonEmpty        (NonEmpty)
+import           Data.Map.Strict           (Map)
+import qualified Data.Map.Strict           as Map
 import           Data.Monoid
-import           Data.Set           (Set)
+import           Data.Set                  (Set)
+import           Data.Text.Prettyprint.Doc
 
 
 import Rbsc.Data.Action
@@ -139,6 +143,36 @@ class HasConstants a where
 -- | Returns @True@ if there is a constant with the given name.
 isConstant :: Constants -> Name -> Bool
 isConstant consts name = Map.member name consts
+
+
+-- | Pretty-print the table of 'Constants'.
+prettyConstants :: Constants -> [Doc ann]
+prettyConstants = fmap prettyConstant . filter (isValue . snd) . Map.assocs
+  where
+    isValue (SomeExpr _ ty) = case ty of
+        TyComponent _             -> False
+        TyArray _ (TyComponent _) -> False
+        TyFunc _ _                -> False
+        _                         -> True
+
+    prettyConstant (name, SomeExpr e ty) =
+        pretty name <+> colon <+> pretty ty <+> equals <+>
+        nest 4 (prettyLiteral e)
+
+    prettyLiteral = \case
+        Literal x ty' -> prettyValue x ty'
+        Lambda _ _    -> "<function>"
+        _             -> "<non-printable value>"
+
+    prettyValue :: Show t => t -> Type t -> Doc ann
+    prettyValue b TyBool
+        | b         = "true"
+        | otherwise = "false"
+    prettyValue arr  (TyArray _ ty') = case dictShow ty' of
+        Dict ->
+            list (fmap (uncurry prettyValue) (zip (toList arr) (repeat ty')))
+    prettyValue act TyAction   = pretty act
+    prettyValue x _            = viaShow x
 
 
 -- | Any syntax tree node @n@ that 'HasExprs' provides a traversal of all

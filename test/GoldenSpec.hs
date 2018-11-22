@@ -72,9 +72,9 @@ translateFile path = do
     (parseResult, _) <- parse path content []
     let results = toEither $ do
             model <- parseResult
-            translateModels 10 model
+            toList <$> translateModels 10 model
 
-    return (over (_Right.traverse) (renderPretty . snd) results)
+    return (over (_Right.traverse) (renderPretty . view _3) results)
   where
     renderPretty = renderStrict . layoutPretty defaultLayoutOptions . pretty
 

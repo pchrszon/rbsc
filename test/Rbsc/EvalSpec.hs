@@ -9,6 +9,8 @@ module Rbsc.EvalSpec (spec) where
 import Control.Lens
 import Control.Monad.Reader
 
+import qualified Data.List.NonEmpty as NonEmpty
+
 import Test.Hspec
 
 
@@ -225,10 +227,10 @@ testModel =
 
 testModelInfo :: ModelInfo
 testModelInfo =
-    let Right [(_, info')] =
+    let Right (_, info') =
             toEither . flip runReaderT (10 :: RecursionDepth) $ do
                 (model', info) <- typeCheck testModel
-                generateInstances model' info
+                NonEmpty.head <$> generateInstances model' info
     in info'
 
 

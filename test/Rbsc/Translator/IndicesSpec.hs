@@ -9,6 +9,8 @@ module Rbsc.Translator.IndicesSpec (spec) where
 import Control.Lens
 import Control.Monad.Reader
 
+import qualified Data.List.NonEmpty as NonEmpty
+
 import Test.Hspec
 
 
@@ -86,11 +88,11 @@ testModuleBody =
 
 typedTestModel :: (T.Model, ModelInfo)
 typedTestModel =
-    let Right (model', [(_, info')]) =
+    let Right (model', (_, info')) =
             toEither . flip runReaderT (10 :: RecursionDepth) $ do
                 (m', info) <- typeCheck testModel
                 insts <- generateInstances m' info
-                return (m', insts)
+                return (m', NonEmpty.head insts)
     in (model', info')
 
 

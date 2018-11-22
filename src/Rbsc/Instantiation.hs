@@ -13,6 +13,7 @@ import Control.Monad.Reader
 
 import Data.Either
 import Data.Foldable
+import Data.List.NonEmpty (NonEmpty, nonEmpty)
 
 
 import Rbsc.Completer
@@ -38,7 +39,7 @@ generateInstances ::
        (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
     => Model
     -> ModelInfo
-    -> t Result [(System, ModelInfo)]
+    -> t Result (NonEmpty (System, ModelInfo))
 generateInstances model info = do
     depth <- view recursionDepth
     lift (runReaderT generate (Info info depth))
@@ -61,9 +62,9 @@ generateInstances model info = do
         sysInfos' <- flip filterM sysInfos $ \(_, info') ->
             local (set modelInfo info') (checkConstraints constraints)
 
-        when (null sysInfos') (throwNoLoc NoSystems)
-
-        for_ sysInfos' $ \(sys', _) ->
-            when (null (view instances sys')) (throwNoLoc EmptySystem)
-
-        return sysInfos'
+        case nonEmpty sysInfos' of
+            Just sysInfos'' -> do
+                for_ sysInfos'' $ \(sys', _) ->
+                    when (null (view instances sys')) (throwNoLoc EmptySystem)
+                return sysInfos''
+            Nothing -> throwNoLoc NoSystems
