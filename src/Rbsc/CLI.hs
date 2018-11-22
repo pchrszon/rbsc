@@ -22,7 +22,8 @@ import           Data.Text.Prettyprint.Doc
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal as T
 import qualified Data.Text.Prettyprint.Doc.Render.Text     as U
 
-import qualified Language.Prism as Prism
+import qualified Language.Prism         as Prism
+import qualified Language.Prism.Convert as Prism
 
 import System.FilePath
 import System.IO
@@ -80,13 +81,17 @@ rbsc = do
         depth        <- asks optRecursionDepth
         multiActions <- asks optMultiActions
 
-        let (result, warnings) =
-                toEither' (translate depth multiActions parseResult)
+        let (result, warnings) = toEither' (translate depth parseResult)
 
         case result of
             Right results -> do
                 printWarnings warnings
-                handleResults results
+
+                results' <- if multiActions
+                    then return results
+                    else convertAll results
+
+                handleResults results'
             Left errors -> do
                 printWarnings warnings
                 unless (null warnings) (liftIO (putStrLn ""))
@@ -149,16 +154,30 @@ readModel = asks optInput >>= \case
 
 translate
     :: RecursionDepth
-    -> Bool
     -> Result Model
     -> Result (NonEmpty (System, ModelInfo, Prism.Model))
-translate depth multiActions parseResult = do
-    model   <- parseResult
-    results <- translateModels depth model
+translate depth parseResult = do
+    model <- parseResult
+    translateModels depth model
 
-    return $ if multiActions
-        then results
-        else fmap (over _3 convertToSingleActions) results
+
+convertAll
+    :: NonEmpty (System, ModelInfo, Prism.Model)
+    -> App (NonEmpty (System, ModelInfo, Prism.Model))
+convertAll = (traverse._3) convert
+
+
+convert :: Prism.Model -> App Prism.Model
+convert model = do
+    let ci = prepareConversion model
+    putStrLnVerbose "Conversion to single actions"
+    putStrLnVerbose $
+        "size of alphabet: " <> pack (show (Prism.numberOfActions ci))
+    putStrLnVerbose $
+        "number of composed multi-actions: " <>
+        pack (show (Prism.numberOfMultiActions ci))
+    putStrLnVerbose ""
+    return (convertToSingleActions ci model)
 
 
 printErrors :: [Error] -> App ()

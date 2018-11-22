@@ -6,6 +6,7 @@
 -- | Conversion of multi-actions to single actions.
 module Rbsc.Translator.Convert
     ( convertToSingleActions
+    , prepareConversion
     ) where
 
 
@@ -41,9 +42,9 @@ instance HasNameGen ConverterState where
 type Converter a = State ConverterState a
 
 
-convertToSingleActions :: Prism.Model -> Prism.Model
-convertToSingleActions =
-    removeDesyncModule . runConverter . Prism.convertToSingleActions convert
+convertToSingleActions :: Prism.ConversionInfo -> Prism.Model -> Prism.Model
+convertToSingleActions ci =
+    removeDesyncModule . runConverter . Prism.convertToSingleActions convert ci
   where
     removeDesyncModule model = model
         { Prism.modelModules =
@@ -51,6 +52,10 @@ convertToSingleActions =
         }
 
     isDesyncModule = ("Desync" ==) . Prism.modIdent
+
+
+prepareConversion :: Prism.Model -> Prism.ConversionInfo
+prepareConversion = Prism.conversionInfo
 
 
 runConverter :: Converter a -> a
