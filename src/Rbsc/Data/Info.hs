@@ -20,7 +20,7 @@ import Rbsc.Syntax.Typed.Expr
 
 
 data Info = Info
-    { _modelInfo :: ModelInfo
+    { _modelInfo          :: ModelInfo
     , _confRecursionDepth :: RecursionDepth
     }
 
@@ -40,3 +40,6 @@ instance HasRangeTable Info where
 
 instance HasConstants Info where
     constants = modelInfo.constants
+
+instance HasMethods Info where
+    methods = modelInfo.methods

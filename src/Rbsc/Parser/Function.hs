@@ -25,11 +25,19 @@ functionDef = DefFunction <$> function <?> "function definition"
 
 
 function :: Parser UFunction
-function = Function
-    <$> (reserved "function" *> identifier)
-    <*> parens (parameter `sepBy` comma)
-    <*> (colon *> typ)
-    <*> (equals *> expr <* semi)
+function = do
+    _ <- reserved "function"
+    fstIdent <- identifier
+    mSndIdent <- optional (dot *> identifier)
+
+    let (mTyName, name) = case mSndIdent of
+            Just sndIdent -> (Just (fmap TypeName fstIdent), sndIdent)
+            Nothing       -> (Nothing, fstIdent)
+
+    Function mTyName name
+        <$> parens (parameter `sepBy` comma)
+        <*> (colon *> typ)
+        <*> (equals *> expr <* semi)
 
 
 parameter :: Parser UParameter

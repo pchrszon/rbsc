@@ -1,0 +1,22 @@
+type A {
+    x : [0..1] init 0;
+}
+
+function A.gt(i : int) : bool = self.x > i;
+
+type B {
+    x : [0..2] init 0;
+}
+
+function B.gt(i : int) : bool = self.x > i;
+
+
+system {
+    a : A;
+    b : B;
+}
+
+
+label "nz_a" = a.gt(0);
+label "nz_b" = b.gt(0);
+label "nz_all" = forall n : {A, B}. n.gt(0);

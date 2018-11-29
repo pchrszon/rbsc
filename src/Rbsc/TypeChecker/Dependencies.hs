@@ -85,6 +85,7 @@ data AnalyzerInfo = AnalyzerInfo
     { _identifiers       :: Identifiers -- ^ the identifiers defined in the model
     , _parameters        :: Set Name -- ^ the set of parameters that are in scope
     , _functions         :: Map Name UFunction -- ^ the functions defined in the model
+    , _methods           :: Map Name [UFunction] -- ^ the methods defined in the model
     , _currentDependency :: Maybe (Loc Dependency) -- ^ the dependency that is currently created
     , _inFunctionBody    :: !Bool -- ^ @True@ if the expression is inside a funcion body
     }
@@ -195,15 +196,25 @@ insertConstant c@(Constant (Loc _ rgn) sTy e) =
 
 
 insertFunction :: UFunction -> Analyzer ()
-insertFunction f@(Function (Loc _ rgn) _ _ e) = do
+insertFunction f@(Function mTyName (Loc _ rgn) _ _ e) = do
+    traverse_ checkIfTypeExists mTyName
     newDependency (DepFunctionSignature f) rgn $ do
         identsSig <- identsInSignature f
         dependOnIdentifiers identsSig
+        case mTyName of
+            Just tyName -> do
+                checkIfTypeExists tyName
+                dependOnIdentifier (fmap getTypeName tyName)
+            Nothing -> return ()
     newDependency (DepDefinition (DefFunction f)) rgn $ do
         dependOn (DepFunctionSignature f) rgn
         local ((inFunctionBody .~ True) . (parameters .~ parameterSet f)) $ do
             idents <- identsInExpr e
             dependOnIdentifiers idents
+
+            ms <- methodsInExpr e
+            for_ ms $ \m ->
+                dependOn (DepFunctionSignature m) (getLoc e)
 
 
 insertGlobal :: UVarDecl -> Analyzer ()
@@ -350,17 +361,33 @@ referencedFunctions f = Set.toList <$> execStateT (go f) Set.empty
         visited <- get
         unless (f' `Set.member` visited) $ do
             modify (Set.insert f')
-            fvars <- functionVars (functionBody f')
+            fvars <- functionsInExpr (functionBody f')
             for_ fvars go
 
-    functionVars e = do
+    functionsInExpr e = do
+        fs <- lift (view functions)
         idents <- lift (identsInExpr e)
-        funcs  <- lift (view functions)
-        return (mapMaybe ((`Map.lookup` funcs) . unLoc) (toList idents))
+
+        let fs' = mapMaybe ((`Map.lookup` fs) . unLoc) (toList idents)
+        ms' <- lift (methodsInExpr e)
+
+        return (fs' ++ ms')
+
+
+methodsInExpr :: LExpr -> Analyzer [UFunction]
+methodsInExpr e = do
+    ms <- view methods
+    return (concat (mapMaybe (`Map.lookup` ms) (memberIdents e)))
+  where
+    memberIdents = mapMaybe getMemberIdent . universe
+
+    getMemberIdent (Loc e' _) = case e' of
+        Member _ ident -> Just ident
+        _              -> Nothing
 
 
 identsInSignature :: UFunction -> Analyzer (Set (Loc Name))
-identsInSignature (Function _ args ty _) = do
+identsInSignature (Function _ _ args ty _) = do
     identsTy <- identsInType ty
     identsParams <- traverse identsInParam (toList args)
     return (Set.unions (identsTy : identsParams))
@@ -450,12 +477,20 @@ runAnalyzer :: Identifiers -> Analyzer () -> Either Error DependencyGraph
 runAnalyzer idents m = view dependencies <$>
     execStateT (runReaderT m info) (AnalyzerState Map.empty 0)
   where
-    info  = AnalyzerInfo idents Set.empty funcs Nothing False
-    funcs = Map.fromAscList (mapMaybe getFunc (Map.toAscList idents))
-    getFunc (ScopedName _ name, def) = case def of
+    info = AnalyzerInfo idents Set.empty fs ms Nothing False
+    fs   = Map.fromAscList (mapMaybe getFunction (Map.toAscList idents))
+    ms   = Map.fromListWith (++) (mapMaybe getMethod (Map.assocs idents))
+
+    getFunction (ScopedName Global name, def) = fromDef name def
+    getFunction _                             = Nothing
+
+    getMethod (ScopedName (Local _) name, def) =
+        over (_Just._2) (: []) (fromDef name def)
+    getMethod _ = Nothing
+
+    fromDef name = \case
         Loc (DefFunction f) _ -> Just (name, f)
         _                     -> Nothing
-
 
 -- | @newDependency dep rgn m@ introduces a new dependency @dep@ defined in
 -- the location @rgn@ and adds it to the dependency graph. Within the

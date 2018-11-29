@@ -35,8 +35,8 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed   (HasConstants (..), LSomeExpr,
-                                      SomeExpr (..))
+import           Rbsc.Syntax.Typed   (HasConstants (..), HasMethods (..),
+                                      LSomeExpr, SomeExpr (..))
 import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped (Enumeration (..), LExpr,
                                       ModuleInstance (..), Parameter (..),
@@ -65,6 +65,9 @@ instance HasRecursionDepth BuilderState where
 
 instance HasConstants BuilderState where
     constants = modelInfo.constants
+
+instance HasMethods BuilderState where
+    methods = modelInfo.methods
 
 
 -- | Construct the 'ModelInfo' for a given 'Model'.
@@ -120,21 +123,28 @@ addConstant (U.Constant (Loc name _) msTy e) = do
 
 
 addFunctionSignature :: UFunction -> Builder ()
-addFunctionSignature (U.Function (Loc name _) params sTy _) = do
+addFunctionSignature (U.Function mTyName (Loc name _) params sTy _) = do
     paramTys <- traverse (fromSyntaxType . U.paramType) params
     tyResult <- fromSyntaxType sTy
-    insertSymbol Global name (foldr mkTyFunc tyResult paramTys)
+    let sc = fromMaybeTypeName (fmap unLoc mTyName)
+    insertSymbol sc name (foldr mkTyFunc tyResult paramTys)
   where
     mkTyFunc (Some a) (Some b) = Some (a --> b)
 
 
 addFunction :: UFunction -> Builder ()
-addFunction (U.Function (Loc name _) params sTy body) = do
+addFunction (U.Function mTyName (Loc name _) params sTy body) = do
     paramSyms <- traverse paramToSym params
     tyResult  <- fromSyntaxType sTy
 
-    f <- runTypeChecker (tcFunctionDef paramSyms tyResult body)
-    insertConstant name f
+    case mTyName of
+        Nothing -> do
+            f <- runTypeChecker (tcFunctionDef paramSyms tyResult body)
+            insertConstant name f
+        Just (Loc tyName _) -> do
+            f <- runTypeChecker . TC.localScope tyName $
+                tcFunctionDef paramSyms tyResult body
+            insertMethod (ScopedName (Local tyName) name) f
   where
     paramToSym (U.Parameter n psTy) = do
         ty <- fromSyntaxType psTy
@@ -366,7 +376,11 @@ insertRange sc name mRange =
 
 
 insertConstant :: Name -> SomeExpr -> Builder ()
-insertConstant name e = modelInfo.constants.at name .= Just e
+insertConstant name e = modelInfo.constants.at name ?= e
+
+
+insertMethod :: ScopedName -> SomeExpr -> Builder ()
+insertMethod name e = modelInfo.methods.at name ?= e
 
 
 insertComponentType :: TypeName -> ComponentType -> Builder ()

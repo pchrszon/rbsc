@@ -78,6 +78,7 @@ spec = describe "identifierDefs" $ do
                 (Constant (dummyLoc "n") (Just TyInt) (dummyLoc (LitInt 5))))
             , (ScopedName Global "f", DefFunction
                 (Function
+                    Nothing
                     (dummyLoc "f")
                     [Parameter (dummyLoc "x") TyInt]
                     TyInt

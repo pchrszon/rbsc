@@ -122,8 +122,11 @@ insertConstants = traverse_ (insert Global <$> constName <*> DefConstant)
 
 
 insertFunctions :: [UFunction] -> Builder ()
-insertFunctions =
-    traverse_ (insert Global <$> functionName <*> DefFunction)
+insertFunctions = traverse_ insertFunction
+  where
+    insertFunction f =
+        let sc = fromMaybeTypeName (fmap unLoc (functionForType f))
+        in (insert sc <$> functionName <*> DefFunction) f
 
 
 insertGlobals :: [UVarDecl] -> Builder ()

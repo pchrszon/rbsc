@@ -54,8 +54,8 @@ import           Data.Text       (Text)
 import Rbsc.Config
 
 import Rbsc.Data.ComponentType
-import Rbsc.Data.Name
 import Rbsc.Data.ModelInfo
+import Rbsc.Data.Name
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
@@ -64,7 +64,8 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed.Expr (Constants, HasConstants, SomeExpr (..))
+import           Rbsc.Syntax.Typed.Expr (Constants, HasConstants, HasMethods,
+                                         SomeExpr (..))
 import qualified Rbsc.Syntax.Typed.Expr as T
 
 import Rbsc.Util (renderPretty)
@@ -87,6 +88,7 @@ data TcInfo = TcInfo
     , _tciTypeSets       :: !TypeSets           -- ^ the user defined component type sets
     , _tciSymbolTable    :: !SymbolTable        -- ^ the 'SymbolTable'
     , _tciConstants      :: !Constants          -- ^ the defined constants
+    , _tciMethods        :: !Methods            -- ^ the defined methods
     , _tciRecursionDepth :: !RecursionDepth     -- ^ the maximum recursion depth
     , _boundVars         :: [(Name, Some Type)] -- ^ list of variables bound by a quantifier or lambda
     , _scope             :: !Scope              -- ^ the current scope
@@ -107,6 +109,9 @@ instance HasSymbolTable TcInfo where
 instance HasConstants TcInfo where
     constants = tciConstants
 
+instance HasMethods TcInfo where
+    methods = tciMethods
+
 instance HasRecursionDepth TcInfo where
     recursionDepth = tciRecursionDepth
 
@@ -118,6 +123,7 @@ runTypeChecker m info = runTypeChecker' m
     (view typeSets info)
     (view symbolTable info)
     (view constants info)
+    (view methods info)
 
 
 -- | Run a type checker action. Since the type checker does not need a full
@@ -128,10 +134,11 @@ runTypeChecker'
     -> TypeSets
     -> SymbolTable
     -> Constants
+    -> Methods
     -> RecursionDepth
     -> Result a
-runTypeChecker' m types tySets symTable consts depth =
-    runReaderT m (TcInfo types tySets symTable consts depth [] Global NoContext)
+runTypeChecker' m types tySets symTable consts ms depth = runReaderT m
+    (TcInfo types tySets symTable consts ms depth [] Global NoContext)
 
 
 -- | Looks up the type of a given identifier in the symbol table. First,

@@ -1,0 +1,23 @@
+module m(size : int) {
+    cell : array size of bool init false;
+}
+
+type One;
+impl One(m(1));
+
+function One.all_true() : bool =
+    forall i : [0 .. length(self.cell) - 1]. self.cell[i];
+
+type Two;
+impl Two(m(2));
+
+function Two.all_true() : bool =
+    forall i : [0 .. length(self.cell) - 1]. self.cell[i];
+
+
+system {
+    o : One;
+    t : Two;
+}
+
+label "all" = forall n. n.all_true();

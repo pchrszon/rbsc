@@ -39,6 +39,7 @@ import qualified Rbsc.Data.Array     as Array
 import           Rbsc.Data.Component
 import           Rbsc.Data.Function  (function, functionType)
 import           Rbsc.Data.Name
+import           Rbsc.Data.Scope
 import           Rbsc.Data.Type
 
 import Rbsc.Report.Error
@@ -55,11 +56,13 @@ type MonadEval r m
        , MonadReader r m
        , HasRecursionDepth r
        , HasConstants r
+       , HasMethods r
        )
 
 
 data ReducerInfo = ReducerInfo
     { _riConstants    :: Constants
+    , _riMethods      :: Methods
     , _remainingDepth :: !RecursionDepth
     , _region         :: !Region
     }
@@ -79,21 +82,18 @@ evalConstDef = eval' True
 
 eval' :: MonadEval r m => Bool -> Loc (Expr t) -> m t
 eval' inConst e = do
-    depth <- view recursionDepth
-    cs    <- view constants
-    case evalInternal cs depth inConst e of
+    info <- getEvalInfo
+    case evalInternal info inConst e of
         Left err -> throwError err
         Right x  -> return x
-
 
 
 -- | Reduce an expression as far as possible by evaluating constant
 -- sub-expressions.
 reduce :: MonadEval r m => Loc (Expr t) -> m (Loc (Expr t))
 reduce e = do
-    depth <- view recursionDepth
-    cs    <- view constants
-    case reduceInternal cs depth False e of
+    info <- getEvalInfo
+    case reduceInternal info False e of
         Left err -> throwError err
         Right e' -> return e'
 
@@ -102,31 +102,42 @@ type Reducer a = ReaderT ReducerInfo (Either Error) a
 
 runReducer
     :: Reducer a
-    -> Constants
-    -> RecursionDepth
+    -> EvalInfo
     -> Region
     -> Either Error a
-runReducer m cs depth rgn =
-    runReaderT m (ReducerInfo cs depth rgn)
+runReducer m (EvalInfo depth cs ms) rgn =
+    runReaderT m (ReducerInfo cs ms depth rgn)
+
+
+data EvalInfo = EvalInfo !RecursionDepth !Constants !Methods
+
+
+getEvalInfo :: MonadEval r m => m EvalInfo
+getEvalInfo = EvalInfo
+    <$> view recursionDepth
+    <*> view constants
+    <*> view methods
 
 
 evalInternal
-    :: Constants -> RecursionDepth -> Bool -> Loc (Expr t) -> Either Error t
-evalInternal cs depth inConst e = do
-    Loc e' _ <- reduceInternal cs depth inConst e
+    :: EvalInfo
+    -> Bool
+    -> Loc (Expr t)
+    -> Either Error t
+evalInternal info inConst e = do
+    Loc e' _ <- reduceInternal info inConst e
     case e' of
         Literal x _ -> return x
         _           -> throw (getLoc e) NotConstant
 
 
-reduceInternal ::
-       Constants
-    -> RecursionDepth
+reduceInternal
+    :: EvalInfo
     -> Bool
     -> Loc (Expr t)
     -> Either Error (Loc (Expr t))
-reduceInternal cs depth inConst (Loc e rgn) =
-    Loc <$> runReducer (go e) cs depth rgn <*> pure rgn
+reduceInternal info inConst (Loc e rgn) =
+    Loc <$> runReducer (go e) info rgn <*> pure rgn
   where
     go :: Expr t -> Reducer (Expr t)
     go e' = case e' of
@@ -150,6 +161,17 @@ reduceInternal cs depth inConst (Loc e rgn) =
                 _ -> do
                     r' <- go r
                     toLiteral (LogicOp lOp l' r')
+
+        Member c name ty -> do
+            c' <- go c
+            case c' of
+                Literal comp (TyComponent (toList -> [tyName])) ->
+                    view (riMethods.at (ScopedName (Local tyName) name)) >>= \case
+                        Just (SomeExpr e'' ty') -> case typeEq ty ty' of
+                            Just Refl -> go (substituteSelf comp e'')
+                            Nothing   -> error "toLiteral: type error"
+                        Nothing -> toLiteral (Member c' name ty)
+                _ -> toLiteral (Member c' name ty)
 
         Apply f arg -> do
             f' <- go f
@@ -414,6 +436,16 @@ componentConsts tySet = concatMap f . Map.elems
         _ -> []
 
     toSomeExpr ty comp = SomeExpr (Literal comp ty) ty
+
+
+substituteSelf :: Component -> Expr t -> Expr t
+substituteSelf comp = transformExpr subst
+  where
+    subst :: Expr t -> Expr t
+    subst e = case e of
+        Self -> Literal comp
+            (TyComponent (Set.singleton (view compTypeName comp)))
+        _ -> e
 
 
 isElement :: Component -> SomeExpr -> Bool

@@ -21,6 +21,9 @@ module Rbsc.Syntax.Typed.Expr
     , isConstant
     , prettyConstants
 
+    , Methods
+    , HasMethods(..)
+
     , HasExprs(..)
 
     , instantiate
@@ -55,6 +58,7 @@ import Rbsc.Data.Action
 import Rbsc.Data.Array
 import Rbsc.Data.Component
 import Rbsc.Data.Function
+import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
 
@@ -173,6 +177,13 @@ prettyConstants = fmap prettyConstant . filter (isValue . snd) . Map.assocs
             list (fmap (uncurry prettyValue) (zip (toList arr) (repeat ty')))
     prettyValue act TyAction   = pretty act
     prettyValue x _            = viaShow x
+
+
+-- | The table of methods.
+type Methods = Map ScopedName SomeExpr
+
+class HasMethods a where
+    methods :: Lens' a Methods
 
 
 -- | Any syntax tree node @n@ that 'HasExprs' provides a traversal of all

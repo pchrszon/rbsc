@@ -11,10 +11,12 @@ module Rbsc.Data.ModelInfo
     , typeSets
     , symbolTable
     , constants
+    , methods
 
     , ComponentTypes
     , SymbolTable
     , Constants
+    , Methods
     ) where
 
 
@@ -35,6 +37,7 @@ data ModelInfo = ModelInfo
     , _miSymbolTable    :: !SymbolTable
     , _miRangeTable     :: !RangeTable
     , _miConstants      :: !Constants
+    , _miMethods        :: !Methods
     } deriving (Show)
 
 makeLenses ''ModelInfo
@@ -54,7 +57,10 @@ instance HasRangeTable ModelInfo where
 instance HasConstants ModelInfo where
     constants = miConstants
 
+instance HasMethods ModelInfo where
+    methods = miMethods
+
 
 -- | Empty @ModelInfo@.
 emptyModelInfo :: ModelInfo
-emptyModelInfo = ModelInfo mempty mempty mempty mempty mempty
+emptyModelInfo = ModelInfo mempty mempty mempty mempty mempty mempty

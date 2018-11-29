@@ -5,7 +5,6 @@ module Rbsc.Syntax.Function
     ) where
 
 
-import Data.Function
 import Data.Ord
 
 
@@ -18,17 +17,20 @@ import Rbsc.Syntax.Type
 
 -- | A function definition.
 data Function expr = Function
-    { functionName   :: Loc Name
-    , functionParams :: [Parameter expr]
-    , functionType   :: Type expr
-    , functionBody   :: expr
+    { functionForType :: Maybe (Loc TypeName)
+    , functionName    :: Loc Name
+    , functionParams  :: [Parameter expr]
+    , functionType    :: Type expr
+    , functionBody    :: expr
     } deriving (Show)
 
 instance Eq (Function expr) where
-    (==) = (==) `on` functionName
+    l == r =
+        functionName l == functionName r &&
+        functionForType l == functionForType r
 
 instance Ord (Function expr) where
-    compare = comparing functionName
+    compare = comparing functionName <> comparing functionForType
 
 
 -- | A function parameter.
