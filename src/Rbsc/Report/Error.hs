@@ -87,6 +87,7 @@ data LocErrorDesc
     -- translation errors
     | TranslationNotSupported !Text
     | IllegalPlayingConstraint
+    | OutOfRangeInit (Integer, Integer) Int
     deriving (Eq, Show)
 
 
@@ -348,6 +349,14 @@ locReport rgn = \case
             [ errorPart rgn . Just $
                 "role-playing constraints are not allowed" <> line <>
                 "outside of coordinator commands"
+            ]
+
+    OutOfRangeInit (lower, upper) actual ->
+        errorReport "invalid initial value"
+            [ errorPart rgn . Just $
+                "expression evaluates to " <> pretty actual <>
+                ", but the variable has range [" <> pretty lower <> ".." <>
+                pretty upper <> "]"
             ]
 
 

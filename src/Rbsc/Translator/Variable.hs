@@ -24,6 +24,9 @@ import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
 
+import Rbsc.Report.Error
+import Rbsc.Report.Region
+
 import Rbsc.Syntax.Typed hiding (Type (..))
 
 import Rbsc.Translator.Expr
@@ -56,13 +59,17 @@ trnsVarDecl mComp (varName, mInit) =
             baseTy' <- baseType ty
             let qnames  = indexedNames baseName ty
                 mInits' = case mInit of
-                    Just e -> fmap Just (indexedExprs e ty)
+                    Just e  -> fmap Just (indexedExprs e ty)
                     Nothing -> repeat Nothing
 
             for (zip qnames mInits') $ \(qname, mInit') -> do
                 ident <- trnsQualified qname
-                mInit'' <-
-                    _Just (trnsLSomeExpr mComp <=< reduceLSomeExpr) mInit'
+                mInit'' <- case mInit' of
+                    Just e -> do
+                        e' <- reduceLSomeExpr e
+                        checkOutOfRange baseTy' e'
+                        Just <$> trnsLSomeExpr mComp e'
+                    Nothing -> return Nothing
                 return (Prism.Declaration ident baseTy' mInit'')
 
         Nothing -> error $
@@ -89,3 +96,9 @@ trnsVarDecl mComp (varName, mInit) =
                 "trnsVarDecl: " ++ show scName ++ "not in range table"
         TyArray _ innerTy -> baseType innerTy
         ty -> error $ "trnsVarDecl: illegal var type " ++ show ty
+
+    checkOutOfRange :: Prism.DeclarationType -> LSomeExpr -> Translator ()
+    checkOutOfRange (Prism.DeclTypeInt (Prism.LitInt lower) (Prism.LitInt upper)) (Loc (SomeExpr (Literal v _) TyInt) rgn)
+        | v < fromInteger lower || v > fromInteger upper =
+            throw rgn (OutOfRangeInit (lower, upper) v)
+    checkOutOfRange _ _ = return ()

@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE MultiWayIf #-}
 
 
 module Rbsc.Translator.Command
@@ -137,7 +137,8 @@ trnsIndices qname _ [] = return qname
 trnsIndices _     _ _  = error "trnsIndices: type error"
 
 
-checkOutOfRange :: Maybe (TypeName, ComponentName) -> Name -> LSomeExpr -> Translator ()
+checkOutOfRange
+    :: Maybe (TypeName, ComponentName) -> Name -> LSomeExpr -> Translator ()
 checkOutOfRange mComp name (Loc (SomeExpr (Literal x TyInt) TyInt) rgn) = do
     rt <- view rangeTable
 
