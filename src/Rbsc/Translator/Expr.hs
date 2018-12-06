@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ViewPatterns          #-}
 
 
@@ -12,14 +13,17 @@ module Rbsc.Translator.Expr
 
 
 import Control.Lens
-import Control.Monad.Trans
+import Control.Monad.Reader
 
-import Data.Text        (pack)
-import Data.Traversable
+import           Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict    as Map
+import           Data.Text          (pack)
+import           Data.Traversable
 
 import qualified Language.Prism as Prism
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.Array     (Array)
 import Rbsc.Data.Component
 import Rbsc.Data.Function
@@ -122,6 +126,16 @@ trnsExpr mComp rgn = go
 
             IfThenElse c t e' ->
                 Prism.Ite <$> go c <*> go t <*> go e'
+
+            Playable (Loc (Literal comp (TyComponent _)) _) mAct -> do
+                rgs <- getRoleGuards comp mAct
+                g <- combineRoleGuards rgs
+                trnsExpr
+                    (Just (view compTypeName comp, view compName comp))
+                    rgn
+                    (unLoc g)
+
+            Playable (Loc _ rgn') _ -> throw rgn' NotConstant
 
             e' ->
                 throw rgn (TranslationNotSupported (pack (show e')))
@@ -227,3 +241,32 @@ trnsLogicOp = \case
     And     -> Prism.And
     Or      -> Prism.Or
     Implies -> Prism.Implies
+
+
+combineRoleGuards :: NonEmpty LSomeExpr -> Translator (Loc (Expr Bool))
+combineRoleGuards rgs = case foldr1 combine rgs of
+    Loc (SomeExpr g TyBool) rgn -> reduce (Loc g rgn)
+    _                           -> error "combineRoleGuards: type error"
+  where
+    combine :: LSomeExpr -> LSomeExpr -> LSomeExpr
+    combine (Loc (SomeExpr l TyBool) lRgn) (Loc (SomeExpr r TyBool) rRgn) =
+        Loc (SomeExpr (LogicOp Or l r) TyBool) (lRgn <> rRgn)
+    combine _ _ = error "combineRoleGuards: type error"
+
+
+getRoleGuards
+    :: Component -> Maybe (Loc (Expr Action)) -> Translator (NonEmpty LSomeExpr)
+getRoleGuards comp mAct =
+    view (roleGuards.at (view compName comp)) >>= \case
+        Just actMap -> case mAct of
+            Just (Loc (Literal act TyAction) _) ->
+                return (Map.findWithDefault (false :| []) (Just act) actMap)
+            Just (Loc _ rgn) -> throw rgn NotConstant
+            Nothing -> case Map.elems actMap of
+                [] -> return (false :| [])
+                gs -> return (foldr1 (<>) gs)
+        Nothing -> error $ "getRoleGuards: component " ++
+            show (view compName comp) ++ " not in roleGuards"
+  where
+    false = noLoc (SomeExpr (Literal False TyBool) TyBool)
+    noLoc x = Loc x (Region "" "" (Position 1 1) (Position 1 1))

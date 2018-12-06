@@ -1,0 +1,30 @@
+type N {
+    s : [0..1] init 0;
+
+    [a] s = 0 -> (s' = 1);
+}
+
+
+role type R(N, R) {
+    s : [0..1] init 0;
+
+    [override a] s = 0 -> (s' = 1);
+}
+
+
+system {
+    n : N;
+    inner : R;
+    outer : R;
+
+    inner boundto n;
+    outer boundto inner;
+}
+
+
+coordinator {
+    [a] [outer] playable(outer, a) & playable(inner, a) -> true;
+    [a] [inner] playable(inner, a) & !playable(outer, a) -> true;
+    [a] [!outer] !playable(outer, a) -> true;
+    [a] [!inner] !playable(inner, a) | playable(outer, a) -> true;
+}

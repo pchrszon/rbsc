@@ -99,6 +99,7 @@ data Expr t where
     Count          :: Set TypeName -> Expr Component -> Expr Int
     HasPlayer      :: Expr Component -> Expr Bool
     Player         :: Loc (Expr Component) -> Expr Component
+    Playable       :: Loc (Expr Component) -> Maybe (Loc (Expr Action)) -> Expr Bool
     ComponentIndex :: Loc (Expr Component) -> Expr Int
     Lambda         :: Type a -> Scoped b -> Expr (Fn (a -> b))
     Quantified     :: Quantifier t -> TQuantifiedType -> Scoped t -> Expr t
@@ -331,7 +332,10 @@ plateExpr f = \case
     Count tySet e      -> Count tySet <$> f e
     HasPlayer e        -> HasPlayer <$> f e
     Player e           -> Player <$> traverse f e
-    ComponentIndex e   -> ComponentIndex <$> traverse f e
+    Playable e mAct    -> Playable
+        <$> traverse f e
+        <*> traverse (traverse f) mAct
+    ComponentIndex e -> ComponentIndex <$> traverse f e
     Lambda ty (Scoped body) -> Lambda ty . Scoped <$> f body
     Quantified q qdTy@(QdTypeComponent _) (Scoped body) ->
         Quantified q qdTy . Scoped <$> f body

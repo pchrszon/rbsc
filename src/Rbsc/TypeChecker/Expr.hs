@@ -270,6 +270,21 @@ tcExpr (Loc e rgn) = case e of
         when (Set.null tySet') (throw rgn NoPossiblePlayers)
         T.Player (inner' `withLocOf` inner) `withType` TyComponent tySet'
 
+    U.Playable inner mAct -> do
+        tyComponent <- getTyComponent
+        (inner', ty) <- inner `hasType'` tyComponent
+        case ty of
+            TyComponent tySet -> checkIfRole (getLoc inner) tySet
+
+        mAct' <- case mAct of
+            Just act -> local (set context ActionContext) $ do
+                act' <- act `hasType` TyAction
+                return (Just (act' `withLocOf` act))
+            Nothing -> return Nothing
+
+        T.Playable (inner' `withLocOf` inner) mAct' `withType` TyBool
+
+
     U.ComponentIndex inner -> do
         tyComponent <- getTyComponent
         inner' <- inner `hasType` tyComponent

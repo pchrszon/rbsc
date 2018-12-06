@@ -81,7 +81,9 @@ translateModel model sys info = do
     checkActionIndices mas
     checkSynchronizations mas
 
-    runTranslator info $ do
+    let rgs = rolePlayingGuards sys modules info
+
+    runTranslator (rgs :&: info) $ do
         desync   <- maybeToList <$> genDesyncModule as
         globals' <- trnsGlobalVars (modelGlobals model)
         labels'  <- traverse trnsLabel (modelLabels model)

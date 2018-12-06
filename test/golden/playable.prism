@@ -1,0 +1,40 @@
+mdp
+
+module Desync
+    ]a[ true -> true;
+endmodule
+
+module coordinator
+    ]a, _not_inner[ !inner_s = 0 | outer_s = 0 -> true;
+    ]a, _inner[ inner_s = 0 & !outer_s = 0 -> true;
+    ]a, _inner, _not_inner[ true -> true;
+endmodule
+
+module coordinator2
+    ]a, _not_outer[ !outer_s = 0 -> true;
+    ]a, _outer[ outer_s = 0 & inner_s = 0 -> true;
+    ]a, _outer, _not_outer[ true -> true;
+endmodule
+
+module inner_R_impl
+    inner_s : [0..1] init 0;
+
+    ]a, _inner, _ovr_inner[ inner_s = 0 -> (inner_s' = 1);
+    ]a, _ovr_outer, _not_inner[ true -> true;
+    ]a, _not_inner[ true -> true;
+endmodule
+
+module n_N_impl
+    n_s : [0..1] init 0;
+
+    ]a[ n_s = 0 -> (n_s' = 1);
+    ]a, _ovr_inner[ true -> true;
+    ]a, _ovr_outer[ true -> true;
+endmodule
+
+module outer_R_impl
+    outer_s : [0..1] init 0;
+
+    ]a, _outer, _ovr_outer[ outer_s = 0 -> (outer_s' = 1);
+    ]a, _not_outer[ true -> true;
+endmodule

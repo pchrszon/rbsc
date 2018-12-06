@@ -4,13 +4,20 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TypeOperators         #-}
 
 
 module Rbsc.Translator.Internal
     ( Translator
     , runTranslator
+
+    , TranslatorInfo
+    , RolePlayingGuards
+    , roleGuards
+
     , TranslatorState
+    , Identifiers
 
     , trnsQualified
     , trnsAction
@@ -24,6 +31,8 @@ module Rbsc.Translator.Internal
     , indexedExprs
     , addIndex
     , reduceLSomeExpr
+
+    , rolePlayingGuards
     ) where
 
 
@@ -31,10 +40,11 @@ import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.State
 
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import qualified Data.Set        as Set
-import           Data.Text       (isPrefixOf, pack)
+import           Data.List.NonEmpty (NonEmpty (..))
+import           Data.Map.Strict    (Map)
+import qualified Data.Map.Strict    as Map
+import qualified Data.Set           as Set
+import           Data.Text          (isPrefixOf, pack)
 
 
 import qualified Language.Prism as Prism
@@ -43,8 +53,10 @@ import qualified Language.Prism as Prism
 import Rbsc.Config
 
 import Rbsc.Data.Action
+import Rbsc.Data.ComponentType
 import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
+import Rbsc.Data.System
 import Rbsc.Data.Type
 
 import Rbsc.Eval
@@ -57,7 +69,19 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 import Rbsc.Util.NameGen
 
 
-type Identifiers = Map Qualified Prism.Ident
+type TranslatorInfo =
+    RolePlayingGuards :&:
+    ModelInfo :&:
+    RecursionDepth
+
+
+-- | Stores the conditions (as guards) under which a given role can execute
+-- a given action.
+type RolePlayingGuards = Map RoleName (Map (Maybe Action) (NonEmpty LSomeExpr))
+
+
+roleGuards :: Lens' TranslatorInfo RolePlayingGuards
+roleGuards = field
 
 
 type TranslatorState =
@@ -65,15 +89,17 @@ type TranslatorState =
     Identifiers
 
 
+type Identifiers = Map Qualified Prism.Ident
+
+
 idents :: Lens' TranslatorState Identifiers
 idents = field
 
 
-type Translator a =
-    StateT TranslatorState (ReaderT (ModelInfo :&: RecursionDepth) Result) a
+type Translator a = StateT TranslatorState (ReaderT TranslatorInfo Result) a
 
 
-runTranslator :: (ModelInfo :&: RecursionDepth) -> Translator a -> Result a
+runTranslator :: TranslatorInfo -> Translator a -> Result a
 runTranslator info m = runReaderT (evalStateT m initState) info
   where
     initState = mkNameGen id Set.empty :&: Map.empty
@@ -177,3 +203,33 @@ reduceLSomeExpr :: MonadEval r m => LSomeExpr -> m LSomeExpr
 reduceLSomeExpr (Loc (SomeExpr e ty) rgn) = do
     Loc e' _ <- reduce (Loc e rgn)
     return (Loc (SomeExpr e' ty) rgn)
+
+
+-- | Returns a map for each role component that contains the guards of all
+-- guarded commands in that component, keyed by their action label.
+rolePlayingGuards
+    :: (MonadReader r m, Has ComponentTypes r)
+    => System
+    -> Map ComponentName [TModuleInstance Elem]
+    -> m (Map RoleName (Map (Maybe Action) (NonEmpty LSomeExpr)))
+rolePlayingGuards sys modules = do
+    compTys <- view componentTypes
+    let modules' = Map.filterWithKey (\name _ -> isRole compTys name) modules
+    return (Map.map (Map.unions . fmap guardsByAction) modules')
+  where
+    isRole compTys name = case view (instances.at name) sys of
+        Just tyName -> isRoleType compTys tyName
+        Nothing     -> error $ "roleGuards: " ++ show name ++ " not in system"
+
+    guardsByAction
+        :: TModuleInstance Elem -> Map (Maybe Action) (NonEmpty LSomeExpr)
+    guardsByAction = Map.fromListWith (<>) .
+        fmap (fromCommand . getElem) . bodyCommands . view miBody
+
+    fromCommand :: TCommand Elem -> (Maybe Action, NonEmpty LSomeExpr)
+    fromCommand Command{..} =
+        let mAct = case cmdAction of
+                Just (Loc (SomeExpr (Literal act _) TyAction) _) ->
+                    Just act
+                _ -> Nothing
+        in (mAct, cmdGuard :| [])

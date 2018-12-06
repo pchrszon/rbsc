@@ -51,6 +51,7 @@ reservedWords =
     , "rewards"
     , "self"
     , "player"
+    , "playable"
     , "index"
     , "min"
     , "minf"

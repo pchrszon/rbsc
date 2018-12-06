@@ -82,6 +82,7 @@ atom = choice
     , lengthFunction
     , hasPlayerFunction
     , playerFunction
+    , playableFunction
     , indexFunction
     , self
     , ident
@@ -206,7 +207,13 @@ playerFunction = do
     arg <- optional ((,) <$> (symbol "(" *> expr) <*> symbol ")")
     case arg of
         Just (e, end) -> return (Loc (Player e) (start <> end))
-        Nothing -> return (Loc (Player (Loc Self start)) start)
+        Nothing       -> return (Loc (Player (Loc Self start)) start)
+
+
+playableFunction :: Parser LExpr
+playableFunction = specialFunction "playable" $ Playable
+    <$> expr
+    <*> optional (comma *> expr)
 
 
 indexFunction :: Parser LExpr
