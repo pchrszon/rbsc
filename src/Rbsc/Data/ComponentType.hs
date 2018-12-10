@@ -14,10 +14,10 @@ module Rbsc.Data.ComponentType
     , _CompartmentType
 
     , ComponentTypes
-    , HasComponentTypes(..)
+    , componentTypes
 
     , TypeSets
-    , HasTypeSets(..)
+    , typeSets
 
     , isRoleType
     , isCompartmentType
@@ -36,6 +36,7 @@ import           Data.Set        (Set)
 import qualified Data.Set        as Set
 
 
+import Rbsc.Data.Field
 import Rbsc.Data.Name
 
 import Rbsc.Report.Error
@@ -66,16 +67,18 @@ makePrisms ''ComponentType
 type ComponentTypes = Map TypeName ComponentType
 
 
-class HasComponentTypes a where
-    componentTypes :: Lens' a ComponentTypes
+-- | A 'Lens' for accessing the 'ComponentTypes'.
+componentTypes :: Has ComponentTypes r => Lens' r ComponentTypes
+componentTypes = field
 
 
 -- | User-defined sets of component types indexed by their name.
 type TypeSets = Map TypeName (Set TypeName)
 
 
-class HasTypeSets a where
-    typeSets :: Lens' a TypeSets
+-- | A 'Lens' for accessing the 'TypeSets'.
+typeSets :: Has TypeSets r => Lens' r TypeSets
+typeSets = field
 
 
 isRoleType :: ComponentTypes -> TypeName -> Bool

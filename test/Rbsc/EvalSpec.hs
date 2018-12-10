@@ -17,7 +17,7 @@ import Test.Hspec
 import Rbsc.Config
 
 import Rbsc.Data.Action
-import Rbsc.Data.Info
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
 
@@ -237,29 +237,41 @@ testModelInfo =
 eval' :: Type t -> Loc U.Expr -> Either [Error] t
 eval' ty e = do
     e' <- toEither
-        (runTypeChecker (tcExpr e) testModelInfo 10 >>= extract ty (getLoc e))
-    over _Left
-         (: [])
-         (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
+        (   runTypeChecker (tcExpr e) (testModelInfo :&: RecursionDepth 10)
+        >>= extract ty (getLoc e)
+        )
+    over
+        _Left
+        (: [])
+        (runReaderT (eval (e' `withLocOf` e))
+                    (testModelInfo :&: RecursionDepth 10)
+        )
 
 
 evalAct :: Loc U.Expr -> Either [Error] Action
 evalAct e = do
     e' <- toEither
-        (   runTypeChecker (tcAction e) testModelInfo 10
+        (   runTypeChecker (tcAction e) (testModelInfo :&: RecursionDepth 10)
         >>= extract TyAction (getLoc e)
         )
-    over _Left
-         (: [])
-         (runReaderT (eval (e' `withLocOf` e)) (Info testModelInfo 10))
+    over
+        _Left
+        (: [])
+        (runReaderT (eval (e' `withLocOf` e))
+                    (testModelInfo :&: RecursionDepth 10)
+        )
 
 
 reduce' :: Type t -> Loc U.Expr -> Either [Error] String
 reduce' ty e = do
     e' <- toEither
-        (runTypeChecker (tcExpr e) testModelInfo 10 >>= extract ty (getLoc e))
+        (   runTypeChecker (tcExpr e) (testModelInfo :&: RecursionDepth 10)
+        >>= extract ty (getLoc e)
+        )
     e'' <- over
         _Left
         (: [])
-        (runReaderT (reduce (e' `withLocOf` e)) (Info testModelInfo 10))
+        (runReaderT (reduce (e' `withLocOf` e))
+                    (testModelInfo :&: RecursionDepth 10)
+        )
     return (show e'')

@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds    #-}
+{-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE LambdaCase         #-}
@@ -17,13 +18,13 @@ module Rbsc.Data.Type
 
       -- * Symbol table
     , SymbolTable
-    , HasSymbolTable(..)
+    , symbolTable
     , isGlobalSymbol
     , isLocalSymbol
 
       -- * Range table
     , RangeTable
-    , HasRangeTable(..)
+    , rangeTable
 
       -- * Type equality
     , (:~:)(..)
@@ -60,6 +61,7 @@ import           Data.Type.Equality        ((:~:) (..))
 import Rbsc.Data.Action
 import Rbsc.Data.Array
 import Rbsc.Data.Component
+import Rbsc.Data.Field
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
@@ -123,8 +125,9 @@ instance Pretty (Some Type) where
 type SymbolTable = Map ScopedName (Some Type)
 
 
-class HasSymbolTable a where
-    symbolTable :: Lens' a SymbolTable
+-- | A 'Lens' for accessing the 'SymbolTable'.
+symbolTable :: Has SymbolTable r => Lens' r SymbolTable
+symbolTable = field
 
 
 -- | Returns @True@ if the 'SymbolTable' contains a global symbol with
@@ -148,8 +151,9 @@ isLocalSymbol symTable typeName name =
 type RangeTable = Map ScopedName (Int, Int)
 
 
-class HasRangeTable a where
-    rangeTable :: Lens' a RangeTable
+-- | A 'Lens' for accessing the 'RangeTable'.
+rangeTable :: Has RangeTable r => Lens' r RangeTable
+rangeTable = field
 
 
 -- | Check the equality of 'Type's.

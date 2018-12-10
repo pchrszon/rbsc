@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -18,6 +19,7 @@ import Data.Map.Strict (Map)
 
 import Rbsc.Config
 
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo (ModelInfo)
 import Rbsc.Data.Type
 
@@ -37,13 +39,13 @@ import Rbsc.TypeChecker.ModelInfo
 
 
 typeCheck
-    :: (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
+    :: (MonadReader r (t Result), Has RecursionDepth r, MonadTrans t)
     => U.Model
     -> t Result (T.Model, ModelInfo)
 typeCheck model = do
     (info, insts) <- getModelInfo model
-    depth         <- view recursionDepth
-    model'        <- lift (runTypeChecker (tcModel insts model) info depth)
+    depth  <- view recursionDepth
+    model' <- lift (runTypeChecker (tcModel insts model) (info :&: depth))
     return (model', info)
 
 

@@ -1,12 +1,12 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
 
 -- | Generator for unique names.
 module Rbsc.Util.NameGen
-    ( HasNameGen(..)
-
-    , NameGen
+    ( NameGen
+    , nameGen
     , mkNameGen
     , defaultDerive
 
@@ -21,16 +21,14 @@ import Control.Monad.State.Strict
 import           Data.Map   (Map)
 import qualified Data.Map   as Map
 import           Data.Maybe (fromMaybe)
-import           Data.Set   (Set, member, insert)
+import           Data.Set   (Set, insert, member)
 import           Data.Text  (Text)
 import qualified Data.Text  as T
 
+
+import Rbsc.Data.Field
+
 import Rbsc.Util (appendIndex)
-
-
--- | A state @t@ that is an instance of 'HasNameGen' carries a 'NameGen'.
-class HasNameGen t where
-    nameGen :: Lens' t NameGen
 
 
 -- | A name generator.
@@ -43,10 +41,12 @@ data NameGen = NameGen
     , _deriveName :: Text -> Text
     }
 
-instance HasNameGen NameGen where
-    nameGen = id
-
 makeLenses ''NameGen
+
+
+-- | A 'Lens' for accessing a 'NameGen'.
+nameGen :: Has NameGen r => Lens' r NameGen
+nameGen = field
 
 
 -- | Creates a new 'NameGen' from a given name derivation function and
@@ -66,12 +66,12 @@ defaultDerive name
 
 
 -- | Creates a new name.
-newName :: (MonadState s m, HasNameGen s) => m Text
+newName :: (MonadState s m, Has NameGen s) => m Text
 newName = newNameFrom "x"
 
 
 -- | Creates a new name derived from the given name.
-newNameFrom :: (MonadState s m, HasNameGen s) => Text -> m Text
+newNameFrom :: (MonadState s m, Has NameGen s) => Text -> m Text
 newNameFrom name = do
     dn <- use (nameGen.deriveName)
     ts <- use (nameGen.taken)

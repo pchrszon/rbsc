@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TypeOperators     #-}
 
 
 module Rbsc.Translator
@@ -25,7 +26,7 @@ import Rbsc.Config
 
 import Rbsc.Data.Action
 import Rbsc.Data.ComponentType
-import Rbsc.Data.Info
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.System
 
@@ -61,11 +62,12 @@ translateModels depth model = do
         return (typedModel, sysInfos)
 
     for sysInfos $ \(sys, mi) -> do
-        model' <- translateModel typedModel sys (Info mi depth)
+        model' <- translateModel typedModel sys (mi :&: depth)
         return (sys, mi, model')
 
 
-translateModel :: Model -> System -> Info -> Result Prism.Model
+translateModel
+    :: Model -> System -> (ModelInfo :&: RecursionDepth) -> Result Prism.Model
 translateModel model sys info = do
     (modules, coordinators, rewardStructs) <- flip runReaderT info $ (,,)
         <$> instantiateComponents model sys

@@ -4,13 +4,13 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeOperators         #-}
 
 
 module Rbsc.Translator.Internal
     ( Translator
     , runTranslator
-    , TranslatorState(..)
+    , TranslatorState
 
     , trnsQualified
     , trnsAction
@@ -34,14 +34,17 @@ import Control.Monad.State
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set        as Set
-import           Data.Text       (pack, isPrefixOf)
+import           Data.Text       (isPrefixOf, pack)
 
 
 import qualified Language.Prism as Prism
 
 
+import Rbsc.Config
+
 import Rbsc.Data.Action
-import Rbsc.Data.Info
+import Rbsc.Data.Field
+import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
 
 import Rbsc.Eval
@@ -54,29 +57,31 @@ import Rbsc.Syntax.Typed hiding (Type (..))
 import Rbsc.Util.NameGen
 
 
-data TranslatorState = TranslatorState
-    { _tsNameGen :: NameGen
-    , _tsIdents  :: !(Map Qualified Prism.Ident)
-    }
-
-makeLenses ''TranslatorState
-
-instance HasNameGen TranslatorState where
-    nameGen = tsNameGen
+type Identifiers = Map Qualified Prism.Ident
 
 
-type Translator a = StateT TranslatorState (ReaderT Info Result) a
+type TranslatorState =
+    NameGen :&:
+    Identifiers
 
 
-runTranslator :: Info -> Translator a -> Result a
+idents :: Lens' TranslatorState Identifiers
+idents = field
+
+
+type Translator a =
+    StateT TranslatorState (ReaderT (ModelInfo :&: RecursionDepth) Result) a
+
+
+runTranslator :: (ModelInfo :&: RecursionDepth) -> Translator a -> Result a
 runTranslator info m = runReaderT (evalStateT m initState) info
   where
-    initState = TranslatorState (mkNameGen id Set.empty) Map.empty
+    initState = mkNameGen id Set.empty :&: Map.empty
 
 
 
 trnsQualified :: MonadState TranslatorState m => Qualified -> m Prism.Ident
-trnsQualified qname = use (tsIdents.at qname) >>= \case
+trnsQualified qname = use (idents.at qname) >>= \case
     Just ident -> return ident
     Nothing    -> do
         -- A Qualified name in the original model is unique. However,
@@ -88,7 +93,7 @@ trnsQualified qname = use (tsIdents.at qname) >>= \case
         let ident = mkIdent qname
         ident' <- newNameFrom ident
 
-        tsIdents.at qname ?= ident'
+        idents.at qname ?= ident'
 
         return ident'
   where

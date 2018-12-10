@@ -19,6 +19,7 @@ import Data.Traversable
 import qualified Language.Prism as Prism
 
 
+import Rbsc.Data.Field
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
@@ -85,7 +86,7 @@ trnsVarDecl mComp (varName, mInit) =
         Nothing            -> ScopedName Global varName
 
     baseType ::
-       (MonadReader r m, HasRangeTable r) => Type t -> m Prism.DeclarationType
+       (MonadReader r m, Has RangeTable r) => Type t -> m Prism.DeclarationType
     baseType = \case
         TyBool -> return Prism.DeclTypeBool
         TyInt  -> view (rangeTable.at scName) >>= \case

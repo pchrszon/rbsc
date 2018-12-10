@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -33,6 +34,7 @@ import qualified Data.Set      as Set
 
 
 import Rbsc.Data.Component
+import Rbsc.Data.Field
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
@@ -133,9 +135,9 @@ type Updates = [TElem (TUpdate Elem)]
 -- | Get the 'Range's of all variables appearing inside an 'Index' operator.
 getIndexRanges
     :: ( MonadReader r m
-       , HasSymbolTable r
-       , HasConstants r
-       , HasRangeTable r
+       , Has SymbolTable r
+       , Has Constants r
+       , Has RangeTable r
        , HasExprs a
        )
     => (a -> Updates)
@@ -167,13 +169,13 @@ indexExprs getUpdates cmd =
 
 -- | Get the 'Range' for each variable in the given list.
 getVariableRanges ::
-       (MonadReader r m, HasRangeTable r)
+       (MonadReader r m, Has RangeTable r)
     => [TypedVariable]
     -> m [(Variable, Range)]
 getVariableRanges = fmap catMaybes . traverse getRange
   where
     getRange ::
-           (MonadReader r m, HasRangeTable r)
+           (MonadReader r m, Has RangeTable r)
         => TypedVariable
         -> m (Maybe (Variable, Range))
     getRange (TypedVariable var (Some ty)) = case ty of
@@ -193,7 +195,7 @@ getVariableRanges = fmap catMaybes . traverse getRange
 
 -- | Get the set of 'TypedVariable's contained in an 'Expr'.
 variables ::
-       (MonadReader r m, HasSymbolTable r, HasConstants r)
+       (MonadReader r m, Has SymbolTable r, Has Constants r)
     => Maybe Component
     -> Some Expr
     -> m (Set TypedVariable)

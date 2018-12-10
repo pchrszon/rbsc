@@ -22,6 +22,7 @@ import Control.Monad.Reader
 
 
 import Rbsc.Data.Component
+import Rbsc.Data.Field
 import Rbsc.Data.Type
 
 import Rbsc.Eval
@@ -36,7 +37,7 @@ import Rbsc.Translator.Indices.Internal
 -- | Remove all variables appearing inside indexing brackets by replacing
 -- them with all possible values.
 removeVariableIndicesInModule ::
-       (MonadEval r m, HasSymbolTable r, HasRangeTable r)
+       (MonadEval r m, Has SymbolTable r, Has RangeTable r)
     => Component
     -> TModuleBody Elem
     -> m (TModuleBody Elem)
@@ -47,7 +48,7 @@ removeVariableIndicesInModule comp (ModuleBody vars cmds) = ModuleBody vars
 -- | Remove all variables appearing inside indexing brackets by replacing
 -- them with all possible values.
 removeVariableIndicesInCoord
-    :: (MonadEval r m, HasSymbolTable r, HasRangeTable r)
+    :: (MonadEval r m, Has SymbolTable r, Has RangeTable r)
     => TCoordinator Elem
     -> m (TCoordinator Elem)
 removeVariableIndicesInCoord (Coordinator vars cmds) = Coordinator vars
@@ -56,9 +57,9 @@ removeVariableIndicesInCoord (Coordinator vars cmds) = Coordinator vars
 
 removeInCommands
     :: ( MonadReader r m
-       , HasConstants r
-       , HasSymbolTable r
-       , HasRangeTable r
+       , Has Constants r
+       , Has SymbolTable r
+       , Has RangeTable r
        , HasExprs a
        )
     => Lens' a LSomeExpr
@@ -72,9 +73,9 @@ removeInCommands guardLens getUpdates mComp = fmap concat . traverse
 
 removeInCommand
     :: ( MonadReader r m
-       , HasConstants r
-       , HasSymbolTable r
-       , HasRangeTable r
+       , Has Constants r
+       , Has SymbolTable r
+       , Has RangeTable r
        , HasExprs a
        )
     => Lens' a LSomeExpr

@@ -17,7 +17,7 @@ import Test.Hspec
 import Rbsc.Config
 
 import Rbsc.Data.Component
-import Rbsc.Data.Info
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 
 import Rbsc.Instantiation
@@ -79,11 +79,10 @@ testCommand = let T.ModuleBody _ [T.Elem cmd] = testModuleBody in cmd
 testModuleBody :: T.TModuleBody T.Elem
 testModuleBody =
     let Right [T.ModuleInstance _ _ r] =
-            toEither . flip runReaderT (Info (view _2 typedTestModel) 10) $
-                instantiateComponent
-                    (view _1 typedTestModel)
-                    testComponent
-    in r
+            toEither
+                . flip runReaderT (view _2 typedTestModel :&: RecursionDepth 10)
+                $ instantiateComponent (view _1 typedTestModel) testComponent
+    in  r
 
 
 typedTestModel :: (T.Model, ModelInfo)
@@ -99,5 +98,5 @@ typedTestModel =
 getIndexRanges' ::
        Component -> T.TCommand T.Elem -> Either [Error] [(Variable, Range)]
 getIndexRanges' comp cmd =
-    toEither . flip runReaderT (Info (view _2 typedTestModel) 10) $
+    toEither . flip runReaderT (view _2 typedTestModel :&: RecursionDepth 10) $
         getIndexRanges T.cmdUpdates (Just comp) cmd

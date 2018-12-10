@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeOperators         #-}
 
 
 -- | Construction of the symbol table and evaluation of constants.
@@ -24,6 +24,7 @@ import qualified Data.Set        as Set
 import Rbsc.Config
 
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
@@ -35,8 +36,8 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed   (HasConstants (..), HasMethods (..),
-                                      LSomeExpr, SomeExpr (..))
+import           Rbsc.Syntax.Typed   (LSomeExpr, SomeExpr (..), constants,
+                                      methods)
 import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped (Enumeration (..), LExpr,
                                       ModuleInstance (..), Parameter (..),
@@ -52,27 +53,23 @@ import           Rbsc.TypeChecker.Identifiers
 import qualified Rbsc.TypeChecker.Internal       as TC
 
 
-data BuilderState = BuilderState
-    { _modelInfo        :: !ModelInfo
-    , _moduleInstances  :: Map TypeName (Map Name [UModuleInstance])
-    , _bsRecursionDepth :: RecursionDepth
-    }
 
-makeLenses ''BuilderState
+type ModuleInstances = Map TypeName (Map Name [UModuleInstance])
 
-instance HasRecursionDepth BuilderState where
-    recursionDepth = bsRecursionDepth
 
-instance HasConstants BuilderState where
-    constants = modelInfo.constants
+type BuilderState =
+    ModelInfo :&:
+    ModuleInstances :&:
+    RecursionDepth
 
-instance HasMethods BuilderState where
-    methods = modelInfo.methods
+
+moduleInstances :: Lens' BuilderState ModuleInstances
+moduleInstances = field
 
 
 -- | Construct the 'ModelInfo' for a given 'Model'.
 getModelInfo
-    :: (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
+    :: (MonadReader r (t Result), Has RecursionDepth r, MonadTrans t)
     => U.Model
     -> t Result (ModelInfo, Map TypeName [UModuleInstance])
 getModelInfo m = do
@@ -180,17 +177,17 @@ addLocalVariable tyName moduleName (U.VarDecl (Loc name _) vTy _) = do
     -- however).
     withConstants :: [(Name, LSomeExpr)] -> Builder a -> Builder a
     withConstants cs m = do
-        symTable <- use (modelInfo.symbolTable)
-        consts   <- use (modelInfo.constants)
+        symTable <- use symbolTable
+        consts   <- use constants
 
         for_ cs $ \(constName, Loc e@(SomeExpr _ ty) _) -> do
-            modelInfo.symbolTable.at (ScopedName Global constName) ?= Some ty
-            modelInfo.constants.at constName ?= e
+            symbolTable.at (ScopedName Global constName) ?= Some ty
+            constants.at constName ?= e
 
         res <- m
 
-        modelInfo.symbolTable .= symTable
-        modelInfo.constants   .= consts
+        symbolTable .= symTable
+        constants   .= consts
 
         return res
 
@@ -233,7 +230,7 @@ addComponentType = \case
 
 addTypeSet :: TypeSetDef -> Builder ()
 addTypeSet (TypeSetDef (Loc name _) tyNames) =
-    modelInfo.typeSets.at name ?= Set.fromList (fmap unLoc (toList tyNames))
+    typeSets.at name ?= Set.fromList (fmap unLoc (toList tyNames))
 
 
 addComponents :: ComponentDef -> Builder ()
@@ -291,8 +288,8 @@ fromSyntaxType = \case
     U.TyDouble -> return (Some TyDouble)
     U.TyAction -> return (Some TyAction)
     U.TyComponent tySet -> do
-        compTys <- use (modelInfo.componentTypes)
-        tySetDefs <- use (modelInfo.typeSets)
+        compTys   <- use componentTypes
+        tySetDefs <- use typeSets
         tySet' <- lift (fromEither' (normalizeTypeSet compTys tySetDefs tySet))
         return (Some (TyComponent tySet'))
     U.TyArray size sTy -> do
@@ -329,11 +326,11 @@ runBuilder
     -> RecursionDepth
     -> Result (ModelInfo, Map TypeName [UModuleInstance])
 runBuilder m depth = do
-    BuilderState mi insts _ <- execStateT m initial
+    (mi :&: (insts :&: _)) <- execStateT m initial
     let insts' = Map.map (concat . Map.elems) insts
     return (mi, insts')
   where
-    initial = BuilderState emptyModelInfo Map.empty depth
+    initial = emptyModelInfo :&: Map.empty :&: depth
 
 
 evalIntExpr :: Loc U.Expr -> Builder Int
@@ -360,28 +357,27 @@ typeCheckExpr ty e = runTypeChecker (e `hasType` ty)
 
 runTypeChecker :: TC.TypeChecker a -> Builder a
 runTypeChecker m = do
-    info  <- use modelInfo
-    depth <- use recursionDepth
-    lift (TC.runTypeChecker m info depth)
+    s <- get
+    lift (TC.runTypeChecker m s)
 
 
 insertSymbol :: Scope -> Name -> Some Type -> Builder ()
 insertSymbol sc name ty =
-    modelInfo.symbolTable.at (ScopedName sc name) .= Just ty
+    symbolTable.at (ScopedName sc name) ?= ty
 
 
 insertRange :: Scope -> Name -> Maybe (Int, Int) -> Builder ()
 insertRange sc name mRange =
-    modelInfo.rangeTable.at (ScopedName sc name) .= mRange
+    rangeTable.at (ScopedName sc name) .= mRange
 
 
 insertConstant :: Name -> SomeExpr -> Builder ()
-insertConstant name e = modelInfo.constants.at name ?= e
+insertConstant name e = constants.at name ?= e
 
 
 insertMethod :: ScopedName -> SomeExpr -> Builder ()
-insertMethod name e = modelInfo.methods.at name ?= e
+insertMethod name e = methods.at name ?= e
 
 
 insertComponentType :: TypeName -> ComponentType -> Builder ()
-insertComponentType tyName ty = modelInfo.componentTypes.at tyName .= Just ty
+insertComponentType tyName ty = componentTypes.at tyName ?= ty

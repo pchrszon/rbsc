@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeOperators         #-}
 
 
@@ -11,7 +10,7 @@ module Rbsc.TypeChecker.Internal
     ( -- * TypeChecker monad
       TypeChecker
 
-    , TcInfo(..)
+    , TcInfo
     , componentTypes
     , symbolTable
     , boundVars
@@ -20,7 +19,6 @@ module Rbsc.TypeChecker.Internal
     , TcContext(..)
 
     , runTypeChecker
-    , runTypeChecker'
 
     , getIdentifierType
     , lookupBoundVar
@@ -54,6 +52,7 @@ import           Data.Text       (Text)
 import Rbsc.Config
 
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
@@ -64,8 +63,8 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed.Expr (Constants, HasConstants, HasMethods,
-                                         SomeExpr (..))
+import           Rbsc.Syntax.Typed.Expr (Constants, SomeExpr (..), constants,
+                                         methods)
 import qualified Rbsc.Syntax.Typed.Expr as T
 
 import Rbsc.Util (renderPretty)
@@ -82,63 +81,58 @@ data TcContext
     | ConstraintContext -- ^ In the role-constraint context, all components are treated as bool.
 
 
+-- | The list of variables bound by a quantifier or lambda.
+type BoundVars = [(Name, Some Type)]
+
+
 -- | The information provided to the type checker.
-data TcInfo = TcInfo
-    { _tciComponentTypes :: !ComponentTypes     -- ^ 'ComponentType' defined in the model
-    , _tciTypeSets       :: !TypeSets           -- ^ the user defined component type sets
-    , _tciSymbolTable    :: !SymbolTable        -- ^ the 'SymbolTable'
-    , _tciConstants      :: !Constants          -- ^ the defined constants
-    , _tciMethods        :: !Methods            -- ^ the defined methods
-    , _tciRecursionDepth :: !RecursionDepth     -- ^ the maximum recursion depth
-    , _boundVars         :: [(Name, Some Type)] -- ^ list of variables bound by a quantifier or lambda
-    , _scope             :: !Scope              -- ^ the current scope
-    , _context           :: !TcContext          -- ^ the current type checking context
-    }
-
-makeLenses ''TcInfo
-
-instance HasComponentTypes TcInfo where
-    componentTypes = tciComponentTypes
-
-instance HasTypeSets TcInfo where
-    typeSets = tciTypeSets
-
-instance HasSymbolTable TcInfo where
-    symbolTable = tciSymbolTable
-
-instance HasConstants TcInfo where
-    constants = tciConstants
-
-instance HasMethods TcInfo where
-    methods = tciMethods
-
-instance HasRecursionDepth TcInfo where
-    recursionDepth = tciRecursionDepth
+type TcInfo =
+    ComponentTypes :&:
+    TypeSets :&:
+    SymbolTable :&:
+    Constants :&:
+    Methods :&:
+    RecursionDepth :&:
+    [(Name, Some Type)] :&: -- list of variables bound by a quantifier or lambda
+    Scope :&: -- the current scope
+    TcContext -- the current type checking context
 
 
--- | Run a type checker action.
-runTypeChecker :: TypeChecker a -> ModelInfo -> RecursionDepth -> Result a
-runTypeChecker m info = runTypeChecker' m
-    (view componentTypes info)
-    (view typeSets info)
-    (view symbolTable info)
-    (view constants info)
-    (view methods info)
+boundVars :: Lens' TcInfo BoundVars
+boundVars = field
 
 
--- | Run a type checker action. Since the type checker does not need a full
--- 'ModelInfo', use this function to supply only the necessary information.
-runTypeChecker'
-    :: TypeChecker a
-    -> ComponentTypes
-    -> TypeSets
-    -> SymbolTable
-    -> Constants
-    -> Methods
-    -> RecursionDepth
+scope :: Lens' TcInfo Scope
+scope = field
+
+
+context :: Lens' TcInfo TcContext
+context = field
+
+
+-- | Run a 'TypeChecker' action.
+runTypeChecker
+    :: ( Has ComponentTypes r
+       , Has TypeSets r
+       , Has SymbolTable r
+       , Has Constants r
+       , Has Methods r
+       , Has RecursionDepth r
+       )
+    => TypeChecker a
+    -> r
     -> Result a
-runTypeChecker' m types tySets symTable consts ms depth = runReaderT m
-    (TcInfo types tySets symTable consts ms depth [] Global NoContext)
+runTypeChecker m r = runReaderT m
+    (   view componentTypes r
+    :&: view typeSets r
+    :&: view symbolTable r
+    :&: view constants r
+    :&: view methods r
+    :&: view recursionDepth r
+    :&: []
+    :&: Global
+    :&: NoContext
+    )
 
 
 -- | Looks up the type of a given identifier in the symbol table. First,

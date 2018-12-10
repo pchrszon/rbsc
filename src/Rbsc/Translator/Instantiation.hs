@@ -27,6 +27,7 @@ import           Data.Traversable
 
 
 import Rbsc.Data.Component
+import Rbsc.Data.Field
 import Rbsc.Data.System
 import Rbsc.Data.Type
 
@@ -45,7 +46,7 @@ import Rbsc.Util (withConstants)
 -- | Instantiate the 'ModuleBody's for all 'Component's in the given
 -- 'System'.
 instantiateComponents
-    :: (MonadEval r m, HasSymbolTable r, HasRangeTable r)
+    :: (MonadEval r m, Has SymbolTable r, Has RangeTable r)
     => Model
     -> System
     -> m (Map ComponentName [TModuleInstance Elem])
@@ -64,7 +65,7 @@ instantiateComponents m sys =
 
 -- | Instantiate a 'Coordinator'.
 instantiateCoordinator
-    :: (MonadEval r m, HasSymbolTable r, HasRangeTable r)
+    :: (MonadEval r m, Has SymbolTable r, Has RangeTable r)
     => TCoordinator ElemMulti
     -> m (TCoordinator Elem)
 instantiateCoordinator =
@@ -99,7 +100,7 @@ reduceRewardStruct RewardStruct {..} = RewardStruct rsName
 
 -- | Instantiate all 'ModuleBody's for the given 'Component'.
 instantiateComponent
-    :: (MonadEval r m, HasSymbolTable r)
+    :: (MonadEval r m, Has SymbolTable r)
     => Model
     -> Component
     -> m [TModuleInstance Elem]
@@ -110,7 +111,7 @@ instantiateComponent m comp =
 
 
 instantiateModuleBody
-    :: (MonadEval r m, HasSymbolTable r)
+    :: (MonadEval r m, Has SymbolTable r)
     => Component
     -> TModuleInstance ElemMulti
     -> m (TModuleInstance Elem)

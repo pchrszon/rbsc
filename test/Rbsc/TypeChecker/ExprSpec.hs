@@ -13,6 +13,7 @@ import Test.Hspec
 
 import Rbsc.Config
 
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Type
 
@@ -111,7 +112,7 @@ testModel =
 
 typeCheck :: Type t -> Loc U.Expr -> Either [Error] String
 typeCheck ty e = toEither $ do
-    te <- runTypeChecker (tcExpr e) modelInfo 10
+    te <- runTypeChecker (tcExpr e) (modelInfo :&: RecursionDepth 10)
     show <$> extract ty (getLoc e) te
 
 

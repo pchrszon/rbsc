@@ -37,6 +37,7 @@ import           Rbsc.Data.Action
 import           Rbsc.Data.Array     (Array)
 import qualified Rbsc.Data.Array     as Array
 import           Rbsc.Data.Component
+import           Rbsc.Data.Field
 import           Rbsc.Data.Function  (function, functionType)
 import           Rbsc.Data.Name
 import           Rbsc.Data.Scope
@@ -47,16 +48,16 @@ import Rbsc.Report.Region (Loc (..), Region)
 
 import Rbsc.Syntax.Operators
 import Rbsc.Syntax.Quantification
-import Rbsc.Syntax.Typed.Expr     (Constants, HasConstants (..))
+import Rbsc.Syntax.Typed.Expr     (Constants, constants)
 import Rbsc.Syntax.Typed.Expr     as T
 
 
 type MonadEval r m
      = ( MonadError Error m
        , MonadReader r m
-       , HasRecursionDepth r
-       , HasConstants r
-       , HasMethods r
+       , Has RecursionDepth r
+       , Has Constants r
+       , Has Methods r
        )
 
 

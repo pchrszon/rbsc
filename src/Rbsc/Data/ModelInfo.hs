@@ -1,66 +1,47 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 
 
 -- | The 'ModelInfo' provides information about the identifiers and types
 -- defined in the model.
 module Rbsc.Data.ModelInfo
-    ( ModelInfo(..)
+    ( ModelInfo
     , emptyModelInfo
 
     , componentTypes
     , typeSets
     , symbolTable
+    , rangeTable
     , constants
     , methods
 
     , ComponentTypes
+    , TypeSets
     , SymbolTable
+    , RangeTable
     , Constants
     , Methods
     ) where
 
 
-import Control.Lens
-
-
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Field
 import Rbsc.Data.Type
 
 import Rbsc.Syntax.Typed.Expr
 
 
--- | The @ModelInfo@ holds the types of identifiers, the user-defined types
--- and the values of constants defined in the model.
-data ModelInfo = ModelInfo
-    { _miComponentTypes :: !ComponentTypes
-    , _miTypeSets       :: !TypeSets
-    , _miSymbolTable    :: !SymbolTable
-    , _miRangeTable     :: !RangeTable
-    , _miConstants      :: !Constants
-    , _miMethods        :: !Methods
-    } deriving (Show)
-
-makeLenses ''ModelInfo
-
-instance HasComponentTypes ModelInfo where
-    componentTypes = miComponentTypes
-
-instance HasTypeSets ModelInfo where
-    typeSets = miTypeSets
-
-instance HasSymbolTable ModelInfo where
-    symbolTable = miSymbolTable
-
-instance HasRangeTable ModelInfo where
-    rangeTable = miRangeTable
-
-instance HasConstants ModelInfo where
-    constants = miConstants
-
-instance HasMethods ModelInfo where
-    methods = miMethods
+-- | The @ModelInfo@ holds information extracted from the model, including
+-- the types of all identifiers, user-defined types and the values of all
+-- constants defined in the model.
+type ModelInfo =
+    ComponentTypes :&:
+    TypeSets :&:
+    SymbolTable :&:
+    RangeTable :&:
+    Constants :&:
+    Methods
 
 
 -- | Empty @ModelInfo@.
 emptyModelInfo :: ModelInfo
-emptyModelInfo = ModelInfo mempty mempty mempty mempty mempty mempty
+emptyModelInfo = mempty

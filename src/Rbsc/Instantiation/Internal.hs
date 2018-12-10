@@ -37,6 +37,7 @@ import Data.Traversable
 import Rbsc.Data.Array
 import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.System
 import Rbsc.Data.Type
@@ -81,8 +82,8 @@ pattern LitComponent name tyName <- (componentLiteral -> Just (name, tyName))
 -- Expressions of the form @x : t@, @x[n] : t@, @x boundto y@ and @x in y@ are
 -- transformed into the 'System' instance. All other expressions are added
 -- to the constraints list.
-buildSystem ::
-       (MonadEval r m, HasComponentTypes r)
+buildSystem
+    :: (MonadEval r m, Has ComponentTypes r)
     => Model
     -> m (System, [Loc (Expr Bool)], [ArrayInfo])
 buildSystem model = do
@@ -125,12 +126,10 @@ buildSystem model = do
 
         _ -> modifying constraints (e :)
 
-    insertRelation ::
-           ( MonadError Error m
-           , MonadReader r m
-           , HasComponentTypes r
-           )
-        => Loc (Expr Bool) -> StateT (System, Map RoleName Region) m ()
+    insertRelation
+        :: (MonadError Error m, MonadReader r m, Has ComponentTypes r)
+        => Loc (Expr Bool)
+        -> StateT (System, Map RoleName Region) m ()
     insertRelation (Loc e _) = do
         compTys <- view componentTypes
         case e of
@@ -243,8 +242,8 @@ clauses e@(Loc e' rgn) = case e' of
 
 -- | Check if the given 'System' violates the role cardinalities given by
 -- the compartment type definitions. If so, an error is thrown.
-checkCompartmentUpperBounds ::
-       (MonadError Error m, MonadReader r m, HasComponentTypes r)
+checkCompartmentUpperBounds
+    :: (MonadError Error m, MonadReader r m, Has ComponentTypes r)
     => System
     -> m ()
 checkCompartmentUpperBounds sys = do

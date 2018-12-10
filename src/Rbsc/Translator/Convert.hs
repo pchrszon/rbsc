@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeOperators     #-}
 
 
 -- | Conversion of multi-actions to single actions.
@@ -23,20 +23,23 @@ import qualified Language.Prism.Convert as Prism
 import Data.Text (intercalate, isPrefixOf, pack)
 
 
+import Rbsc.Data.Field
+
 import Rbsc.Translator.Internal (overridePrefix)
 
 import Rbsc.Util.NameGen
 
 
-data ConverterState = ConverterState
-    { _csNameGen :: NameGen
-    , _csIdents  :: !(Map [Prism.Action] Prism.Ident)
-    }
+type Identifiers = Map [Prism.Action] Prism.Ident
 
-makeLenses ''ConverterState
 
-instance HasNameGen ConverterState where
-    nameGen = csNameGen
+type ConverterState =
+    NameGen :&:
+    Identifiers
+
+
+idents :: Lens' ConverterState Identifiers
+idents = field
 
 
 type Converter a = State ConverterState a
@@ -61,17 +64,17 @@ prepareConversion = Prism.conversionInfo
 runConverter :: Converter a -> a
 runConverter m = evalState m initState
   where
-    initState = ConverterState (mkNameGen id Set.empty) Map.empty
+    initState = mkNameGen id Set.empty :&: Map.empty
 
 
 convert :: [Prism.Action] -> Converter Prism.Ident
-convert acts = use (csIdents.at acts) >>= \case
+convert acts = use (idents.at acts) >>= \case
     Just ident -> return ident
     Nothing -> do
         let ident = mkIdent acts
         ident' <- newNameFrom ident
 
-        csIdents.at acts ?= ident'
+        idents.at acts ?= ident'
 
         return ident'
   where

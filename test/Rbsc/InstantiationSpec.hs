@@ -19,8 +19,10 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 
+import Rbsc.Config
+
 import Rbsc.Data.Component
-import Rbsc.Data.Info
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
 import Rbsc.Data.System
@@ -250,19 +252,20 @@ simpleModel =
 
 checkCompartmentUpperBounds' :: Model -> Either [Error] ()
 checkCompartmentUpperBounds' m =
-    toEither . flip runReaderT (Info emptyModelInfo 10) $ do
+    toEither . flip runReaderT (emptyModelInfo :&: RecursionDepth 10) $ do
         (m', info) <- typeCheck m
-        local (set modelInfo info) $ do
+        local (const (info :&: RecursionDepth 10)) $ do
             (sys, _, _) <- buildSystem m'
             checkCompartmentUpperBounds sys
 
 
 buildSystem' :: Model -> Either [Error] System
-buildSystem' m = toEither . flip runReaderT (Info emptyModelInfo 10) $ do
-    (m', info) <- typeCheck m
-    local (set modelInfo info) $ do
-        result <- buildSystem m'
-        return (view _1 result)
+buildSystem' m =
+    toEither . flip runReaderT (emptyModelInfo :&: RecursionDepth 10) $ do
+        (m', info) <- typeCheck m
+        local (const (info :&: RecursionDepth 10)) $ do
+            result <- buildSystem m'
+            return (view _1 result)
 
 
 getComponents :: Model -> Either [Error] (Map Name Component)
@@ -288,9 +291,9 @@ getComponentArrays m = do
 
 
 getConstants :: Model -> Either [Error] Constants
-getConstants m = toEither . flip runReaderT (Info emptyModelInfo 10) $ do
+getConstants m = toEither . flip runReaderT (emptyModelInfo :&: RecursionDepth 10) $ do
     (m', info) <- typeCheck m
-    local (set modelInfo info) $ do
+    local (const (info :&: RecursionDepth 10)) $ do
         (sys, _, arrayInfos) <- buildSystem m'
         let (_, info') = updateModelInfo info arrayInfos sys
         return (view constants info')

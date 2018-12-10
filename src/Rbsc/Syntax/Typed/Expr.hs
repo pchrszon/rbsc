@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE LambdaCase          #-}
@@ -17,12 +18,12 @@ module Rbsc.Syntax.Typed.Expr
     , SomeExpr(..)
 
     , Constants
-    , HasConstants(..)
+    , constants
     , isConstant
     , prettyConstants
 
     , Methods
-    , HasMethods(..)
+    , methods
 
     , HasExprs(..)
 
@@ -57,6 +58,7 @@ import           Data.Text.Prettyprint.Doc
 import Rbsc.Data.Action
 import Rbsc.Data.Array
 import Rbsc.Data.Component
+import Rbsc.Data.Field
 import Rbsc.Data.Function
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
@@ -140,8 +142,10 @@ deriving instance Show (Some Expr)
 -- | The table of constants.
 type Constants = Map Name SomeExpr
 
-class HasConstants a where
-    constants :: Lens' a Constants
+
+-- | A 'Lens' for accessing the 'Constants'.
+constants :: Has Constants r => Lens' r Constants
+constants = field
 
 
 -- | Returns @True@ if there is a constant with the given name.
@@ -182,8 +186,10 @@ prettyConstants = fmap prettyConstant . filter (isValue . snd) . Map.assocs
 -- | The table of methods.
 type Methods = Map ScopedName SomeExpr
 
-class HasMethods a where
-    methods :: Lens' a Methods
+
+-- | A 'Lens' for accessing the 'Methods'.
+methods :: Has Methods r => Lens' r Methods
+methods = field
 
 
 -- | Any syntax tree node @n@ that 'HasExprs' provides a traversal of all

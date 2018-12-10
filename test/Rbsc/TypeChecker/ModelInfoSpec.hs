@@ -7,6 +7,7 @@ module Rbsc.TypeChecker.ModelInfoSpec (spec) where
 
 import qualified Data.Map.Strict as Map
 
+import Control.Lens
 import Control.Monad.Reader
 
 import Test.Hspec
@@ -30,7 +31,7 @@ import Rbsc.TypeChecker.ModelInfo
 spec :: Spec
 spec = describe "getModelInfo" $
     it "computes the variable ranges" $
-        fmap _miRangeTable (getModelInfo'
+        fmap (view rangeTable) (getModelInfo'
             [model|
                 natural type N;
 

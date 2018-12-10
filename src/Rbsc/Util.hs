@@ -33,6 +33,7 @@ import           Data.Text.Prettyprint.Doc
 import           Data.Text.Prettyprint.Doc.Render.Text
 
 
+import Rbsc.Data.Field
 import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
@@ -67,7 +68,7 @@ whenIsJust Nothing  _ = return ()
 
 -- | Locally add a list of constants to the constant table and the symbol table.
 withConstants
-    :: (MonadReader r m, HasSymbolTable r, HasConstants r)
+    :: (MonadReader r m, Has SymbolTable r, Has Constants r)
     => [(Name, LSomeExpr)]
     -> m a
     -> m a

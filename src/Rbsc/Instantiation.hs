@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 
@@ -20,7 +21,7 @@ import Rbsc.Completer
 
 import Rbsc.Config
 
-import Rbsc.Data.Info
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.System
 
@@ -36,13 +37,13 @@ import Rbsc.Syntax.Typed
 -- the system block of the model. For each system, an extended 'ModelInfo'
 -- is returned that contains constants for each component instance.
 generateInstances ::
-       (MonadReader r (t Result), HasRecursionDepth r, MonadTrans t)
+       (MonadReader r (t Result), Has RecursionDepth r, MonadTrans t)
     => Model
     -> ModelInfo
     -> t Result (NonEmpty (System, ModelInfo))
 generateInstances model info = do
     depth <- view recursionDepth
-    lift (runReaderT generate (Info info depth))
+    lift (runReaderT generate (info :&: depth))
   where
     generate = do
         -- Partition the system block of the model into a 'System' and
@@ -59,8 +60,9 @@ generateInstances model info = do
 
         let sysInfos = fmap (updateModelInfo info arrayInfos) syss
 
+        depth <- view recursionDepth
         sysInfos' <- flip filterM sysInfos $ \(_, info') ->
-            local (set modelInfo info') (checkConstraints constraints)
+            local (const (info' :&: depth)) (checkConstraints constraints)
 
         case nonEmpty sysInfos' of
             Just sysInfos'' -> do

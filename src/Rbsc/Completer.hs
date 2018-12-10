@@ -1,9 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeOperators         #-}
 
 
 -- | Generation of minimal complete system instances.
@@ -30,11 +28,11 @@ import qualified Data.Text       as T
 
 
 import Rbsc.Data.ComponentType
+import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
 import Rbsc.Data.Scope
 import Rbsc.Data.System
-import Rbsc.Data.Type
 
 import Rbsc.Util.NameGen
 
@@ -51,21 +49,19 @@ type Completer a = ReaderT Stack (StateT CompletionState (ExceptT Cycle [])) a
 
 type Stack = [TypeName]
 
-data CompletionState = CompletionState
-    { _csNameGen :: NameGen
-    , _system    :: System
-    }
+type CompletionState =
+    NameGen :&:
+    System
 
-makeLenses ''CompletionState
 
-instance HasNameGen CompletionState where
-    nameGen = csNameGen
+system :: Lens' CompletionState System
+system = field
 
 
 runCompleter :: Completer () -> SymbolTable -> System -> [Either Cycle System]
 runCompleter m symTable sys =
     let results =
-            runExceptT (execStateT (runReaderT m []) (CompletionState gen sys))
+            runExceptT (execStateT (runReaderT m []) (gen :&: sys))
     in over (traverse._Right) (view system) results
   where
     gen = mkNameGen deriveFromTypeIdent takenNames
@@ -86,7 +82,7 @@ liftList = lift . lift . lift
 -- Some instantiations may lead to a cycle (e.g., a role played by
 -- a compartment is contained within the compartment).
 completeSystem ::
-       (MonadReader r m, HasSymbolTable r, HasComponentTypes r)
+       (MonadReader r m, Has SymbolTable r, Has ComponentTypes r)
     => System
     -> m [Either Cycle System]
 completeSystem sys = do
