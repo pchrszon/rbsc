@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 
 module Rbsc.Parser
@@ -56,12 +57,12 @@ parse path content constArgContents =
         (result, sourceMap) <- run modelFile path content args
 
         return $ case result of
-            Left  err         -> Left [fromParseError sourceMap err]
+            Left  err         -> Left [fromParseErrorBundle sourceMap err]
             Right errorOrDefs -> do
                 let (errors, defs) = partitionEithers errorOrDefs
                 if null errors
                     then return (toModel defs, sourceMap)
-                    else throwError (fmap (fromParseError sourceMap) errors)
+                    else throwError errors
   where
     getResult :: Either [Error] (Model, SourceMap) -> (Result Model, SourceMap)
     getResult r =
@@ -114,7 +115,7 @@ include = do
     -- includePath is relative to file containing the include keyword,
     -- thus we need to make the path relative to our current working
     -- directory
-    parentPath <- sourceName <$> getPosition
+    parentPath <- sourceName <$> getSourcePos
     let parentDir = dropFileName parentPath
         path = parentDir </> includePath
 
@@ -131,15 +132,14 @@ include = do
 parseIncludeFile :: MonadIO m => FilePath -> ParserT m [ErrorOrDef]
 parseIncludeFile path = do
     content <- liftIO (Text.readFile path)
-    sources.at path .= Just content
+    sources.at path ?= content
 
     -- save current parser state
-    input <- getInput
     source <- use currentSource
+    s      <- getParserState
 
     -- switch to include file
-    pushPosition (initialPos path)
-    setInput content
+    setParserState (parserInitState content path)
     currentSource .= content
 
     -- parse include file
@@ -147,10 +147,21 @@ parseIncludeFile path = do
 
     -- switch back to current file
     currentSource .= source
-    setInput input
-    popPosition
+    setParserState s
 
     return result
+  where
+    parserInitState s name = State
+        { stateInput    = s
+        , stateOffset   = 0
+        , statePosState = PosState
+            { pstateInput      = s
+            , pstateOffset     = 0
+            , pstateSourcePos  = initialPos name
+            , pstateTabWidth   = defaultTabWidth
+            , pstateLinePrefix = ""
+            }
+        }
 
 
 parseCliConst :: Monad m => Text -> m (Either Error (Name, LExpr))
@@ -161,15 +172,16 @@ parseCliConst = run' cliConstantDef "<command line>"
     run' :: Monad m => ParserT m a -> FilePath -> Text -> m (Either Error a)
     run' p path content = do
         (result, sourceMap) <- run p path content Map.empty
-        return (over _Left (fromParseError sourceMap) result)
+        return (over _Left (fromParseErrorBundle sourceMap) result)
 
 
-fromParseError ::
-       (Ord t, ShowToken t, ShowErrorComponent e)
+fromParseErrorBundle
+    :: (Stream s, ShowErrorComponent e)
     => SourceMap
-    -> ParseError t e
+    -> ParseErrorBundle s e
     -> Error
-fromParseError sourceMap err = LocError (MkLocError rgn (Error.ParseError msg))
+fromParseErrorBundle sourceMap ParseErrorBundle{..} =
+    LocError (MkLocError rgn (Error.ParseError msg))
   where
     rgn = Region.Region path content start end
     msg = fromString (parseErrorTextPretty err)
@@ -179,4 +191,6 @@ fromParseError sourceMap err = LocError (MkLocError rgn (Error.ParseError msg))
 
     start = fromSourcePos pos
     end   = start { Region.column = Region.column start + 1 }
-    pos   = NonEmpty.head (errorPos err)
+    pos   = fst (reachOffsetNoLine (errorOffset err) bundlePosState)
+
+    err = NonEmpty.head bundleErrors

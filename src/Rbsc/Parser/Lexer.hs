@@ -70,6 +70,8 @@ import qualified Text.Megaparsec.Char.Lexer as Lexer
 
 import Rbsc.Data.Name
 
+import           Rbsc.Report.Error  (Error (..), LocError (..))
+import qualified Rbsc.Report.Error  as Error
 import           Rbsc.Report.Region (Loc (..), Region)
 import qualified Rbsc.Report.Region as Region
 
@@ -102,7 +104,7 @@ run :: Monad m
     -> FilePath
     -> Text
     -> ConstArgs
-    -> m (Either (ParseError Char Void) a, SourceMap)
+    -> m (Either (ParseErrorBundle Text Void) a, SourceMap)
 run p path content consts = do
     (result, parserState) <-
         runStateT (runParserT p path content) (initialState path content consts)
@@ -113,7 +115,7 @@ run p path content consts = do
 testRun :: ParserT IO a -> Text -> IO (Either String a)
 testRun p content = do
     (result, _) <- run p "" content Map.empty
-    return (over _Left parseErrorPretty result)
+    return (over _Left errorBundlePretty result)
 
 
 -- | The @ParserState@ keeps track of source file contents so that they can
@@ -245,9 +247,9 @@ symbol s = getLoc <$> lexeme (Loc <$> string s)
 lexeme :: Monad m => ParserT m (Region -> a) -> ParserT m a
 lexeme p = do
     source <- use currentSource
-    start <- getPosition
+    start <- getSourcePos
     f <- p
-    end <- getPosition
+    end <- getSourcePos
     sc
 
     let rgn = Region.Region
@@ -263,10 +265,23 @@ sc = Lexer.space (void spaceChar) (Lexer.skipLineComment "//") empty
 
 -- | @withRecoveryOn end p@ runs parser @p@. In case @p@ fails, the input
 -- is skipped until @end@ is parsed successfully.
-withRecoveryOn ::
-       ParserT m b -> ParserT m a -> ParserT m (Either (ParseError Char Void) a)
-withRecoveryOn end =
-    withRecovery (\err -> Left err <$ anyChar `manyTill` end) . fmap Right
+withRecoveryOn
+    :: Monad m => ParserT m b -> ParserT m a -> ParserT m (Either Error a)
+withRecoveryOn terminator = withRecovery recover . fmap Right
+  where
+    recover err = do
+        pos     <- getSourcePos
+        content <- use currentSource
+
+        let path  = sourceName pos
+            start = fromSourcePos pos
+            end   = start { Region.column = Region.column start + 1 }
+            msg   = fromString (parseErrorTextPretty err)
+            rgn   = Region.Region path content start end
+
+        _ <- anySingle `manyTill` terminator
+
+        return (Left (LocError (MkLocError rgn (Error.ParseError msg))))
 
 
 -- | Convert a 'SourcePos' to a 'Region.Position'.

@@ -18,18 +18,16 @@ module Rbsc.Parser.Definition
 import Control.Lens
 
 import qualified Data.Map.Strict as Map
-import           Data.Void
-
-import Text.Megaparsec
 
 
+import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..))
 
 import Rbsc.Syntax.Untyped
 
 
 -- | A parse error or a definition.
-type ErrorOrDef = Either (ParseError Char Void) Definition
+type ErrorOrDef = Either Error Definition
 
 
 -- | Top-level definitions of a model.

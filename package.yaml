@@ -25,6 +25,7 @@ dependencies:
   - megaparsec
   - mtl
   - optparse-applicative
+  - parser-combinators
   - prettyprinter
   - prettyprinter-ansi-terminal
   - process

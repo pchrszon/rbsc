@@ -12,7 +12,8 @@ module Rbsc.Parser.Expr
     ) where
 
 
-import Control.Applicative        hiding (many)
+import Control.Applicative            hiding (many)
+import Control.Monad.Combinators.Expr
 import Control.Monad.State.Strict
 
 import           Data.List.NonEmpty (NonEmpty (..))
@@ -22,7 +23,6 @@ import           Data.Text          (Text)
 import           Data.Void
 
 import Text.Megaparsec
-import Text.Megaparsec.Expr
 
 
 import Rbsc.Data.ComponentType
