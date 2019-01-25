@@ -15,6 +15,9 @@ module Rbsc.Translator.Internal
     , TranslatorInfo
     , RolePlayingGuards
     , roleGuards
+    , ObservedRoles
+    , observedRoles
+    , hasObservedRoles
 
     , TranslatorState
     , Identifiers
@@ -33,6 +36,9 @@ module Rbsc.Translator.Internal
     , reduceLSomeExpr
 
     , rolePlayingGuards
+
+    , addStepGuard
+    , stepGuardName
     ) where
 
 
@@ -71,6 +77,7 @@ import Rbsc.Util.NameGen
 
 type TranslatorInfo =
     RolePlayingGuards :&:
+    ObservedRoles :&:
     ModelInfo :&:
     RecursionDepth
 
@@ -82,6 +89,17 @@ type RolePlayingGuards = Map RoleName (Map (Maybe Action) (NonEmpty LSomeExpr))
 
 roleGuards :: Lens' TranslatorInfo RolePlayingGuards
 roleGuards = field
+
+
+type ObservedRoles = [RoleName]
+
+
+observedRoles :: Lens' TranslatorInfo ObservedRoles
+observedRoles = field
+
+
+hasObservedRoles :: MonadReader TranslatorInfo m => m Bool
+hasObservedRoles = not . null <$> view observedRoles
 
 
 type TranslatorState =
@@ -233,3 +251,24 @@ rolePlayingGuards sys modules = do
                     Just act
                 _ -> Nothing
         in (mAct, cmdGuard :| [])
+
+
+-- | If there are observed roles, then add the @step@ guard to a given
+-- command's guard expression.
+addStepGuard :: Prism.Expr -> Translator Prism.Expr
+addStepGuard g = do
+    hasObs <- hasObservedRoles
+    return $ if hasObs
+        then case g of
+            Prism.LitBool True  -> Prism.Ident stepGuardName
+            Prism.LitBool False -> g
+            _ -> Prism.BinaryOp (Prism.Ident stepGuardName) Prism.And g
+        else g
+
+
+-- | If there are any observed roles, the system may only take a transition
+-- once the role activity variables have been reset. This is the name of
+-- the formula that evaluates to true whenever the model can take
+-- a transition.
+stepGuardName :: Name
+stepGuardName = "step"

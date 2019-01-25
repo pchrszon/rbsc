@@ -12,6 +12,10 @@ module Rbsc.TypeChecker.Expr
     , tcFunctionDef
     , tcQuantifiedType
     , hasType
+    , hasType'
+
+    , checkIfRole
+    , getTyComponent
     ) where
 
 

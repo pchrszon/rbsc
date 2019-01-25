@@ -71,6 +71,7 @@ reservedWords =
     , "internal"
     , "over"
     , "constraint"
+    , "observe"
     ]
 
 

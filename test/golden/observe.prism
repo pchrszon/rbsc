@@ -1,0 +1,39 @@
+mdp
+
+formula step = r_0 = 0;
+
+module Desync
+    ]b[ true -> true;
+    ]n_0_a[ true -> true;
+    ]n_1_a[ true -> true;
+endmodule
+
+module n_0_N_impl
+    n_0_s : [0..1] init 0;
+
+    ]n_0_a[ step & n_0_s = 0 -> (n_0_s' = 1);
+endmodule
+
+module n_1_N_impl
+    n_1_s : [0..1] init 0;
+
+    ]n_1_a[ step & n_1_s = 0 -> (n_1_s' = 1);
+endmodule
+
+module r_0_R_impl
+    r_0 : [-1..1] init 0;
+    r_0_s : [0..1] init 0;
+
+    ]n_0_a, _r_0[ step & r_0_s = 0 -> (r_0_s' = 1) & (r_0' = 1);
+    ]b, _r_0[ step & r_0_s = 0 -> (r_0_s' = 1) & (r_0' = 1);
+    ]n_0_a, _not_r_0[ true -> (r_0' = -1);
+    [reset] !step -> (r_0' = 0);
+endmodule
+
+module r_1_R_impl
+    r_1_s : [0..1] init 0;
+
+    ]n_1_a, _r_1[ step & r_1_s = 0 -> (r_1_s' = 1);
+    ]b, _r_1[ step & r_1_s = 0 -> (r_1_s' = 1);
+    ]n_1_a, _not_r_1[ true -> true;
+endmodule

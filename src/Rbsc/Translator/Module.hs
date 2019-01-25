@@ -14,6 +14,7 @@ import Control.Monad.State
 import           Data.Foldable
 import           Data.Map.Strict  (Map)
 import qualified Data.Map.Strict  as Map
+import           Data.Maybe       (maybeToList)
 import qualified Data.Set         as Set
 import           Data.Traversable
 
@@ -68,19 +69,25 @@ trnsModule
     -> TModuleInstance Elem
     -> Translator Prism.Module
 trnsModule bi as alph oas isRole typeName compName (ModuleInstance moduleName _ body) = do
-    ident <- trnsQualified (QlMember (QlName (trnsComponentName compName)) moduleName)
-    vars' <- trnsLocalVars typeName compName (bodyVars body)
+    ident <- trnsQualified
+        (QlMember (QlName (trnsComponentName compName)) moduleName)
+
+    vars'       <- trnsLocalVars typeName compName (bodyVars body)
+    activityVar <- maybeToList <$> genRoleActivityVar compName
+    let vars'' = activityVar ++ vars'
 
     cmds' <- traverse
         (trnsCommand isRole typeName compName . getElem)
         (bodyCommands body)
+    resetCmd <- maybeToList <$> genResetCommand compName
 
     override <- genOverrideSelfLoops bi oas alph isRole compName
     nonblocking <- if isRole
         then genNonblockingSelfLoops bi as compName alph
         else return []
 
-    return (Prism.Module ident vars' (concat [cmds', override, nonblocking]))
+    return (Prism.Module ident vars''
+        (concat [cmds', override, nonblocking, resetCmd]))
 
 
 genOverrideSelfLoops
@@ -101,7 +108,7 @@ genOverrideSelfLoops bi oas alph isRole compName = traverse
         let acts = [act', overrideActionIdent roleName]
             acts' =
                 if isRole then acts ++ [notPlayedActionIdent compName] else acts
-        return (selfLoops acts' Prism.ActionOpen)
+        return (selfLoops acts' [])
 
     isModuleAction act = act `Set.member` alph'
 
@@ -109,12 +116,11 @@ genOverrideSelfLoops bi oas alph isRole compName = traverse
 
 
 genNonblockingSelfLoops
-    :: MonadState TranslatorState m
-    => BindingInfo
+    :: BindingInfo
     -> Alphabets
     -> RoleName
     -> Alphabet
-    -> m [Prism.Command]
+    -> Translator [Prism.Command]
 genNonblockingSelfLoops bi as roleName alph =
     traverse genCommand
         . filter ((&&) <$> isRequired <*> (not . isInternal))
@@ -123,7 +129,14 @@ genNonblockingSelfLoops bi as roleName alph =
   where
     genCommand act = do
         act' <- trnsQualified (trnsAction act)
-        return (selfLoops [act', notPlayedActionIdent roleName] Prism.ActionOpen)
+
+        obsRoles <- view observedRoles
+        let upds =
+                [ activityVarUpdate (trnsComponentName roleName)
+                | roleName `elem` obsRoles
+                ]
+
+        return (selfLoops [act', notPlayedActionIdent roleName] upds)
 
     isRequired = (`Set.member` required)
     isInternal = (`Set.member` internal)
@@ -131,7 +144,41 @@ genNonblockingSelfLoops bi as roleName alph =
     required = requiredActionsOfRole bi as roleName alph
     internal = internalActionsOfPlayers bi as roleName
 
+    activityVarUpdate name = Prism.Update Nothing [(name, Prism.LitInt (-1))]
 
-selfLoops :: [Prism.Ident] -> Prism.ActionType -> Prism.Command
-selfLoops acts actTy =
-    Prism.Command (fmap Prism.Action acts) actTy (Prism.LitBool True) []
+
+selfLoops :: [Prism.Ident] -> [Prism.Update] -> Prism.Command
+selfLoops acts upds = Prism.Command
+    { Prism.cmdActions    = fmap Prism.Action acts
+    , Prism.cmdActionType = Prism.ActionOpen
+    , Prism.cmdGuard      = Prism.LitBool True
+    , Prism.cmdUpdates    = upds
+    }
+
+
+genRoleActivityVar :: ComponentName -> Translator (Maybe Prism.Declaration)
+genRoleActivityVar compName = do
+    obsRoles <- view observedRoles
+    return $ if compName `elem` obsRoles
+        then Just (genDecl (trnsComponentName compName))
+        else Nothing
+  where
+    genDecl name = Prism.Declaration
+        name
+        (Prism.DeclTypeInt (Prism.LitInt (-1)) (Prism.LitInt 1))
+        (Just (Prism.LitInt 0))
+
+
+genResetCommand :: ComponentName -> Translator (Maybe Prism.Command)
+genResetCommand compName = do
+    obsRoles <- view observedRoles
+    return $ if compName `elem` obsRoles
+        then Just (resetCommand (trnsComponentName compName))
+        else Nothing
+  where
+    resetCommand name = Prism.Command
+        { Prism.cmdActions    = [Prism.Action "reset"]
+        , Prism.cmdActionType = Prism.ActionClosed
+        , Prism.cmdGuard = Prism.UnaryOp Prism.Not (Prism.Ident stepGuardName)
+        , Prism.cmdUpdates = [Prism.Update Nothing [(name, Prism.LitInt 0)]]
+        }

@@ -17,6 +17,7 @@ module Rbsc.Parser.Definition
 
 import Control.Lens
 
+import           Data.Foldable
 import qualified Data.Map.Strict as Map
 
 
@@ -46,6 +47,7 @@ data Definition
     | DefModule UModule
     | DefCoordinator UCoordinator
     | DefRewardStruct URewardStruct
+    | DefObserve UObserve
     deriving (Show)
 
 makePrisms ''Definition
@@ -68,6 +70,7 @@ toModel defs = Model
     , modelImpls            = def _DefImplementation
     , modelCoordinators     = def _DefCoordinator
     , modelRewardStructs    = mergeRewardStructs (def _DefRewardStruct)
+    , modelObserve          = concatMap (toList . obsRoles) (def _DefObserve)
     }
   where
     def p = toListOf (traverse.p) defs

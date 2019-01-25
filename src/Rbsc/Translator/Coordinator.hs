@@ -115,8 +115,9 @@ trnsCoordCommand
     -> TCoordCommand Elem
     -> Translator [Prism.Command]
 trnsCoordCommand valuations roleActs CoordCommand {..} = do
-    grd'      <- trnsLSomeExpr Nothing coordGuard
-    upds'     <- trnsUpdates Nothing coordUpdates
+    grd'  <- trnsLSomeExpr Nothing coordGuard
+    grd'' <- addStepGuard grd'
+    upds' <- trnsUpdates Nothing coordUpdates
 
     multiActs <- case coordConstraint of
         Just (PlayingConstraint (Loc (SomeExpr c TyBool) rgn) _) -> do
@@ -137,7 +138,7 @@ trnsCoordCommand valuations roleActs CoordCommand {..} = do
                 return [[act']]
             Nothing -> return [[]]
 
-    return (fmap (mkCommand grd' upds') multiActs)
+    return (fmap (mkCommand grd'' upds') multiActs)
   where
     mkCommand grd upds acts
         | null acts = Prism.Command [] Prism.ActionClosed grd upds

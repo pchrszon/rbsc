@@ -19,6 +19,7 @@ import Data.Map.Strict (Map)
 
 import Rbsc.Config
 
+import Rbsc.Data.Component
 import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo (ModelInfo)
 import Rbsc.Data.Type
@@ -57,12 +58,22 @@ tcModel insts U.Model{..} = T.Model
     <*> tcModuleInstances insts
     <*> traverse tcCoordinator modelCoordinators
     <*> traverse tcRewardStruct modelRewardStructs
+    <*> traverse tcObserve modelObserve
 
 
 tcLabel :: ULabel -> TypeChecker TLabel
 tcLabel Label{..} = do
     e' <- labelExpr `hasType` TyBool
     return (Label labelName (SomeExpr e' TyBool `withLocOf` labelExpr))
+
+
+tcObserve :: LExpr -> TypeChecker (Loc (T.Expr Component))
+tcObserve e = do
+    tyComponent <- getTyComponent
+    (e', ty) <- e `hasType'` tyComponent
+    case ty of
+        TyComponent tySet -> checkIfRole (getLoc e) tySet
+    return (e' `withLocOf` e)
 
 
 tcConstraint :: LExpr -> TypeChecker (Loc (T.Expr Bool))

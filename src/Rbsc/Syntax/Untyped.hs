@@ -47,6 +47,9 @@ module Rbsc.Syntax.Untyped
     , URewardStructItem
     , URewardKind
 
+      -- * Observable roles
+    , UObserve
+
       -- * Types
     , UType
     , UVarType
@@ -63,6 +66,7 @@ import Rbsc.Syntax.Enumeration    as Syntax
 import Rbsc.Syntax.Function       as Syntax
 import Rbsc.Syntax.Impl           as Syntax
 import Rbsc.Syntax.Label          as Syntax
+import Rbsc.Syntax.Observe        as Syntax
 import Rbsc.Syntax.Operators      as Syntax
 import Rbsc.Syntax.Quantification as Syntax
 import Rbsc.Syntax.RewardStruct   as Syntax
@@ -90,6 +94,7 @@ data Model = Model
     , modelImpls            :: [UImplementation]
     , modelCoordinators     :: [UCoordinator]
     , modelRewardStructs    :: [URewardStruct]
+    , modelObserve          :: [LExpr]
     } deriving (Show)
 
 
@@ -137,6 +142,9 @@ type UQuantifiedType = QuantifiedType ComponentTypeSet LExpr
 type URewardStruct     = RewardStruct ElemMulti UQuantifiedType LExpr
 type URewardStructItem = RewardStructItem LExpr
 type URewardKind       = RewardKind LExpr
+
+
+type UObserve = Observe LExpr
 
 
 type UType    = Type LExpr

@@ -1,7 +1,9 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf            #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
 
 
@@ -48,7 +50,12 @@ trnsCommand
     -> Translator Prism.Command
 trnsCommand isRole typeName comp Command{..} = do
     grd'  <- trnsLSomeExpr (Just (typeName, comp)) cmdGuard
-    upds' <- trnsUpdates (Just (typeName, comp)) cmdUpdates
+    grd'' <- addStepGuard grd'
+
+    upds'  <- trnsUpdates (Just (typeName, comp)) cmdUpdates
+    upds'' <- roleActivityAssignment >>= return . \case
+        Just raa -> appendAssignment raa upds'
+        Nothing  -> upds'
 
     case cmdAction of
         Just act -> do
@@ -56,9 +63,9 @@ trnsCommand isRole typeName comp Command{..} = do
             ract <- roleAct
             oact <- overrideAct
             let acts' = fmap Prism.Action (catMaybes [Just act', ract, oact])
-            return (Prism.Command acts' Prism.ActionOpen grd' upds')
+            return (Prism.Command acts' Prism.ActionOpen grd'' upds'')
         Nothing ->
-            return (Prism.Command [] Prism.ActionClosed grd' upds')
+            return (Prism.Command [] Prism.ActionClosed grd'' upds'')
   where
     roleAct
         | isRole = do
@@ -71,6 +78,12 @@ trnsCommand isRole typeName comp Command{..} = do
             act <- trnsQualified (QlName (overrideActionIdent comp))
             return (Just act)
         _ -> return Nothing
+
+    roleActivityAssignment = do
+        obsRoles <- view observedRoles
+        return $ if comp `elem` obsRoles
+            then Just (trnsComponentName comp, Prism.LitInt 1)
+            else Nothing
 
 
 trnsActionExpr :: LSomeExpr -> Translator Prism.Ident
@@ -154,3 +167,11 @@ checkOutOfRange mComp name (Loc (SomeExpr (Literal x TyInt) TyInt) rgn) = do
                 lift (lift (warn (OutOfRangeUpdate rgn (lower, upper) x)))
         _ -> return ()
 checkOutOfRange _ _ _ = return ()
+
+
+appendAssignment
+    :: (Prism.Ident, Prism.Expr) -> [Prism.Update] -> [Prism.Update]
+appendAssignment a = fmap append
+  where
+    append upd =
+        upd { Prism.updAssignments = Prism.updAssignments upd ++ [a] }

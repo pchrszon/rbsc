@@ -46,7 +46,8 @@ module Rbsc.Syntax.Typed
 import Data.Map.Strict (Map)
 
 
-import Rbsc.Data.Name as Syntax
+import Rbsc.Data.Component
+import Rbsc.Data.Name      as Syntax
 
 import Rbsc.Report.Region (Loc)
 
@@ -73,6 +74,7 @@ data Model = Model
     , modelImpls         :: Map TypeName [TModuleInstance ElemMulti]
     , modelCoordinators  :: [TCoordinator ElemMulti]
     , modelRewardStructs :: [TRewardStruct ElemMulti]
+    , modelObserve       :: [Loc (Expr Component)]
     } deriving (Show)
 
 

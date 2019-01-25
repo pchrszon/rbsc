@@ -1,0 +1,23 @@
+type N {
+    s : [0 .. 1] init 0;
+
+    [self.a] s = 0 -> (s' = 1);
+}
+
+
+role type R(N) {
+    s : [0 .. 1] init 0;
+
+    [player.a] s = 0 -> (s' = 1);
+    [b] s = 0 -> (s' = 1);
+}
+
+
+system {
+    n[2] : N;
+    r[2] : R;
+
+    forall i : [0 .. 1]. r[i] boundto n[i];
+}
+
+observe r[0];

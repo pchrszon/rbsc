@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeOperators     #-}
@@ -25,10 +27,13 @@ import qualified Language.Prism as Prism
 import Rbsc.Config
 
 import Rbsc.Data.Action
+import Rbsc.Data.Component
 import Rbsc.Data.ComponentType
 import Rbsc.Data.Field
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.System
+
+import Rbsc.Eval
 
 import Rbsc.Instantiation
 
@@ -69,10 +74,12 @@ translateModels depth model = do
 translateModel
     :: Model -> System -> (ModelInfo :&: RecursionDepth) -> Result Prism.Model
 translateModel model sys info = do
-    (modules, coordinators, rewardStructs) <- flip runReaderT info $ (,,)
-        <$> instantiateComponents model sys
-        <*> traverse instantiateCoordinator (modelCoordinators model)
-        <*> traverse instantiateRewardStruct (modelRewardStructs model)
+    (modules, coordinators, rewardStructs, obsRoles) <-
+        flip runReaderT info $ (,,,)
+            <$> instantiateComponents model sys
+            <*> traverse instantiateCoordinator (modelCoordinators model)
+            <*> traverse instantiateRewardStruct (modelRewardStructs model)
+            <*> getObservedRoles (modelObserve model)
 
     mas <- moduleAlphabets modules
     let as = componentAlphabets mas
@@ -83,8 +90,9 @@ translateModel model sys info = do
 
     let rgs = rolePlayingGuards sys modules info
 
-    runTranslator (rgs :&: info) $ do
+    runTranslator (rgs :&: obsRoles :&: info) $ do
         desync   <- maybeToList <$> genDesyncModule as
+        step     <- genStepFormula
         globals' <- trnsGlobalVars (modelGlobals model)
         labels'  <- traverse trnsLabel (modelLabels model)
         modules' <- trnsModules sys bi mas as modules
@@ -95,7 +103,7 @@ translateModel model sys info = do
 
         return Prism.Model
             { Prism.modelType          = Prism.MDP
-            , Prism.modelFormulas      = []
+            , Prism.modelFormulas      = step
             , Prism.modelLabels        = labels'
             , Prism.modelConstants     = []
             , Prism.modelGlobalVars    = fmap Prism.GlobalVar globals'
@@ -110,6 +118,11 @@ trnsLabel :: TLabel -> Translator Prism.Label
 trnsLabel Label{..} = do
     e' <- reduceLSomeExpr labelExpr
     Prism.Label (unLoc labelName) <$> trnsLSomeExpr Nothing e'
+
+
+getObservedRoles :: MonadEval r m => [Loc (Expr Component)] -> m [RoleName]
+getObservedRoles =
+    fmap (fmap (view compName)) . traverse eval
 
 
 genDesyncModule :: Alphabets -> Translator (Maybe Prism.Module)
@@ -129,3 +142,16 @@ genDesyncModule as = do
             [Prism.Action act']
             Prism.ActionOpen
             (Prism.LitBool True) [])
+
+
+genStepFormula :: Translator [Prism.Formula]
+genStepFormula = view observedRoles >>= \case
+    []       -> return []
+    obsRoles -> return [Prism.Formula stepGuardName (stepExpr obsRoles)]
+  where
+    stepExpr =
+        foldr1 (binOp Prism.And) .
+        fmap (equalsZero . Prism.Ident . trnsComponentName)
+
+    equalsZero e = binOp Prism.Eq e (Prism.LitInt 0)
+    binOp = flip Prism.BinaryOp
