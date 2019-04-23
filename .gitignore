@@ -22,3 +22,4 @@ tmux.conf
 
 # documentation
 doc/development/
+doc/_build/
