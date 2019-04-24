@@ -1,8 +1,8 @@
 rbsc documentation
 ==================
 
-This is the documentation for the ``rbsc`` tool. It describes the installation
-and usage of the tool.
+This is the documentation for the ``rbsc`` tool. It describes the installation,
+usage of the tool and the role-based modeling language.
 
 .. toctree::
    :maxdepth: 2
@@ -10,12 +10,5 @@ and usage of the tool.
 
    introduction
    installation
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   usage
+   language
