@@ -1,0 +1,3 @@
+[submodule "lib/lang-prism"]
+	path = lib/lang-prism
+	url = https://gitlab.tcs.inf.tu-dresden.de/chrszon/lang-prism.git

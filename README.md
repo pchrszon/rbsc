@@ -21,6 +21,11 @@ installed.
 
 ### Building from source
 
+The project includes submodules, which must be fetched before building:
+
+    git submodule init
+    git submodule update
+
 In the projects root directory, which contains the `package.yaml` file, run
 the following command to build the tool:
 
