@@ -88,7 +88,7 @@ modelFile =
 
 
 definitions :: Parser [ErrorOrDef]
-definitions = fmap leftToList . withRecoveryOn (semi <|> symbol "}") $
+definitions = fmap leftToList . withRecoveryOn (lookAhead definitionStart) $
     componentTypeDef <|> (fmap (: []) . choice $
     [ typeSetDef
     , constantDef
@@ -107,6 +107,21 @@ definitions = fmap leftToList . withRecoveryOn (semi <|> symbol "}") $
     leftToList = \case
         Left e   -> [Left e]
         Right xs -> fmap Right xs
+
+    definitionStart = choice . fmap reserved $
+        [ "typedef"
+        , "const"
+        , "enum"
+        , "function"
+        , "system"
+        , "global"
+        , "label"
+        , "impl"
+        , "module"
+        , "coordinator"
+        , "rewards"
+        , "observe"
+        ]
 
 
 include :: MonadIO m => ParserT m [ErrorOrDef]
