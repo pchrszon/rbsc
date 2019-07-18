@@ -361,14 +361,15 @@ referencedFunctions f = Set.toList <$> execStateT (go f) Set.empty
         visited <- get
         unless (f' `Set.member` visited) $ do
             modify (Set.insert f')
-            fvars <- functionsInExpr (functionBody f')
+            fvars <- functionsInExpr (functionBody f') (parameterSet f)
             for_ fvars go
 
-    functionsInExpr e = do
+    functionsInExpr e params = do
         fs <- lift (view functions)
-        idents <- lift (identsInExpr e)
+        idents <- Set.map unLoc <$> lift (identsInExpr e)
+        let idents' = Set.difference idents params
 
-        let fs' = mapMaybe ((`Map.lookup` fs) . unLoc) (toList idents)
+        let fs' = mapMaybe (`Map.lookup` fs) (toList idents')
         ms' <- lift (methodsInExpr e)
 
         return (fs' ++ ms')
