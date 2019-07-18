@@ -24,7 +24,7 @@ import Rbsc.Syntax.Untyped
 -- | Parser for a component type definition. A type definition may
 -- optionally provide the 'Implementation'.
 componentTypeDef :: Parser [Definition]
-componentTypeDef = label "type definition" $ choice
+componentTypeDef = label "definition" $ choice
     [ naturalTypeDef
     , roleTypeDef
     , compartmentTypeDef
@@ -91,7 +91,7 @@ cardinalities = brackets $ do
 
 -- | Parser for a type set definition.
 typeSetDef :: Parser Definition
-typeSetDef = DefTypeSet <$> typeSet <?> "type set definition"
+typeSetDef = DefTypeSet <$> typeSet <?> "definition"
 
 
 typeSet :: Parser TypeSetDef

@@ -21,7 +21,7 @@ import Rbsc.Syntax.Untyped
 
 -- | Parser for a reward structure definition.
 rewardStructDef :: Parser Definition
-rewardStructDef = DefRewardStruct <$> rewardStruct <?> "reward structure"
+rewardStructDef = DefRewardStruct <$> rewardStruct <?> "definition"
 
 
 rewardStruct :: Parser URewardStruct

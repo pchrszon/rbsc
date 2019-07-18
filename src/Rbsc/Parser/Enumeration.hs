@@ -18,7 +18,7 @@ import Rbsc.Syntax.Untyped
 
 
 enumerationDef :: Parser Definition
-enumerationDef = DefEnumeration <$> enumeration <?> "enumeration"
+enumerationDef = DefEnumeration <$> enumeration <?> "definition"
 
 
 -- | Parser for enumerations.

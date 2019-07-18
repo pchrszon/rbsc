@@ -29,7 +29,7 @@ import Rbsc.Syntax.Untyped
 -- | Parser for an implementation definition.
 implementationDef :: Parser Definition
 implementationDef =
-    DefImplementation <$> implementation <?> "implementation definition"
+    DefImplementation <$> implementation <?> "definition"
 
 
 implementation :: Parser UImplementation
@@ -49,7 +49,7 @@ moduleRef = ModuleRef
 
 
 moduleDef :: Parser Definition
-moduleDef = DefModule <$> modul <?> "module definition"
+moduleDef = DefModule <$> modul <?> "definition"
 
 
 modul :: Parser UModule

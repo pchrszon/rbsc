@@ -21,7 +21,7 @@ import Rbsc.Syntax.Untyped
 
 -- | Parser for a function definition.
 functionDef :: Parser Definition
-functionDef = DefFunction <$> function <?> "function definition"
+functionDef = DefFunction <$> function <?> "definition"
 
 
 function :: Parser UFunction

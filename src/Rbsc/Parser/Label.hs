@@ -18,7 +18,7 @@ import Rbsc.Syntax.Untyped
 
 
 labelDef :: Parser Definition
-labelDef = DefLabel <$> label' <?> "label definition"
+labelDef = DefLabel <$> label' <?> "definition"
 
 
 label' :: Parser ULabel

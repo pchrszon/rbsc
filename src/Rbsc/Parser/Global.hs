@@ -18,4 +18,4 @@ import Rbsc.Parser.VarDecl
 -- | Parser for a global definition.
 globalDef :: Parser Definition
 globalDef =
-    DefGlobal <$> (reserved "global" *> varDecl <* semi) <?> "global variable"
+    DefGlobal <$> (reserved "global" *> varDecl <* semi) <?> "definition"

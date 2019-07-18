@@ -90,14 +90,14 @@ atom = choice
 
 
 member :: Parser (LExpr -> LExpr)
-member = do
+member = label "operator" $ do
     _ <- operator "."
     Loc name rgn <- identifier
     return (\e -> Loc (Member e name) (getLoc e <> rgn))
 
 
 index :: Parser (LExpr -> LExpr)
-index = do
+index = label "operator" $ do
     _ <- symbol "["
     idx <- expr
     end <- symbol "]"
@@ -105,7 +105,7 @@ index = do
 
 
 call :: Parser (LExpr -> LExpr)
-call = do
+call = label "operator" $ do
     _ <- symbol "("
     args <- expr `sepBy` comma
     end <- symbol ")"
@@ -277,8 +277,8 @@ table :: Monad m => [[ExprOp m]]
 table =
     [ [ unary Negate "-"
       ]
-    , [ binary InfixN BoundTo (reserved "boundto")
-      , binary InfixN Element (reserved "in")
+    , [ binary InfixN BoundTo (reserved "boundto" <?> "operator")
+      , binary InfixN Element (reserved "in" <?> "operator")
       , infixFunction
       , hasType
       ]
@@ -308,11 +308,11 @@ table =
 
 
 binaryLOp :: Monad m => Text -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
-binaryLOp n c = binary InfixL c (operator n)
+binaryLOp n c = binary InfixL c (operator n <?> "operator")
 
 
 binaryNOp :: Monad m => Text -> (Loc Expr -> Loc Expr -> Expr) -> ExprOp m
-binaryNOp n c = binary InfixN c (operator n)
+binaryNOp n c = binary InfixN c (operator n <?> "operator")
 
 
 hasType :: Monad m => ExprOp m
@@ -320,7 +320,7 @@ hasType =
     Postfix . try $ do
         -- Fail if there is an assignment following. In that case, the
         -- colon denotes a probability, not a @HasType@ relation.
-        _ <- operator ":" <* notFollowedBy (symbol "(")
+        _ <- operator ":" <* notFollowedBy (symbol "(") <?> "operator"
         tyName <- identifier
         return (\e -> Loc (HasType e tyName) (getLoc e <> getLoc tyName))
 
@@ -328,7 +328,7 @@ hasType =
 infixFunction :: Monad m => ExprOp m
 infixFunction =
     InfixN $ do
-        funcIdent <- fmap Identifier <$> identifier
+        funcIdent <- fmap Identifier <$> identifier <?> "infix function"
         return (\l r -> Loc (Call funcIdent [l, r]) (getLoc l <> getLoc r))
 
 
@@ -352,5 +352,5 @@ binary assoc c p = assoc ((\l r -> Loc (c l r) (getLoc l <> getLoc r)) <$ p)
 unary :: Monad m => (Loc Expr -> Expr) -> Text -> ExprOp m
 unary c s =
     Prefix $ do
-        rgn <- operator s
+        rgn <- operator s <?> "operator"
         return (\e -> Loc (c e) (rgn <> getLoc e))

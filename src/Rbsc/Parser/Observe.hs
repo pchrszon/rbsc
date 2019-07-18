@@ -19,7 +19,7 @@ import Rbsc.Syntax.Untyped
 
 -- | Parser for an observe definition.
 observeDef :: Parser Definition
-observeDef = DefObserve <$> observe <?> "observe definition"
+observeDef = DefObserve <$> observe <?> "definition"
 
 
 observe :: Parser UObserve

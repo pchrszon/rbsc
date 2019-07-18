@@ -24,7 +24,7 @@ import Rbsc.Syntax.Untyped
 
 -- | Parser for a constant definition.
 constantDef :: Parser Definition
-constantDef = DefConstant <$> constant <?> "constant definition"
+constantDef = DefConstant <$> constant <?> "definition"
 
 
 constant :: Parser UConstant

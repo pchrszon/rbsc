@@ -21,7 +21,7 @@ import Rbsc.Syntax.Untyped
 
 -- | Parser for a coordinator definition.
 coordinatorDef :: Parser Definition
-coordinatorDef = DefCoordinator <$> coordinator <?> "coordinator definition"
+coordinatorDef = DefCoordinator <$> coordinator <?> "definition"
 
 
 coordinator :: Parser UCoordinator

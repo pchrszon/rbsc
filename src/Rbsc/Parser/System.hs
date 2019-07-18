@@ -17,7 +17,4 @@ import Rbsc.Parser.Lexer
 
 -- | Parser for a system definition.
 systemDef :: Parser Definition
-systemDef =
-    DefSystem <$>
-    block "system" (many (expr <* semi)) <?>
-    "system definition"
+systemDef = DefSystem <$> block "system" (many (expr <* semi)) <?> "definition"
