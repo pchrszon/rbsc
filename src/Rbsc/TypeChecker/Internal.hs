@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeOperators         #-}
 
 
@@ -139,18 +140,19 @@ runTypeChecker m r = runReaderT m
 -- the local scope is checked, then the global scope.  If the identifier is
 -- undefined and the identifier does not appear within an action expression, an
 -- error is thrown.
-getIdentifierType :: Name -> Region -> TypeChecker (Some Type)
+getIdentifierType :: Name -> Region -> TypeChecker (Scope, Some Type)
 getIdentifierType name rgn = do
     sc  <- view scope
     ctx <- view context
 
-    varTyLocal  <- view (symbolTable.at (ScopedName sc name))
-    varTyGlobal <- view (symbolTable.at (ScopedName Global name))
+    varTyLocal  <- fmap (sc,) <$> view (symbolTable.at (ScopedName sc name))
+    varTyGlobal <-
+        fmap (Global,) <$> view (symbolTable.at (ScopedName Global name))
 
     -- If we are inside action brackets, all undefined identifiers are
     -- actions.
     let varTyAction = case ctx of
-            ActionContext -> Just (Some TyAction)
+            ActionContext -> Just (Global, Some TyAction)
             _             -> Nothing
 
     case varTyLocal <|> varTyGlobal <|> varTyAction of

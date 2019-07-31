@@ -102,7 +102,7 @@ tcAssignment hasAction ownVars (Assignment (Loc name rgn) idxs e) = do
                     throw rgn IllegalGlobalUpdate
             _ -> return ()
 
-    varTy <- getIdentifierType name rgn
+    (_, varTy) <- getIdentifierType name rgn
     (idxs', Some ty) <- tcIndices rgn idxs varTy
     e' <- someExpr e ty
     return (Assignment (Loc name rgn) idxs' e')

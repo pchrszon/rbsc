@@ -128,8 +128,11 @@ tcExpr (Loc e rgn) = case e of
             Just (i, Some ty) ->
                 T.Bound i ty `withType` ty
             Nothing -> do
-                Some ty <- getIdentifierType name rgn
-                T.Identifier name ty `withType` ty
+                sc <- view scope
+                (sc', Some ty) <- getIdentifierType name rgn
+                case sc' of
+                    Local _ | sc == sc' -> T.Member T.Self name ty `withType` ty
+                    _                   -> T.Identifier name ty `withType` ty
 
     U.Not inner -> do
         inner' <- inner `hasType` TyBool
