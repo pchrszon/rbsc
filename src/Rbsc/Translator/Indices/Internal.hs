@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedLists       #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ViewPatterns          #-}
 
 
@@ -126,6 +127,14 @@ substituteVariable (Variable name sc, SomeExpr e ty) =
                     Just Refl -> e
                     Nothing   -> error "substituteVariable: type error"
             _ -> e'
+        Member (Literal (Component {..}) (TyComponent _)) name' ty' ->
+            case sc of
+                LocalVar _ cName
+                    | name' == name && componentName _compName == cName ->
+                        case typeEq ty ty' of
+                            Just Refl -> e
+                            Nothing   -> error "substituteVariable: type error"
+                _ -> e'
         _ -> e'
 
 
@@ -221,5 +230,12 @@ variables mComp (Some e) =
                 | isLocalSymbol symTable tyName' name ->
                     Just (TypedVariable
                         (Variable name (LocalVar tyName' cName))
+                        (Some ty))
+            Member (Literal (Component {..}) (TyComponent _)) name ty
+                | isLocalSymbol symTable _compTypeName name ->
+                    Just (TypedVariable
+                        (Variable
+                            name
+                            (LocalVar _compTypeName (componentName _compName)))
                         (Some ty))
             _ -> Nothing
