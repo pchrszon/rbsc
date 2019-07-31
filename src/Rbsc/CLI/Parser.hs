@@ -1,4 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# LANGUAGE ApplicativeDo   #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 
@@ -37,70 +39,53 @@ parseOptions = execParser opts
 
 
 options :: Parser Options
-options = Options
-    <$> strArgument
-        ( metavar "MODEL"
-       <> help helpModelFile )
-    <*> optional (strOption
-        ( metavar "FILE"
-       <> short 'o'
-       <> help helpOutputFile ))
-    <*> many (strOption
-        ( metavar "CONST=EXPRESSION"
-       <> short 'c'
-       <> long "const"
-       <> hidden
-       <> help helpConstant ))
-    <*> switch
-        ( short 'm'
-       <> long "multi-actions"
-       <> hidden
-       <> help helpMultiActions )
-    <*> optional (strOption
-        ( metavar "FILE"
-       <> long "export-systems"
-       <> hidden
-       <> help helpExportSystems ))
-    <*> optional (strOption
-        ( metavar "FILE"
-       <> long "export-diagrams"
-       <> hidden
-       <> help helpExportDiagrams ))
-    <*> switch
-        ( long "print-consts"
-       <> hidden
-       <> help helpPrintConsts )
-    <*> (RecursionDepth <$> option auto
-        ( metavar "INT"
-       <> long "recursion-depth"
-       <> value 100
-       <> showDefault
-       <> hidden
-       <> help helpRecursionDepth ))
-    <*> option auto
-        ( metavar "INT"
-       <> long "page-width"
-       <> value 120
-       <> showDefault
-       <> hidden
-       <> help helpPageWidth )
-    <*> flag True False
-        ( long "no-color"
-       <> hidden
-       <> help helpNoColor )
-    <*> flag True False
-        ( long "no-warn"
-       <> hidden
-       <> help helpNoWarnings )
-    <*> switch
-        ( long "warn-no-sync"
-       <> hidden
-       <> help helpWarnNoSync )
-    <*> flag NonVerbose Verbose
-        ( short 'v'
-       <> long "verbose"
-       <> hidden
-       <> help helpVerbose )
+options = do
+    optInput <- strArgument
+        (metavar "MODEL" <> help helpModelFile)
+
+    optOutput <- optional (strOption
+        (metavar "FILE" <> short 'o' <> help helpOutputFile))
+
+    optConstants <- many (strOption
+        (metavar "CONST=EXPRESSION" <> short 'c' <> long "const" <> hidden
+        <> help helpConstant))
+
+    optMultiActions <- switch
+        (short 'm' <> long "multi-actions" <> hidden <> help helpMultiActions)
+
+    optExportSystems <- optional (strOption
+        (metavar "FILE" <> long "export-systems" <> hidden
+        <> help helpExportSystems))
+
+    optExportDiagrams <- optional (strOption
+        (metavar "FILE" <> long "export-diagrams" <> hidden
+        <> help helpExportDiagrams ))
+
+    optPrintConstants <- switch
+        (long "print-consts" <> hidden <> help helpPrintConsts)
+
+    optRecursionDepth <- RecursionDepth <$> option auto
+        ( metavar "INT" <> long "recursion-depth" <> value 100 <> showDefault
+        <> hidden <> help helpRecursionDepth)
+
+    optPageWidth <- option auto
+        (metavar "INT" <> long "page-width" <> value 120 <> showDefault
+        <> hidden <> help helpPageWidth)
+
+    optShowColor <- not <$> switch
+        (long "no-color" <> hidden <> help helpNoColor)
+
+    optShowWarnings <- not <$> switch
+        (long "no-warn" <> hidden <> help helpNoWarnings)
+
+
+    optWarnNoSync <- switch
+        (long "warn-no-sync" <> hidden <> help helpWarnNoSync)
+
+    optVerbose <- flag NonVerbose Verbose
+        (short 'v' <> long "verbose" <> hidden <> help helpVerbose)
+
+    pure Options {..}
 
 
 helpModelFile      = "The model file (pass - to read from stdin)"
