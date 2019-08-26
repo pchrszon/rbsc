@@ -509,10 +509,15 @@ cast _ _ e = return e
 -- @checkComponentType expected rgn actual@ checks if @actual@ is equal to
 -- @expected@ or a subtype of @expected@.
 checkComponentType :: Type t -> Region -> Type t -> TypeChecker ()
-checkComponentType expected@(TyComponent tySetExp) rgn actual@(TyComponent tySetAct)
-    | tySetAct `Set.isSubsetOf` tySetExp = return ()
-    | otherwise = throw rgn (typeError [Some expected] actual)
-checkComponentType _ _ _ = return ()
+checkComponentType expected rgn actual = go expected actual
+  where
+    go :: Type t -> Type t -> TypeChecker ()
+    go (TyComponent tySetExp) (TyComponent tySetAct)
+        | tySetAct `Set.isSubsetOf` tySetExp = return ()
+        | otherwise = throw rgn (typeError [Some expected] actual)
+    go (TyArray _ expected') (TyArray _ actual') =
+        go expected' actual'
+    go _ _ = return ()
 
 
 -- | If @l@ and @r@ are 'TyComponent', then @typeUnion l r@ returns the
