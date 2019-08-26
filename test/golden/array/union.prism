@@ -1,0 +1,13 @@
+mdp
+
+module Desync
+    ]a_act[ true -> true;
+    ]b_act[ true -> true;
+    ]c_act[ true -> true;
+endmodule
+
+module n_N_impl
+    ]a_act[ true -> true;
+    ]b_act[ true -> true;
+    ]c_act[ true -> true;
+endmodule

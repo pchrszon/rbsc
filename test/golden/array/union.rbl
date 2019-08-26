@@ -1,0 +1,17 @@
+type A;
+type B;
+type C;
+
+system {
+    a : A;
+    b : B;
+    c : C;
+
+    n : N;
+}
+
+type N {
+    forall i : [0..2] {
+        [ [a, b, c][i].act ] true -> true;
+    }
+}

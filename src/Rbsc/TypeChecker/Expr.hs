@@ -95,8 +95,12 @@ tcExpr (Loc e rgn) = case e of
     U.LitArray (inner :| inners) -> do
         SomeExpr inner' ty <- tcExpr inner
         Dict <- pure (dictShow ty)
-        inners' <- traverse (`hasType` ty) inners
-        let arrayTy = TyArray (length inners + 1) ty
+        (inners', tys') <- fmap unzip . for inners $ \i -> do
+            SomeExpr i' ty' <- cast (getLoc i) ty =<< tcExpr i
+            Refl <- expect ty (getLoc i) ty'
+            return (i', ty')
+        let elemTy = foldr typeUnion ty tys'
+        let arrayTy = TyArray (length inners + 1) elemTy
         return (SomeExpr (T.LitArray (inner' :| inners')) arrayTy)
 
     U.GenArray inner var lower upper -> do
