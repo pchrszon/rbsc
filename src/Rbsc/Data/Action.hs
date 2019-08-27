@@ -35,7 +35,7 @@ instance Pretty Action where
         IndexedAction act idx -> pretty act <> brackets (pretty idx)
 
 
--- | An 'Action' boundled with its 'ActionKind' and its 'ActionIntent'.
+-- | An 'Action' bundled with its 'ActionKind' and its 'ActionIntent'.
 data ActionInfo = ActionInfo
     { actionName   :: !(Loc Action)
     , actionKind   :: !ActionKind

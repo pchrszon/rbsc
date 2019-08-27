@@ -87,6 +87,7 @@ translateModel model sys info = do
 
     checkActionIndices mas
     checkSynchronizations mas
+    checkOverrides bi as
 
     let rgs = rolePlayingGuards sys modules info
 

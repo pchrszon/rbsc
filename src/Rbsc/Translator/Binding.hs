@@ -14,10 +14,13 @@ module Rbsc.Translator.Binding
     , requiredActionsOfRole
     , internalActionsOfPlayers
     , overrideActionsOfRoles
+
+    , checkOverrides
     ) where
 
 
 import Control.Lens
+import Control.Monad
 
 import           Data.Foldable
 import           Data.Map.Strict  (Map)
@@ -107,6 +110,25 @@ overrideActionsOfRoles bi oas compName =
         Set.map ((,) role) (Map.findWithDefault Set.empty role oas)
   where
     roles = rolesOfComponent bi compName
+
+
+-- | Check if all actions marked override actually exist within the player
+-- components.
+checkOverrides :: BindingInfo -> Alphabets -> Result ()
+checkOverrides bi as =
+    traverse_ checkOverridesOfRole (Map.keys (_playersOfRole bi))
+  where
+    checkOverridesOfRole roleName = do
+        let alph   = Map.findWithDefault Set.empty roleName as
+            ovActs = Set.filter isOverrideAction alph
+            rolePlayers = toList
+                (Map.findWithDefault Set.empty roleName (_playersOfRole bi))
+        for_ rolePlayers $ \compName -> do
+            let playerActs =
+                    stripActionInfo (Map.findWithDefault Set.empty compName as)
+            for_ ovActs $ \act ->
+                unless (unLoc (actionName act) `Set.member` playerActs) $
+                    warn (MissingOverriddenAction (actionName act) compName)
 
 
 data Binding = Binding

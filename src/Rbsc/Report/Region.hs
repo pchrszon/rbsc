@@ -15,7 +15,8 @@ module Rbsc.Report.Region
 
 
 import Data.Ord
-import Data.Text      (Text)
+import Data.Text                 (Text)
+import Data.Text.Prettyprint.Doc
 
 
 -- | A position in a source file.
@@ -75,6 +76,9 @@ instance Ord a => Ord (Loc a) where
 
 instance Show a => Show (Loc a) where
     showsPrec d = showsPrec d . unLoc
+
+instance Pretty a => Pretty (Loc a) where
+    pretty = pretty . unLoc
 
 
 -- | @withLocOf x y@ annotates x with the 'Region' of @y@.

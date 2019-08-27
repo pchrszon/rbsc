@@ -8,11 +8,13 @@ module Rbsc.Report.Warning where
 
 import Control.Lens
 
-import           Data.Text                 (Text)
-import qualified Data.Text                 as Text
+import           Data.Text                                 (Text)
+import qualified Data.Text                                 as Text
 import           Data.Text.Prettyprint.Doc
+import           Data.Text.Prettyprint.Doc.Render.Terminal
 
 
+import Rbsc.Data.Action
 import Rbsc.Data.Name
 
 import Rbsc.Report
@@ -25,7 +27,8 @@ data Warning
     | InstantiationCycle [TypeName]
     | OutOfRangeUpdate !Region (Int, Int) !Int
     | InconsistentActionIndices !Region !Int !Region !Int
-    | UnsynchronizedAction !Text !Region
+    | UnsynchronizedAction !(Loc Action)
+    | MissingOverriddenAction !(Loc Action) !ComponentName
     | DynamicArrayAccess !Region
     deriving (Eq, Show)
 
@@ -72,11 +75,20 @@ toReport = \case
                 "... but" <+> indexText n2' <+> " here"
             ]
 
-    UnsynchronizedAction act rgn ->
+    UnsynchronizedAction act ->
         warningReport "unsynchronized action"
-            [ hintPart rgn . Just $
-                "the action" <+> prettyIdent act <+>
+            [ hintPart (getLoc act) . Just $
+                "the action" <+> annotate bold (pretty act) <+>
                 "does not synchronize with any other action"
+            ]
+
+    MissingOverriddenAction act compName ->
+        warningReport "missing overridden action"
+            [ hintPart (getLoc act) . Just $
+                "the action" <+> annotate bold (pretty act) <+>
+                "is marked override," <> line <>
+                "but the player" <+> annotate bold (pretty compName) <+>
+                "does not provide a matching action"
             ]
 
     DynamicArrayAccess rgn ->

@@ -47,8 +47,6 @@ import Rbsc.Report.Result
 
 import Rbsc.Syntax.Typed hiding (Type (..))
 
-import Rbsc.Util (renderPretty)
-
 
 -- | The action alphabet of a component.
 type Alphabet = Set ActionInfo
@@ -143,7 +141,7 @@ numberOfIndices (Loc act rgn) = go 0 act
 -- module.
 checkSynchronizations :: Map ComponentName ModuleAlphabets -> Result ()
 checkSynchronizations mas = for_ (Map.assocs syncs) $ \case
-    (Loc act rgn, [_]) -> warn (UnsynchronizedAction (renderPretty act) rgn)
+    (act, [_]) -> warn (UnsynchronizedAction act)
     _ -> return ()
   where
     syncs = Map.fromListWith (++) actions
