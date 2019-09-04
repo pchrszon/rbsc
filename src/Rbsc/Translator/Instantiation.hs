@@ -38,15 +38,13 @@ import Rbsc.Report.Region
 
 import Rbsc.Syntax.Typed hiding (Type (..))
 
-import Rbsc.Translator.Indices
-
 import Rbsc.Util (withConstants)
 
 
 -- | Instantiate the 'ModuleBody's for all 'Component's in the given
 -- 'System'.
 instantiateComponents
-    :: (MonadEval r m, Has SymbolTable r, Has RangeTable r)
+    :: (MonadEval r m, Has SymbolTable r)
     => Model
     -> System
     -> m (Map ComponentName [TModuleInstance Elem])
@@ -56,20 +54,18 @@ instantiateComponents m sys =
     inst comp = do
         bodies <- instantiateComponent m comp
         bodies' <- for bodies $ \(ModuleInstance name args body) ->
-            withConstants args $ do
-                body' <-
-                    reduceModuleBody =<< removeVariableIndicesInModule comp body
-                return (ModuleInstance name args body')
+            withConstants args
+                (ModuleInstance name args <$> reduceModuleBody body)
         return (view compName comp, bodies')
 
 
 -- | Instantiate a 'Coordinator'.
 instantiateCoordinator
-    :: (MonadEval r m, Has SymbolTable r, Has RangeTable r)
+    :: MonadEval r m
     => TCoordinator ElemMulti
     -> m (TCoordinator Elem)
 instantiateCoordinator =
-    reduceCoordinator <=< removeVariableIndicesInCoord <=< unrollCoordinator
+    reduceCoordinator <=< unrollCoordinator
 
 
 -- | Instantiate a 'RewardStruct'.
