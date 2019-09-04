@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -7,6 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -21,8 +23,6 @@ module Rbsc.Data.Field
 
 
 import Control.Lens hiding (Contains (..))
-
-import Data.Proxy
 
 
 infixr 2 :&:
@@ -44,20 +44,20 @@ type Has a s = Contains (Elem a s) a s
 
 -- | A 'Lens' providing access to the field with type @a@.
 field :: forall a s. Has a s => Lens' s a
-field = field' (Proxy :: Proxy (Elem a s))
+field = field' @(Elem a s)
 
 
 class Contains (res :: Res) a s where
-    field' :: Proxy res -> Lens' s a
+    field' :: Lens' s a
 
 instance Contains ('Found 'Here) a a where
-    field' _ = id
+    field' = id
 
 instance Contains ('Found p) a l => Contains ('Found ('L p)) a (l :&: r) where
-    field' _ f (l :&: r) = (:&: r) <$> field' (Proxy :: Proxy ('Found p)) f l
+    field' f (l :&: r) = (:&: r) <$> field' @('Found p) f l
 
 instance Contains ('Found p) a r => Contains ('Found ('R p)) a (l :&: r) where
-    field' _ f (l :&: r) = (l :&:) <$> field' (Proxy :: Proxy ('Found p)) f r
+    field' f (l :&: r) = (l :&:) <$> field' @('Found p) f r
 
 
 -- | Type-level witness for finding a field.
