@@ -117,8 +117,10 @@ The following built-in functions are provided:
   function with a component that is not a role will throw an error during the
   translation of the model. Use ``has_player`` to check if ``r`` actually has
   a player.
-* ``playable(r)`` returns ``true`` if the role ``r`` can be played in the
-  current system state, i.e., there is an outgoing transition labeled with ``r``.
+* ``playable(r [, act])`` returns ``true`` if the role ``r`` can be played in
+  the current system state, i.e., there is an outgoing transition labeled with
+  ``r``. If an optional action ``act`` is given, then ``playable(r, act)``
+  returns ``true`` only if ``r`` can be played on action ``act``.
 * ``index(c)`` returns the index of a component contained in a component array.
   For example, ``index(workers[2])`` will return ``2``, where ``workers`` is
   a component array.
