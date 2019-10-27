@@ -11,6 +11,7 @@ module Rbsc.Completer
     ) where
 
 
+import Control.Applicative
 import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -148,11 +149,8 @@ completeCompartmentInstance types name roleRefLists = do
 
 -- | Get an instance of the given type or create a new one.
 getOrCreateInstance :: ComponentTypes -> TypeName -> Completer ComponentName
-getOrCreateInstance types tyName = do
-    create <- liftList [True, False]
-    if create
-        then createInstance types tyName
-        else getInstance tyName
+getOrCreateInstance types tyName =
+    createInstance types tyName <|> getInstance tyName
 
 
 -- | Create a new instance of the given type and add it to the system. The
