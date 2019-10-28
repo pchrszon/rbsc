@@ -39,7 +39,7 @@ spec = describe "typeCheck" $ do
     it "computes the correct type" $
         typeCheck TyBool [expr| n : N |]
         `shouldBe`
-        Right "HasType (Identifier \"n\" (TyComponent (fromList [\"N\"]))) \"N\""
+        Right "HasType (Identifier \"n\" (TyComponent (fromList [\"N\"]))) (fromList [\"N\"])"
 
     it "detects type errors" $
         typeCheck TyBool [expr| true : N |]

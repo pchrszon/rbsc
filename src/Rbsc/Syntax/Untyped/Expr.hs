@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE PatternSynonyms   #-}
+{-# LANGUAGE ViewPatterns      #-}
 
 
 -- | Abstract syntax of untyped expressions.
@@ -15,6 +16,7 @@ module Rbsc.Syntax.Untyped.Expr
 
 import Control.Lens
 
+import Data.Foldable
 import Data.List.NonEmpty (NonEmpty)
 
 
@@ -51,7 +53,7 @@ data Expr
     | Index LExpr LExpr
     | Call LExpr [LExpr]
     | IfThenElse LExpr LExpr LExpr
-    | HasType LExpr (Loc TypeName)
+    | HasType LExpr ComponentTypeSet
     | BoundTo LExpr LExpr
     | Element LExpr LExpr
     | Count ComponentTypeSet LExpr
@@ -116,4 +118,5 @@ pattern Index' :: LExpr -> LExpr -> LExpr
 pattern Index' e idx <- Loc (Index e idx) _
 
 pattern HasType' :: LExpr -> Loc TypeName -> LExpr
-pattern HasType' e tyName <- Loc (HasType e tyName) _
+pattern HasType' e tyName <-
+    Loc (HasType e (ComponentTypeSet (toList -> [tyName]))) _

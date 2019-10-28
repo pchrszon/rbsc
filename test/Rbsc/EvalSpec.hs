@@ -94,6 +94,21 @@ spec = do
             `shouldBe`
             Right 1
 
+        it "evaluates the has-type operator for single types" $
+            eval' TyBool [expr| n : N |]
+            `shouldBe`
+            Right True
+
+        it "evaluates the has-type operator for type sets" $
+            eval' TyBool [expr| n : {N, R} |]
+            `shouldBe`
+            Right True
+
+        it "evaluates the has-type operator for built-in type sets" $
+            eval' TyBool [expr| r : role |]
+            `shouldBe`
+            Right True
+
         it "evaluates the count function" $
             eval' TyInt [expr| count(R, c) |]
             `shouldBe`

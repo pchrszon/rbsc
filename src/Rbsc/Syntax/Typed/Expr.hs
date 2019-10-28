@@ -92,7 +92,7 @@ data Expr t where
     Index          :: Show t => Expr (Array t) -> Maybe Int -> Loc (Expr Int) -> Expr t
     Apply          :: Show b => Expr (Fn (a -> b)) -> Expr a -> Expr b
     IfThenElse     :: Expr Bool -> Expr t -> Expr t -> Expr t
-    HasType        :: Expr Component -> TypeName -> Expr Bool
+    HasType        :: Expr Component -> Set TypeName -> Expr Bool
     BoundTo        :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Element        :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound          :: Int -> Type t -> Expr t
@@ -325,7 +325,7 @@ plateExpr f = \case
     Index e mSize idx  -> Index <$> f e <*> pure mSize <*> traverse f idx
     Apply g e          -> Apply <$> f g <*> f e
     IfThenElse c t e   -> IfThenElse <$> f c <*> f t <*> f e
-    HasType e tyName   -> HasType <$> f e <*> pure tyName
+    HasType e tySet    -> HasType <$> f e <*> pure tySet
     BoundTo l r        -> BoundTo <$> traverse f l <*> traverse f r
     Element l r        -> Element <$> traverse f l <*> traverse f r
     Bound i ty         -> pure (Bound i ty)

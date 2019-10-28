@@ -446,8 +446,9 @@ identsInExpr = go False Set.empty
                     return Set.empty
                 | otherwise ->
                     return (Set.singleton (name `withLocOf` e))
-        HasType e' tyName ->
-            Set.insert (fmap getTypeName tyName) <$> go inAction bound e'
+        HasType e' tySet -> Set.union
+            <$> identsInComponentTypeSet tySet
+            <*> go inAction bound e'
         Count _ e' -> Set.union
             <$> identsInComponentTypeSet AllComponents
             <*> go inAction bound e'

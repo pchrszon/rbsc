@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -24,7 +25,8 @@ module Rbsc.TypeChecker.Internal
     , getIdentifierType
     , lookupBoundVar
     , localScope
-    , whenTypeExists
+    , checkIfTypeExists
+    , checkIfTypesExist
 
       -- * Extracting typed expressions
     , getExpr
@@ -45,6 +47,7 @@ import Control.Lens
 import Control.Monad.Except
 import Control.Monad.Reader
 
+import           Data.Foldable
 import           Data.List       (find)
 import qualified Data.Map.Strict as Map
 import           Data.Text       (Text)
@@ -176,14 +179,19 @@ localScope :: TypeName -> TypeChecker a -> TypeChecker a
 localScope tyName = local (scope .~ Local tyName)
 
 
--- | When a given user-defined component type exists, execute the given
--- action. Otherwise, an error is thrown.
-whenTypeExists :: Loc TypeName -> TypeChecker a -> TypeChecker a
-whenTypeExists (Loc tyName rgn) m = do
+-- | Check if all user-definded types in a 'ComponentTypeSet" exist.
+checkIfTypesExist :: ComponentTypeSet -> TypeChecker ()
+checkIfTypesExist = \case
+    ComponentTypeSet tySet -> traverse_ checkIfTypeExists tySet
+    _ -> return ()
+
+
+-- | Check if the given user-defined type exists. If not, an 'UndefinedType'
+-- error is thrown.
+checkIfTypeExists :: Loc TypeName -> TypeChecker ()
+checkIfTypeExists (Loc tyName rgn) = do
     types <- view componentTypes
-    if Map.member tyName types
-        then m
-        else throw rgn UndefinedType
+    unless (Map.member tyName types) (throw rgn UndefinedType)
 
 
 -- | Unwrap 'SomeExpr'. If the given expected 'Type' and the actual @Type@ do

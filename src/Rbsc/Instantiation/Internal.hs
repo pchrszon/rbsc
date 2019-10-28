@@ -113,10 +113,10 @@ buildSystem model = do
   where
     -- insertDefinition :: Monad m => Loc (Expr Bool) -> StateT Result m ()
     insertDefinition e = case unLoc e of
-        HasType (Identifier name _) tyName ->
+        HasType (Identifier name _) (toList -> [tyName]) ->
             system.instances.at (ComponentName name Nothing) .= Just tyName
 
-        HasType (Index (Identifier name _) _ idx) tyName -> do
+        HasType (Index (Identifier name _) _ idx) (toList -> [tyName]) -> do
             idx' <- eval idx
             arr <- for [0 .. idx' - 1] $ \i -> do
                 let name' = ComponentName name (Just i)

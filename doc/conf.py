@@ -22,7 +22,7 @@ copyright = '2019, Philipp Chrszon'
 author = 'Philipp Chrszon'
 
 # The full version, including alpha/beta/rc tags
-release = '1.1.0.2'
+release = '1.2.0.0'
 
 
 # -- General configuration ---------------------------------------------------

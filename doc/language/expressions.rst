@@ -32,6 +32,9 @@ The following operators can be used in expressions, ordered by their precedence
 Infix functions are written in between their operators without parentheses,
 for instance ``plus(1, 2)`` is equivalent to ``1 plus 2``.
 
+The has-type operator ``:`` also accepts type sets on the right-hand side,
+including the built-in sets ``natural``, ``role``, and ``compartment``.
+
 
 Arrays
 ------

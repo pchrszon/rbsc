@@ -220,11 +220,12 @@ tcExpr (Loc e rgn) = case e of
         let ty = typeUnion tyT tyE
         T.IfThenElse cond' _then' _else' `withType` ty
 
-    U.HasType inner tyName ->
-        whenTypeExists tyName $ do
-            tyComponent <- getTyComponent
-            inner' <- inner `hasType` tyComponent
-            T.HasType inner' (unLoc tyName) `withType` TyBool
+    U.HasType inner tySet -> do
+        checkIfTypesExist tySet
+        tyComponent <- getTyComponent
+        inner' <- inner `hasType` tyComponent
+        tySet' <- normalizeTypeSet' tySet
+        T.HasType inner' tySet' `withType` TyBool
 
     U.BoundTo l r -> do
         tyComponent <- getTyComponent

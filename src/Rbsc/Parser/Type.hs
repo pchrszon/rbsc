@@ -32,7 +32,7 @@ valueType = choice
     , TyInt       <$  reserved "int"
     , TyDouble    <$  reserved "double"
     , TyAction    <$  reserved "action"
-    , TyComponent <$> componentTypeSet
+    , TyComponent <$> (unLoc <$> componentTypeSet)
     , TyArray     <$> (reserved "array" *> expr) <*> (reserved "of" *> typ)
     , parens typ
     ]

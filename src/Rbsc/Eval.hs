@@ -332,8 +332,8 @@ toLiteral e = case e of
     Index (ActionArray (Literal act _)) _ (LitIndex i _) ->
         return (Literal (IndexedAction act i) TyAction)
 
-    HasType (Literal comp _) tyName ->
-        return (Literal (view compTypeName comp == tyName) TyBool)
+    HasType (Literal comp _) tySet ->
+        return (Literal (view compTypeName comp `Set.member` tySet) TyBool)
 
     BoundTo (Loc (Literal role _) _) (Loc (Literal player _) _) ->
         return (Literal

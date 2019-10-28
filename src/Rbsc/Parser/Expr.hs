@@ -45,18 +45,23 @@ expr :: Parser LExpr
 expr = makeExprParser term table <?> "expression"
 
 
-componentTypeSet :: Parser ComponentTypeSet
+componentTypeSet :: Parser (Loc ComponentTypeSet)
 componentTypeSet = choice
-    [ AllComponents    <$  reserved "component"
-    , AllNaturals      <$  reserved "natural"
-    , AllRoles         <$  reserved "role"
-    , AllCompartments  <$  reserved "compartment"
-    , ComponentTypeSet <$> singleType
-    , ComponentTypeSet <$> typeSet
+    [ Loc AllComponents   <$> reserved "component"
+    , Loc AllNaturals     <$> reserved "natural"
+    , Loc AllRoles        <$> reserved "role"
+    , Loc AllCompartments <$> reserved "compartment"
+    , singleType
+    , typeSet
     ]
   where
-    singleType = Set.singleton <$> identifier
-    typeSet    = Set.fromList <$> braces (identifier `sepBy1` comma)
+    singleType = do
+        tyIdent@(Loc _ rgn) <- identifier
+        return (Loc (ComponentTypeSet (Set.singleton tyIdent)) rgn)
+    typeSet = do
+        tyIdents <- braces (identifier `sepBy1` comma)
+        let rgn = foldr1 (<>) (fmap getLoc tyIdents)
+        return (Loc (ComponentTypeSet (Set.fromList tyIdents)) rgn)
 
 
 term :: Parser LExpr
@@ -188,8 +193,8 @@ function = choice
 
 
 countFunction :: Parser LExpr
-countFunction =
-    specialFunction "count" (Count <$> componentTypeSet <*> (comma *> expr))
+countFunction = specialFunction "count"
+    (Count <$> (unLoc <$> componentTypeSet) <*> (comma *> expr))
 
 
 lengthFunction :: Parser LExpr
@@ -265,7 +270,7 @@ quantified = do
 
 quantifiedType :: Parser (QuantifiedType ComponentTypeSet LExpr)
 quantifiedType = label "type" $
-    QdTypeInt <$> range <|> QdTypeComponent <$> componentTypeSet
+    QdTypeInt <$> range <|> QdTypeComponent <$> (unLoc <$> componentTypeSet)
 
 
 -- | Operators working on 'Expr's.
@@ -321,8 +326,8 @@ hasType =
         -- Fail if there is an assignment following. In that case, the
         -- colon denotes a probability, not a @HasType@ relation.
         _ <- operator ":" <* notFollowedBy (symbol "(") <?> "operator"
-        tyName <- identifier
-        return (\e -> Loc (HasType e tyName) (getLoc e <> getLoc tyName))
+        Loc tySet rgn <- componentTypeSet
+        return (\e -> Loc (HasType e tySet) (getLoc e <> rgn))
 
 
 infixFunction :: Monad m => ExprOp m
