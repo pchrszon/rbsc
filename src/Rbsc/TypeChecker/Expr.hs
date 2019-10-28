@@ -264,11 +264,6 @@ tcExpr (Loc e rgn) = case e of
                 T.Literal size TyInt `withType` TyInt
             _ -> throw (getLoc inner) (NotAnArray (renderPretty ty))
 
-    U.HasPlayer inner -> do
-        tyComponent <- getTyComponent
-        inner' <- inner `hasType` tyComponent
-        T.HasPlayer inner' `withType` TyBool
-
     U.Player inner -> do
         tyComponent <- getTyComponent
         compTys <- view componentTypes

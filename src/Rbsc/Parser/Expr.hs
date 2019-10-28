@@ -85,7 +85,6 @@ atom = choice
     , function
     , countFunction
     , lengthFunction
-    , hasPlayerFunction
     , playerFunction
     , playableFunction
     , indexFunction
@@ -200,10 +199,6 @@ countFunction = specialFunction "count"
 lengthFunction :: Parser LExpr
 lengthFunction =
     specialFunction "length" (Length <$> expr)
-
-
-hasPlayerFunction :: Parser LExpr
-hasPlayerFunction = specialFunction "has_player" (HasPlayer <$> expr)
 
 
 playerFunction :: Parser LExpr

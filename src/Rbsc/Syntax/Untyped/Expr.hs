@@ -58,7 +58,6 @@ data Expr
     | Element LExpr LExpr
     | Count ComponentTypeSet LExpr
     | Length LExpr
-    | HasPlayer LExpr
     | Player LExpr
     | Playable LExpr (Maybe LExpr)
     | ComponentIndex LExpr
@@ -106,7 +105,6 @@ instance Plated LExpr where
         Element l r -> Element <$> f l <*> f r
         Count tyName e' -> Count tyName <$> f e'
         Length e' -> Length <$> f e'
-        HasPlayer e' -> HasPlayer <$> f e'
         Player e' -> Player <$> f e'
         Playable e' mAct -> Playable <$> f e' <*> traverse f mAct
         ComponentIndex e' -> ComponentIndex <$> f e'

@@ -24,6 +24,6 @@ system {
 
 
 function core(c : component) : component =
-    if has_player(c)
+    if c : role
         then core(player(c))
         else c;

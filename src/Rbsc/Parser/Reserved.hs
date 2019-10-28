@@ -65,7 +65,6 @@ reservedWords =
     , "log"
     , "count"
     , "length"
-    , "has_player"
     , "player"
     , "override"
     , "internal"

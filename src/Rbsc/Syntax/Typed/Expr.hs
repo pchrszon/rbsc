@@ -97,7 +97,6 @@ data Expr t where
     Element        :: Loc (Expr Component) -> Loc (Expr Component) -> Expr Bool
     Bound          :: Int -> Type t -> Expr t
     Count          :: Set TypeName -> Expr Component -> Expr Int
-    HasPlayer      :: Expr Component -> Expr Bool
     Player         :: Loc (Expr Component) -> Expr Component
     Playable       :: Loc (Expr Component) -> Maybe (Loc (Expr Action)) -> Expr Bool
     ComponentIndex :: Loc (Expr Component) -> Expr Int
@@ -330,7 +329,6 @@ plateExpr f = \case
     Element l r        -> Element <$> traverse f l <*> traverse f r
     Bound i ty         -> pure (Bound i ty)
     Count tySet e      -> Count tySet <$> f e
-    HasPlayer e        -> HasPlayer <$> f e
     Player e           -> Player <$> traverse f e
     Playable e mAct    -> Playable
         <$> traverse f e

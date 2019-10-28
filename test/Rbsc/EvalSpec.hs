@@ -119,11 +119,6 @@ spec = do
             `shouldBe`
             Right 3
 
-        it "evaluates the has_player function" $
-            eval' TyBool [expr| has_player(r) |]
-            `shouldBe`
-            Right True
-
         it "evaluates the player function" $
             eval' TyBool [expr| player(r) = n |]
             `shouldBe`

@@ -114,12 +114,10 @@ The following built-in functions are provided:
 * ``count(R, c)`` which counts the number of role instances with type ``R``
   contained in the compartment instance ``c``.
 * ``length(arr)`` which returns the length of an array.
-* ``has_player(c)`` returns ``true`` if the component ``c`` is a role and has
-  a player.
 * ``player(r)`` returns the component to which ``r`` is bound. Calling this
   function with a component that is not a role will throw an error during the
-  translation of the model. Use ``has_player`` to check if ``r`` actually has
-  a player.
+  translation of the model. Use ``r : role`` to check if ``r`` actually is a
+  role.
 * ``playable(r [, act])`` returns ``true`` if the role ``r`` can be played in
   the current system state, i.e., there is an outgoing transition labeled with
   ``r``. If an optional action ``act`` is given, then ``playable(r, act)``

@@ -348,9 +348,6 @@ toLiteral e = case e of
         comps <- componentConsts tySet <$> view riConstants
         return (Literal (genericLength (filter (isElement comp) comps)) TyInt)
 
-    HasPlayer (Literal comp _) ->
-        return (Literal (has (compBoundTo._Just) comp) TyBool)
-
     Player (Loc (Literal comp _) rgn) ->
         case view compBoundTo comp of
             Just (ComponentName name (Just idx)) ->
