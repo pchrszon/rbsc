@@ -197,17 +197,11 @@ countFunction = specialFunction "count"
 
 
 lengthFunction :: Parser LExpr
-lengthFunction =
-    specialFunction "length" (Length <$> expr)
+lengthFunction = specialFunction "length" (Length <$> expr)
 
 
 playerFunction :: Parser LExpr
-playerFunction = do
-    start <- reserved "player"
-    arg <- optional ((,) <$> (symbol "(" *> expr) <*> symbol ")")
-    case arg of
-        Just (e, end) -> return (Loc (Player e) (start <> end))
-        Nothing       -> return (Loc (Player (Loc Self start)) start)
+playerFunction = keywordFunction "player" Player
 
 
 playableFunction :: Parser LExpr
@@ -217,7 +211,7 @@ playableFunction = specialFunction "playable" $ Playable
 
 
 indexFunction :: Parser LExpr
-indexFunction = specialFunction "index" (ComponentIndex <$> expr)
+indexFunction = keywordFunction "index" ComponentIndex
 
 
 specialFunction :: Text -> Parser Expr -> Parser LExpr
@@ -227,6 +221,15 @@ specialFunction name p = do
     e <- p
     end <- symbol ")"
     return (Loc e (start <> end))
+
+
+keywordFunction :: Text -> (LExpr -> Expr) -> Parser LExpr
+keywordFunction name con = do
+    start <- reserved name
+    arg <- optional ((,) <$> (symbol "(" *> expr) <*> symbol ")")
+    case arg of
+        Just (e, end) -> return (Loc (con e) (start <> end))
+        Nothing       -> return (Loc (con (Loc Self start)) start)
 
 
 self :: Parser LExpr

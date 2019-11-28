@@ -126,8 +126,9 @@ The following built-in functions are provided:
   For example, ``index(workers[2])`` will return ``2``, where ``workers`` is
   a component array.
 
-The ``player`` function can also be used as a keyword without an argument. This
-is equivalent to writing ``player(self)``.
+The ``player`` and ``index`` functions can also be used as a keywords without an
+argument. This is equivalent to writing ``player(self)`` and ``index(self)``,
+respectively.
 
 
 .. _sec-expression-contexts:
