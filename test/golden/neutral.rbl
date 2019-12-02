@@ -6,6 +6,7 @@ type N {
     [] b | false -> true;
     [] x + 0 > 0 -> true;
     [] x - 0 > 0 -> true;
+    [] true => b -> true;
 }
 
 system { n : N; }

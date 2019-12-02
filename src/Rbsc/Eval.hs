@@ -316,6 +316,9 @@ toLiteral e = case e of
     LogicOp lOp (Literal l _) (Literal r _) ->
         return (Literal (logicOp lOp l r) TyBool)
 
+    LogicOp Implies (Literal True _) r ->
+        return r
+
     Member (Literal comp _) name TyAction ->
         return (Literal (LocalAction (view compName comp) name) TyAction)
 

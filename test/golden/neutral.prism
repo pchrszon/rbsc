@@ -8,4 +8,5 @@ module n_N_impl
     [] n_b -> true;
     [] n_x > 0 -> true;
     [] n_x > 0 -> true;
+    [] n_b -> true;
 endmodule
