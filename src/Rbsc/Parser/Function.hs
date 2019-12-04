@@ -36,9 +36,10 @@ function = do
 
     Function mTyName name
         <$> parens (parameter `sepBy` comma)
-        <*> (colon *> typ)
+        <*> (colon *> typ <?> "type annotation")
         <*> (equals *> expr <* semi)
 
 
 parameter :: Parser UParameter
-parameter = Parameter <$> identifier <*> (colon *> typ)
+parameter =
+    Parameter <$> hidden identifier <*> (colon *> typ <?> "type annotation")
