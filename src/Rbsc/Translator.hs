@@ -92,7 +92,7 @@ translateModel model sys info = do
     let rgs = rolePlayingGuards sys modules info
 
     runTranslator (rgs :&: obsRoles :&: info) $ do
-        desync   <- maybeToList <$> genDesyncModule as
+        nosync   <- maybeToList <$> genNosyncModule as
         step     <- genStepFormula
         globals' <- trnsGlobalVars (modelGlobals model)
         labels'  <- traverse trnsLabel (modelLabels model)
@@ -109,7 +109,7 @@ translateModel model sys info = do
             , Prism.modelConstants     = []
             , Prism.modelGlobalVars    = fmap Prism.GlobalVar globals'
             , Prism.modelModules       =
-                concat [desync, coordinators', modules']
+                concat [nosync, coordinators', modules']
             , Prism.modelInitStates    = Nothing
             , Prism.modelRewardStructs = rewardStructs'
             }
@@ -126,9 +126,9 @@ getObservedRoles =
     fmap (fmap (view compName)) . traverse eval
 
 
-genDesyncModule :: Alphabets -> Translator (Maybe Prism.Module)
-genDesyncModule as = do
-    ident <- trnsQualified (QlName "Desync")
+genNosyncModule :: Alphabets -> Translator (Maybe Prism.Module)
+genNosyncModule as = do
+    ident <- trnsQualified (QlName "Nosync")
     cmds <- traverse genCommand acts
     return $ if null cmds
         then Nothing

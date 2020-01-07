@@ -2,7 +2,7 @@ mdp
 
 global g : [0..1] init 0;
 
-module Desync
+module Nosync
     ]n_act_0[ true -> true;
     ]n_act_1[ true -> true;
     ]n_act_2[ true -> true;

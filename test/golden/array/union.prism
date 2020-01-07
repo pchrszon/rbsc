@@ -1,6 +1,6 @@
 mdp
 
-module Desync
+module Nosync
     ]a_act[ true -> true;
     ]b_act[ true -> true;
     ]c_act[ true -> true;

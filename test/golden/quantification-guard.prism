@@ -1,6 +1,6 @@
 mdp
 
-module Desync
+module Nosync
     ]n_b[ true -> true;
     ]a_0[ true -> true;
     ]a_2[ true -> true;

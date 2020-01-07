@@ -1,6 +1,6 @@
 mdp
 
-module Desync
+module Nosync
     ]r_a[ true -> true;
 endmodule
 

@@ -47,14 +47,14 @@ type Converter a = State ConverterState a
 
 convertToSingleActions :: Prism.ConversionInfo -> Prism.Model -> Prism.Model
 convertToSingleActions ci =
-    removeDesyncModule . runConverter . Prism.convertToSingleActions convert ci
+    removeNosyncModule . runConverter . Prism.convertToSingleActions convert ci
   where
-    removeDesyncModule model = model
+    removeNosyncModule model = model
         { Prism.modelModules =
-            filter (not . isDesyncModule) (Prism.modelModules model)
+            filter (not . isNosyncModule) (Prism.modelModules model)
         }
 
-    isDesyncModule = ("Desync" ==) . Prism.modIdent
+    isNosyncModule = ("Nosync" ==) . Prism.modIdent
 
 
 prepareConversion :: Prism.Model -> Prism.ConversionInfo

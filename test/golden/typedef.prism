@@ -2,7 +2,7 @@ mdp
 
 label "done" = fst_s = 1 & snd_s = 1;
 
-module Desync
+module Nosync
     ]fst_a[ true -> true;
     ]snd_a[ true -> true;
 endmodule

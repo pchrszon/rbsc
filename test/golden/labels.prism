@@ -2,7 +2,7 @@ mdp
 
 label "goal" = n_0_s = 1 & n_1_s = 1 & n_2_s = 1;
 
-module Desync
+module Nosync
     ]n_0_a[ true -> true;
     ]n_1_a[ true -> true;
     ]n_2_a[ true -> true;

@@ -1,6 +1,6 @@
 mdp
 
-module Desync
+module Nosync
     ]enq_l_1[ true -> true;
     ]enq_l_2[ true -> true;
     ]enq_s_1[ true -> true;
