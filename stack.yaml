@@ -1,4 +1,4 @@
-resolver: lts-14.11
+resolver: lts-14.20
 packages:
   - .
   - lib/lang-prism

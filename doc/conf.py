@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'rbsc'
-copyright = '2019, Philipp Chrszon'
+copyright = '2020, Philipp Chrszon'
 author = 'Philipp Chrszon'
 
 # The full version, including alpha/beta/rc tags
