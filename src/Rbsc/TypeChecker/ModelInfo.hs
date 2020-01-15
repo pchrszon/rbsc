@@ -73,7 +73,7 @@ getModelInfo
     => U.Model
     -> t Result (ModelInfo, Map TypeName [UModuleInstance])
 getModelInfo m = do
-    idents <- lift (fromEither (identifierDefs m))
+    idents <- lift (identifierDefs m)
     deps   <- lift (fromEither' (sortDefinitions m idents))
 
     depth  <- view recursionDepth

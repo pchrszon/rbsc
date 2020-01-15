@@ -20,6 +20,7 @@ import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.Untyped
 
@@ -103,23 +104,23 @@ spec = describe "identifierDefs" $ do
             ]
 
     it "detects duplicated identifiers" $
-        identifierDefs
+        toEither (identifierDefs
             [model|
                 const n : int = 5;
 
                 system {
                     n : Comp;
                 }
-            |]
+            |])
         `shouldThrowError`
         _DuplicateIdentifier
 
 
-shouldBeLike ::
-       Either [Error] Identifiers
+shouldBeLike
+    :: Result Identifiers
     -> Either [Error] (Map ScopedName IdentifierDef)
     -> Expectation
-shouldBeLike x y = over _Right (Map.map unLoc) x `shouldBe` y
+shouldBeLike x y = over _Right (Map.map unLoc) (toEither x) `shouldBe` y
 
 
 dummyLoc :: a -> Loc a

@@ -20,6 +20,7 @@ module Rbsc.Report.Result
     , throw
     , throwMany
     , warn
+    , warnMany
 
     , Error(..)
     , LocErrorDesc(..)
@@ -85,6 +86,11 @@ throwMany = Result mempty . Left . Bag.fromList
 -- | Emit a 'Warning'.
 warn :: Warning -> Result ()
 warn w = Result (Bag.singleton w) (Right ())
+
+
+-- | Emit many 'Warning's.
+warnMany :: [Warning] -> Result ()
+warnMany ws = Result (Bag.fromList ws) (Right ())
 
 
 -- | Convert an 'Either' value into a 'Result' value.

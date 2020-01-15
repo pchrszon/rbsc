@@ -30,6 +30,7 @@ data Warning
     | UnsynchronizedAction !(Loc Action)
     | MissingOverriddenAction !(Loc Action) !ComponentName
     | DynamicArrayAccess !Region
+    | MergedComponent !Region !Region
     deriving (Eq, Show)
 
 makePrisms ''Warning
@@ -96,6 +97,14 @@ toReport = \case
             [ hintPart rgn . Just $
                 "this index depends on one or more variables" <> line <>
                 "the bounds are not checked"
+            ]
+
+    MergedComponent rgn first ->
+        warningReport "merged components"
+            [ hintPart rgn . Just $
+                "compontent has been merged with component of the same name"
+            , hintPart first . Just $
+                "first definition was here"
             ]
 
 

@@ -15,6 +15,7 @@ import Rbsc.Parser.TH
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.Untyped
 
@@ -71,7 +72,7 @@ spec = describe "sortDefinitions" $ do
 
 dependencies :: Model -> Either [Error] [Name]
 dependencies m = do
-    idents <- identifierDefs m
+    idents <- toEither (identifierDefs m)
     (: []) +++ fmap getName $ sortDefinitions m idents
 
 

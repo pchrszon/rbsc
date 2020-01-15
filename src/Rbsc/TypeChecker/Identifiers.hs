@@ -42,6 +42,7 @@ import Rbsc.Data.Scope
 
 import Rbsc.Report.Error
 import Rbsc.Report.Region
+import Rbsc.Report.Result
 
 import Rbsc.Syntax.Untyped
 
@@ -92,6 +93,7 @@ makePrisms ''ComponentTypeDef
 data BuilderState = BuilderState
     { _identifiers :: Identifiers
     , _errors      :: [Error]
+    , _warnings    :: [Warning]
     }
 
 makeLenses ''BuilderState
@@ -100,7 +102,7 @@ makeLenses ''BuilderState
 -- | Extract all identifiers together with their definition from the
 -- 'Model'. In case one or more identifiers are defined multiple times,
 -- a list of 'DuplicateIdentifier' errors is returned.
-identifierDefs :: Model -> Either [Error] Identifiers
+identifierDefs :: Model -> Result Identifiers
 identifierDefs Model{..} = runBuilder $ do
     insertConstants modelConstants
     traverse_ insertEnumeration modelEnumumerations
@@ -154,8 +156,10 @@ insertTypeSets =
 insertComponents :: [LExpr] -> Builder ()
 insertComponents es = for_ es $ \case
     HasType' (Loc (Identifier name) rgn) tyName ->
-        insert Global (Loc name rgn)
-            (DefComponent (ComponentDef (Loc name rgn) tyName Nothing))
+        use (identifiers.at (ScopedName Global name)) >>= \case
+            Just (Loc DefComponent {} rgn') -> warn' (MergedComponent rgn rgn')
+            _ -> insert Global (Loc name rgn)
+                (DefComponent (ComponentDef (Loc name rgn) tyName Nothing))
     HasType' (Index' (Loc (Identifier name) rgn) len) tyName ->
         insert Global (Loc name rgn)
             (DefComponent (ComponentDef (Loc name rgn) tyName (Just len)))
@@ -219,21 +223,28 @@ insertCoordinatorVars = traverse_ insertVars
 type Builder a = State BuilderState a
 
 
-runBuilder :: Builder a -> Either [Error] Identifiers
+runBuilder :: Builder a -> Result Identifiers
 runBuilder m
-    | null errs = Right idents
-    | otherwise = Left errs
+    | null errs = do
+        warnMany warns
+        pure idents
+    | otherwise = throwMany errs
   where
-    BuilderState idents errs = execState m (BuilderState Map.empty [])
+    BuilderState idents errs warns =
+        execState m (BuilderState Map.empty mempty mempty)
 
 
 insert :: Scope -> Loc Name -> IdentifierDef -> Builder ()
 insert sc (Loc name rgn) def =
-    use (identifiers . at (ScopedName sc name)) >>= \case
+    use (identifiers.at (ScopedName sc name)) >>= \case
         Just def' ->
             throw' (locError rgn (DuplicateIdentifier name (getLoc def')))
-        Nothing -> identifiers . at (ScopedName sc name) .= Just (Loc def rgn)
+        Nothing -> identifiers.at (ScopedName sc name) .= Just (Loc def rgn)
 
 
 throw' :: Error -> Builder ()
 throw' e = modifying errors (++ [e])
+
+
+warn' :: Warning -> Builder ()
+warn' w = modifying warnings (++ [w])
