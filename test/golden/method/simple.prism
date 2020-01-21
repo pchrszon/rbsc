@@ -4,10 +4,10 @@ label "nz_a" = a_x > 0;
 label "nz_b" = b_x > 0;
 label "nz_all" = a_x > 0 & b_x > 0;
 
-module a_A_impl
+module a
     a_x : [0..1] init 0;
 endmodule
 
-module b_B_impl
+module b
     b_x : [0..2] init 0;
 endmodule

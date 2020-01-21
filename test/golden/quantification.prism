@@ -8,7 +8,7 @@ module Nosync
     ]n_act_2[ true -> true;
 endmodule
 
-module n_N_impl
+module n
     n_x_0 : bool init false;
     n_x_1 : bool init false;
 

@@ -1,6 +1,6 @@
 mdp
 
-module n_N_impl
+module n
     n_b : bool;
     n_x : [0..1];
 

@@ -14,7 +14,7 @@ module coordinator
     ]_r, _not_r[ true -> true;
 endmodule
 
-module r_R_impl
+module r
     r_s : [0..1] init 0;
 
     ]r_a, _r[ r_s = 0 -> (r_s' = 1);

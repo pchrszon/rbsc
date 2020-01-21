@@ -5,7 +5,7 @@ module Nosync
     ]n_a[ true -> true;
 endmodule
 
-module outer_Outer_impl
+module outer
     ]inner_a, _outer[ true -> true;
     ]n_a, _outer[ true -> true;
 endmodule

@@ -23,13 +23,13 @@ module coordinator2
     ]a, _r_0, _not_r_0, _r_1, _not_r_1[ true -> true;
 endmodule
 
-module n_N_impl
+module n
     n_s : [0..1] init 0;
 
     ]a[ n_s = 0 -> (n_s' = 1);
 endmodule
 
-module r_0_R_impl
+module r_0
     r_0_s : [0..2] init 0;
 
     ]a, _r_0[ r_0_s = 0 -> (r_0_s' = 1);
@@ -37,7 +37,7 @@ module r_0_R_impl
     ]a, _not_r_0[ true -> true;
 endmodule
 
-module r_1_R_impl
+module r_1
     r_1_s : [0..2] init 0;
 
     ]a, _r_1[ r_1_s = 0 -> (r_1_s' = 1);

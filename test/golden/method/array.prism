@@ -2,11 +2,11 @@ mdp
 
 label "all" = o_cell_0 & t_cell_0 & t_cell_1;
 
-module o_m
+module o
     o_cell_0 : bool init false;
 endmodule
 
-module t_m
+module t
     t_cell_0 : bool init false;
     t_cell_1 : bool init false;
 endmodule

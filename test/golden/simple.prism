@@ -4,7 +4,7 @@ module Nosync
     ]a[ true -> true;
 endmodule
 
-module n_N_impl
+module n
     n_x : bool init false;
 
     ]a[ true -> (n_x' = !n_x);

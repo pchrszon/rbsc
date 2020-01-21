@@ -6,7 +6,7 @@ module Nosync
     ]enq_s_1[ true -> true;
 endmodule
 
-module l_fifo
+module l
     l_cell_0 : [0..2];
     l_cell_1 : [0..2];
     l_cell_2 : [0..2];
@@ -29,7 +29,7 @@ module l_fifo
         (l_cell_4' = 2);
 endmodule
 
-module s_fifo
+module s
     s_cell_0 : [0..1];
     s_cell_1 : [0..1];
 

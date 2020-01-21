@@ -45,40 +45,40 @@ module coordinator3
     ]_r_2, _not_r_2, _r_3, _not_r_3[ true -> true;
 endmodule
 
-module n_0_step
+module n_0
     n_0_s : [0..1] init 0;
 
     ]a[ n_0_s = 0 -> (n_0_s' = 1);
 endmodule
 
-module n_1_step
+module n_1
     n_1_s : [0..1] init 0;
 
     ]a[ n_1_s = 0 -> (n_1_s' = 1);
 endmodule
 
-module r_0_step
+module r_0
     r_0_s : [0..1] init 0;
 
     ]a, _r_0[ r_0_s = 0 -> (r_0_s' = 1);
     ]a, _not_r_0[ true -> true;
 endmodule
 
-module r_1_step
+module r_1
     r_1_s : [0..1] init 0;
 
     ]a, _r_1[ r_1_s = 0 -> (r_1_s' = 1);
     ]a, _not_r_1[ true -> true;
 endmodule
 
-module r_2_step
+module r_2
     r_2_s : [0..1] init 0;
 
     ]a, _r_2[ r_2_s = 0 -> (r_2_s' = 1);
     ]a, _not_r_2[ true -> true;
 endmodule
 
-module r_3_step
+module r_3
     r_3_s : [0..1] init 0;
 
     ]a, _r_3[ r_3_s = 0 -> (r_3_s' = 1);

@@ -6,7 +6,7 @@ module Nosync
     ]c_act[ true -> true;
 endmodule
 
-module n_N_impl
+module n
     ]a_act[ true -> true;
     ]b_act[ true -> true;
     ]c_act[ true -> true;

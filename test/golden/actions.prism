@@ -9,7 +9,7 @@ module Nosync
     ]msg_1_2[ true -> true;
 endmodule
 
-module n_N_impl
+module n
     [] true -> true;
     ]a[ true -> true;
     ]n_a[ true -> true;

@@ -16,7 +16,7 @@ module coordinator2
     ]a, _outer, _not_outer[ true -> true;
 endmodule
 
-module inner_R_impl
+module inner
     inner_s : [0..1] init 0;
 
     ]a, _inner, _ovr_inner[ inner_s = 0 -> (inner_s' = 1);
@@ -24,7 +24,7 @@ module inner_R_impl
     ]a, _not_inner[ true -> true;
 endmodule
 
-module n_N_impl
+module n
     n_s : [0..1] init 0;
 
     ]a[ n_s = 0 -> (n_s' = 1);
@@ -32,7 +32,7 @@ module n_N_impl
     ]a, _ovr_outer[ true -> true;
 endmodule
 
-module outer_R_impl
+module outer
     outer_s : [0..1] init 0;
 
     ]a, _outer, _ovr_outer[ outer_s = 0 -> (outer_s' = 1);

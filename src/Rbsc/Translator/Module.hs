@@ -49,12 +49,22 @@ trnsModules sys bi mas as instss = do
         case view (instances . at name) sys of
             Just typeName -> do
                 let isRole = has (at typeName._Just._RoleType) compTys
+                    hasSingleModule = case insts of
+                                          [_] -> True
+                                          _   -> False
                     cmas   = Map.findWithDefault Map.empty name mas
                 for insts $ \inst -> do
-                    let alph = Map.findWithDefault Set.empty
-                                                   (view miName inst)
-                                                   cmas
-                    trnsModule bi as alph oas isRole typeName name inst
+                    let moduleName = view miName inst
+                        alph = Map.findWithDefault Set.empty moduleName cmas
+
+                    let compName'   = QlName (trnsComponentName name)
+                        moduleName' =
+                            if hasSingleModule
+                                then compName'
+                                else QlMember compName' moduleName
+
+                    ident <- trnsQualified moduleName'
+                    trnsModule bi as alph oas isRole typeName name (view miBody inst) ident
             Nothing -> error $ "trnsModules: undefined component " ++ show name
 
 
@@ -66,12 +76,10 @@ trnsModule
     -> Bool
     -> TypeName
     -> ComponentName
-    -> TModuleInstance Elem
+    -> TModuleBody Elem
+    -> Prism.Ident
     -> Translator Prism.Module
-trnsModule bi as alph oas isRole typeName compName (ModuleInstance moduleName _ body) = do
-    ident <- trnsQualified
-        (QlMember (QlName (trnsComponentName compName)) moduleName)
-
+trnsModule bi as alph oas isRole typeName compName body ident = do
     vars'       <- trnsLocalVars typeName compName (bodyVars body)
     activityVar <- maybeToList <$> genRoleActivityVar compName
     let vars'' = activityVar ++ vars'

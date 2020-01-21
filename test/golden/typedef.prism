@@ -7,20 +7,20 @@ module Nosync
     ]snd_a[ true -> true;
 endmodule
 
-module fst_step
+module fst
     fst_s : [0..1] init 0;
 
     ]fst_a[ fst_s = 0 -> (fst_s' = 1);
 endmodule
 
-module m_Monitor_impl
+module m
     m_c : [0..2] init 0;
 
     ]fst_a[ true -> (m_c' = min(m_c + 1, 2));
     ]snd_a[ true -> (m_c' = min(m_c + 1, 2));
 endmodule
 
-module snd_step
+module snd
     snd_s : [0..1] init 0;
 
     ]snd_a[ snd_s = 0 -> (snd_s' = 1);
