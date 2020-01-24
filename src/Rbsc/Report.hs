@@ -138,11 +138,11 @@ renderPart marginWidth (Part partType region message, path) =
     mconcat (punctuate hardline lineRegions) <> partMessage <> hardline
   where
     partPosition
-        | Just (Region.path region) == path = "..."
+        | Just (Region.path region) == path = annotate lineNumberStyle "..."
         | otherwise =
             (if isNothing path then emptyDoc else hardline) <>
             "  --> " <> renderStartPosition region <> hardline <>
-            spaces marginWidth <+> annotate lineNumberStyle pipe
+            spaces marginWidth <+> annotate lineNumberStyle bar
 
     lineRegions = fmap
         (renderLineRegion marginWidth partType)
@@ -166,9 +166,9 @@ renderPart marginWidth (Part partType region message, path) =
 
 renderLineRegion :: Int -> MessageType -> (Text, LineRegion) -> Doc AnsiStyle
 renderLineRegion marginWidth partType (sourceLine, LineRegion lrLine lrStart lrEnd) =
-    annotate lineNumberStyle (fill marginWidth (pretty lrLine) <+> pipe) <+>
+    annotate lineNumberStyle (fill marginWidth (pretty lrLine) <+> bar) <+>
     prettySourceLine <> hardline <> spaces marginWidth <+>
-    annotate lineNumberStyle pipe <+> underline
+    annotate lineNumberStyle bar <+> underline
   where
     prettySourceLine =
         let (prefix, sourceLine') = Text.splitAt (lrStart - 1) sourceLine
@@ -202,3 +202,7 @@ spaces n = replicateDoc n space
 
 replicateDoc :: Int -> Doc ann -> Doc ann
 replicateDoc n = mconcat . replicate n
+
+
+bar :: Doc ann
+bar = "\x2502"

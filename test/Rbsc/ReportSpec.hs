@@ -19,29 +19,29 @@ spec = describe "pretty" $ do
         (errorReport "title" [errorPart (mkRegion (2, 1) (2, 7)) Nothing]) $
         "title\n" <>
         "  --> <test>:2:1\n" <>
-        "  |\n" <>
-        "2 | second line\n" <>
-        "  | ^^^^^^\n"
+        "  " <> bar <> "\n" <>
+        "2 " <> bar <> " second line\n" <>
+        "  " <> bar <> " ^^^^^^\n"
 
     it "prints a message" $ shouldRender
         (errorReport "title" [errorPart (mkRegion (2, 1) (2, 7)) (Just "message")]) $
         "title\n" <>
         "  --> <test>:2:1\n" <>
-        "  |\n" <>
-        "2 | second line\n" <>
-        "  | ^^^^^^ message\n"
+        "  " <> bar <> "\n" <>
+        "2 " <> bar <> " second line\n" <>
+        "  " <> bar <> " ^^^^^^ message\n"
 
     it "handles multi-line regions" $ shouldRender
         (errorReport "title" [errorPart (mkRegion (1, 7) (3, 6)) Nothing]) $
         "title\n" <>
         "  --> <test>:1:7\n" <>
-        "  |\n" <>
-        "1 | first line\n" <>
-        "  |       ^^^^\n" <>
-        "2 | second line\n" <>
-        "  | ^^^^^^^^^^^\n" <>
-        "3 | third line\n" <>
-        "  | ^^^^^\n"
+        "  " <> bar <> "\n" <>
+        "1 " <> bar <> " first line\n" <>
+        "  " <> bar <> "       ^^^^\n" <>
+        "2 " <> bar <> " second line\n" <>
+        "  " <> bar <> " ^^^^^^^^^^^\n" <>
+        "3 " <> bar <> " third line\n" <>
+        "  " <> bar <> " ^^^^^\n"
 
     it "prints multiple parts" $ shouldRender
         (errorReport "title"
@@ -50,12 +50,12 @@ spec = describe "pretty" $ do
             ]) $
         "title\n" <>
         "  --> <test>:1:1\n" <>
-        "  |\n" <>
-        "1 | first line\n" <>
-        "  | ^^^^^ first\n" <>
+        "  " <> bar <> "\n" <>
+        "1 " <> bar <> " first line\n" <>
+        "  " <> bar <> " ^^^^^ first\n" <>
         "...\n" <>
-        "3 | third line\n" <>
-        "  | ----- second\n"
+        "3 " <> bar <> " third line\n" <>
+        "  " <> bar <> " ----- second\n"
 
     it "prints multiple parts from different sources" $ shouldRender
         (errorReport "title"
@@ -65,14 +65,14 @@ spec = describe "pretty" $ do
             ]) $
         "title\n" <>
         "  --> <test>:2:1\n" <>
-        "  |\n" <>
-        "2 | second line\n" <>
-        "  | ^^^^^^ first\n" <>
+        "  " <> bar <> "\n" <>
+        "2 " <> bar <> " second line\n" <>
+        "  " <> bar <> " ^^^^^^ first\n" <>
         "\n" <>
         "  --> <other>:2:7\n" <>
-        "  |\n" <>
-        "2 | other second line\n" <>
-        "  |       ------ second\n"
+        "  " <> bar <> "\n" <>
+        "2 " <> bar <> " other second line\n" <>
+        "  " <> bar <> "       ------ second\n"
 
 
 testSource :: Text
@@ -98,3 +98,7 @@ mkRegion (startLine, startColumn) (endLine, endColumn) =
 
 shouldRender :: Pretty a => a -> String -> Expectation
 shouldRender = shouldBe . show . pretty
+
+
+bar :: String
+bar = "\x2502"
