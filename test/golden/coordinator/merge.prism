@@ -1,9 +1,5 @@
 mdp
 
-module Nosync
-    ]r_a[ true -> true;
-endmodule
-
 module coordinator
     y : [0..1] init 0;
     x : [0..1] init 0;

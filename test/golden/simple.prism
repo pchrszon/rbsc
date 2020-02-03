@@ -1,9 +1,5 @@
 mdp
 
-module Nosync
-    ]a[ true -> true;
-endmodule
-
 module n
     n_x : bool init false;
 

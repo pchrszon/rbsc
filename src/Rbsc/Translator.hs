@@ -127,12 +127,12 @@ getObservedRoles =
 
 
 genNosyncModule :: Alphabets -> Translator (Maybe Prism.Module)
-genNosyncModule as = do
-    ident <- trnsQualified (QlName "Nosync")
-    cmds <- traverse genCommand acts
-    return $ if null cmds
-        then Nothing
-        else Just (Prism.Module ident [] cmds)
+genNosyncModule as
+    | length acts <= 1 = return Nothing
+    | otherwise = do
+        ident <- trnsQualified (QlName "Nosync")
+        cmds <- traverse genCommand acts
+        return (Just (Prism.Module ident [] cmds))
   where
     acts = toList (stripActionInfo (Set.unions (Map.elems as)))
 
