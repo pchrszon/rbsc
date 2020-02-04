@@ -93,7 +93,7 @@ trnsCoordinator roleActMap coord@Coordinator{..} = do
     return (Prism.Module ident vars' (cmds' ++ alphCmd))
   where
     alphabetCmd alph =
-        Prism.Command alph Prism.ActionOpen (Prism.LitBool True) []
+        Prism.Command alph Prism.ActionOpen (Prism.LitBool False) []
 
     genPlayActs roleName =
         [playedActionIdent roleName, notPlayedActionIdent roleName]

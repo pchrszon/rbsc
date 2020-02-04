@@ -4,14 +4,14 @@ module coordinator
     ]a, _r_0, _not_r_1[ true -> true;
     ]a, _not_r_0, _r_1[ true -> true;
     ]a, _not_r_0, _not_r_1[ true -> true;
-    ]_r_0, _not_r_0, _r_1, _not_r_1[ true -> true;
+    ]_r_0, _not_r_0, _r_1, _not_r_1[ false -> true;
 endmodule
 
 module coordinator2
     ]a, _r_2, _not_r_3[ true -> true;
     ]a, _not_r_2, _r_3[ true -> true;
     ]a, _not_r_2, _not_r_3[ true -> true;
-    ]_r_2, _not_r_2, _r_3, _not_r_3[ true -> true;
+    ]_r_2, _not_r_2, _r_3, _not_r_3[ false -> true;
 endmodule
 
 module n_0

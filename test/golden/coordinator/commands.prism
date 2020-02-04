@@ -20,7 +20,7 @@ module coordinator2
     ]a, _not_r_0, _r_1[ !s -> true;
     ]r_0_b, _r_0[ !s -> true;
     ]r_1_b, _r_1[ !s -> true;
-    ]a, _r_0, _not_r_0, _r_1, _not_r_1[ true -> true;
+    ]a, _r_0, _not_r_0, _r_1, _not_r_1[ false -> true;
 endmodule
 
 module n
