@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists   #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
@@ -23,7 +24,10 @@ import Rbsc.Completer
 import Rbsc.Data.ComponentType
 import Rbsc.Data.ModelInfo
 import Rbsc.Data.Name
+import Rbsc.Data.Scope
+import Rbsc.Data.Some
 import Rbsc.Data.System
+import Rbsc.Data.Type
 
 import Rbsc.Util
 
@@ -40,6 +44,51 @@ spec = describe "completeSystem" $ parallel $ do
         allOf (traverse._Right)
               (compartmentsAreFilled (view componentTypes info))
               (completeSystem sys info)
+
+    it "finds or creates role players" $
+        completeSystem testSystem testModelInfo
+        `shouldBe`
+        [ Right System
+            { _instances =
+                [ ("n", "N")
+                , ("n2", "N")
+                , ("r", "R")
+                ]
+            , _boundTo = [ ("r", "n2") ]
+            , _containedIn = []
+            }
+        , Right System
+            { _instances =
+                [ ("n", "N")
+                , ("r", "R")
+                ]
+            , _boundTo = [ ("r", "n") ]
+            , _containedIn = []
+            }
+        ]
+
+
+testModelInfo :: ModelInfo
+testModelInfo = emptyModelInfo
+    & componentTypes .~ types
+    & symbolTable .~ symTable
+  where
+    types =
+        [ ("N", NaturalType)
+        , ("R", RoleType ["N"])
+        ]
+    symTable = fromSystem testSystem
+
+
+testSystem :: System
+testSystem = System
+    { _instances =
+        [ ("n", "N")
+        , ("r", "R")
+        ]
+    , _boundTo = []
+    , _containedIn = []
+    }
 
 
 rolesAreBound :: ComponentTypes -> System -> Bool
@@ -85,8 +134,11 @@ instance Arbitrary Model where
                     , _boundTo = bt
                     , _containedIn = Map.empty
                     }
+            info = emptyModelInfo
+                    & componentTypes .~ types
+                    & symbolTable .~ fromSystem sys
 
-        return (Model (emptyModelInfo & componentTypes .~ types) sys)
+        return (Model info sys)
 
 
 genInstances :: ComponentTypes -> Gen (Map ComponentName TypeName)
@@ -131,7 +183,7 @@ genComponentTypes = scale (min 1) $ do
     rtys <- roleTypes roleTyNames playerTyNames
     ctys <- compartmentTypes compartmentTyNames roleTyNames
 
-    return (Map.unions [ntys, rtys, ctys])
+    return (Map.unions ([ntys, rtys, ctys] :: [ComponentTypes]))
 
 
 naturalTypes :: [TypeName] -> Gen ComponentTypes
@@ -172,3 +224,11 @@ mkInstanceName = flip ComponentName Nothing . toLower . getTypeName
 
 nonEmptySublistOf :: [a] -> Gen [a]
 nonEmptySublistOf xs = sublistOf xs `suchThat` (not . null)
+
+
+fromSystem :: System -> SymbolTable
+fromSystem = Map.fromList . fmap toEntry . Map.assocs . view instances
+  where
+    toEntry :: (ComponentName, TypeName) -> (ScopedName, Some Type)
+    toEntry (name, tyName) =
+        (ScopedName Global (componentName name), Some (TyComponent [tyName]))
