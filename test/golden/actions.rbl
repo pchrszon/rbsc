@@ -19,6 +19,9 @@ impl N {
     // indexed action
     [self.a[0]] true -> true;
 
+    // indexed action (negative index)
+    [a[-1]] true -> true;
+
     // action from constant
     [act] true -> true;
 

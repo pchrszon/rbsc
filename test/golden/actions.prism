@@ -5,6 +5,7 @@ module Nosync
     ]b[ true -> true;
     ]c[ true -> true;
     ]n_a[ true -> true;
+    ]a__1[ true -> true;
     ]n_a_0[ true -> true;
     ]msg_1_2[ true -> true;
 endmodule
@@ -14,6 +15,7 @@ module n
     ]a[ true -> true;
     ]n_a[ true -> true;
     ]n_a_0[ true -> true;
+    ]a__1[ true -> true;
     ]c[ true -> true;
     ]b[ true -> true;
     ]msg_1_2[ true -> true;

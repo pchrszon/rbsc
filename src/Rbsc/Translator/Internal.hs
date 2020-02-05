@@ -144,7 +144,11 @@ trnsQualified qname = use (idents.at qname) >>= \case
     mkIdent = \case
         QlName name         -> name
         QlMember inner name -> mkIdent inner <> "_" <> name
-        QlIndex inner idx   -> mkIdent inner <> "_" <> pack (show idx)
+        QlIndex inner idx   -> mkIdent inner <> "_" <> pack (showIndex idx)
+
+    showIndex idx
+        | idx >= 0  = show idx
+        | otherwise = '_' : show (abs idx)
 
 
 trnsAction :: Action -> Qualified
