@@ -71,17 +71,20 @@ import Rbsc.Util (regions)
 
 
 partition :: MonadError Error m => TCoordinator Elem -> m [TCoordinator Elem]
-partition coord@Coordinator{..} = do
-    statelessCoords <- fmap concat . for statelessPart $
-        fmap (fmap (over _2 genStatelessCoordinator)) . partitionOnRoleSets . snd
+partition coord@Coordinator{..}
+    | null coordCommands = return [coord]
+    | otherwise = do
+        statelessCoords <- fmap concat . for statelessPart $
+            fmap (fmap (over _2 genStatelessCoordinator)) .
+            partitionOnRoleSets . snd
 
-    statefulCoords <- for statefulParts $ \part -> do
-        let coord' = genStatefulCoordinator coord part
-        roles <- coordinatedRoles coord'
-        return (roles, coord')
+        statefulCoords <- for statefulParts $ \part -> do
+            let coord' = genStatefulCoordinator coord part
+            roles <- coordinatedRoles coord'
+            return (roles, coord')
 
-    return
-        (Map.elems (Map.fromListWith (<>) (statelessCoords ++ statefulCoords)))
+        return
+            (Map.elems (Map.fromListWith (<>) (statelessCoords ++ statefulCoords)))
   where
     cmdVars =
         fmap ((\cmd -> (cmd, updatedVariables cmd)) . getElem) coordCommands
