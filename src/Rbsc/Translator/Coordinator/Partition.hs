@@ -71,20 +71,23 @@ import Rbsc.Util (regions)
 
 
 partition :: MonadError Error m => TCoordinator Elem -> m [TCoordinator Elem]
-partition coord@Coordinator{..}
-    | null coordCommands = return [coord]
-    | otherwise = do
-        statelessCoords <- fmap concat . for statelessPart $
-            fmap (fmap (over _2 genStatelessCoordinator)) .
-            partitionOnRoleSets . snd
+partition coord@Coordinator{..} = do
+    statelessCoords <- fmap concat . for statelessPart $
+        fmap (fmap (over _2 genStatelessCoordinator)) . partitionOnRoleSets . snd
 
-        statefulCoords <- for statefulParts $ \part -> do
-            let coord' = genStatefulCoordinator coord part
-            roles <- coordinatedRoles coord'
-            return (roles, coord')
+    statefulCoords <- for statefulParts $ \part -> do
+        let coord' = genStatefulCoordinator coord part
+        roles <- coordinatedRoles coord'
+        return (roles, coord')
 
-        return
-            (Map.elems (Map.fromListWith (<>) (statelessCoords ++ statefulCoords)))
+    let readOnlyVarsCoord =
+            if Set.null readOnlyVars
+                then []
+                else [(Set.empty, genReadOnlyCoordinator coordVars readOnlyVars)]
+
+    return
+        (Map.elems (Map.fromListWith (<>)
+            (readOnlyVarsCoord ++ statelessCoords ++ statefulCoords)))
   where
     cmdVars =
         fmap ((\cmd -> (cmd, updatedVariables cmd)) . getElem) coordCommands
@@ -93,6 +96,11 @@ partition coord@Coordinator{..}
 
     (statelessPart, statefulParts) =
         List.partition (Set.null . fst) varPartitions
+
+    readOnlyVars =
+        Set.fromList (fmap fst coordVars)
+        `Set.difference`
+        Set.unions (fmap snd cmdVars)
 
 
 genStatefulCoordinator
@@ -107,6 +115,13 @@ genStatefulCoordinator Coordinator {..} (vars, cmds) = Coordinator
 
 genStatelessCoordinator :: [TCoordCommand Elem] -> TCoordinator Elem
 genStatelessCoordinator = Coordinator [] . fmap Elem
+
+
+-- | Generate a coordinator module containing all coordinator variables that are
+-- never updated.
+genReadOnlyCoordinator :: TInits -> Set Name -> TCoordinator Elem
+genReadOnlyCoordinator vars readOnlyVars =
+    Coordinator (filterVariables readOnlyVars vars) []
 
 
 filterVariables :: Set Name -> TInits -> TInits

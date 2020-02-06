@@ -1,0 +1,20 @@
+natural type N;
+
+role type R(N) {
+    s : [0 .. 2] init 0;
+
+    [a] s = 0 -> (s' = 1);
+    [b] s = 0 -> (s' = 1);
+}
+
+system {
+    r : R;
+}
+
+// variable x is never written, but it should still appear in the translation
+coordinator {
+    x : bool init true;
+
+    [a] [r] x -> true;
+    [b] [r] !x -> true;
+}

@@ -1,0 +1,23 @@
+mdp
+
+module Nosync
+    ]a[ true -> true;
+    ]b[ true -> true;
+endmodule
+
+module coordinator
+    x : bool init true;
+endmodule
+
+module coordinator2
+    ]b, _r[ !x -> true;
+    ]a, _r[ x -> true;
+    ]a, b, _r, _not_r[ false -> true;
+endmodule
+
+module r
+    r_s : [0..2] init 0;
+
+    ]a, _r[ r_s = 0 -> (r_s' = 1);
+    ]b, _r[ r_s = 0 -> (r_s' = 1);
+endmodule
