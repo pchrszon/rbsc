@@ -29,6 +29,7 @@ data Warning
     | InconsistentActionIndices !Region !Int !Region !Int
     | UnsynchronizedAction !(Loc Action)
     | MissingOverriddenAction !(Loc Action) !ComponentName
+    | ConvertedToArray !Region !Int
     | DynamicArrayAccess !Region
     | MergedComponent !Region !Region
     deriving (Eq, Show)
@@ -97,6 +98,12 @@ toReport = \case
             [ hintPart rgn . Just $
                 "this index depends on one or more variables" <> line <>
                 "the bounds are not checked"
+            ]
+
+    ConvertedToArray rgn size ->
+        warningReport "converted value to array"
+            [ hintPart rgn . Just $
+                "value has been converted to an array of size" <+> pretty size
             ]
 
     MergedComponent rgn first ->

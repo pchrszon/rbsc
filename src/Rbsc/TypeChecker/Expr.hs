@@ -478,18 +478,18 @@ binaryCast l r = (l, r)
 
 
 -- | @cast expected e@ inserts 'Cast's if a dynamic cast to type @expected@
--- is possible. Otherwise, the original expression is returned.
+-- if possible. Otherwise, the original expression is returned.
 cast :: Region -> Type t -> SomeExpr -> TypeChecker SomeExpr
 cast _ TyDouble (SomeExpr e TyInt) = T.Cast e `withType` TyDouble
 cast _ (TyArray tSize TyDouble) (SomeExpr (T.LitArray es) (TyArray vSize TyInt))
     | tSize == vSize =
         T.LitArray (fmap T.Cast es) `withType` TyArray vSize TyDouble
-cast _ arrTy@(TyArray tSize ty) e@(SomeExpr e' elemTy) =
+cast rgn arrTy@(TyArray tSize ty) e@(SomeExpr e' elemTy) =
     case typeEq ty elemTy of
         Just Refl -> case dictShow ty of
-            Dict ->
-                T.LitArray (fromList (replicate tSize e'))
-                `withType` arrTy
+            Dict -> do
+                lift (warn (ConvertedToArray rgn tSize))
+                T.LitArray (fromList (replicate tSize e')) `withType` arrTy
         Nothing -> return e
 cast rgn TyBool e@(SomeExpr e' (TyComponent tySet)) = do
     ctx <- view context
