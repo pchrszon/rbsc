@@ -137,6 +137,12 @@ trnsExpr mComp rgn = go
 
             Playable (Loc _ rgn') _ -> throw rgn' NotConstant
 
+            BoundTo (Loc (Literal _ _) _) (Loc _ rgn') -> throw rgn' NotConstant
+            BoundTo (Loc _ rgn') _ -> throw rgn' NotConstant
+
+            Element (Loc (Literal _ _) _) (Loc _ rgn') -> throw rgn' NotConstant
+            Element (Loc _ rgn') _ -> throw rgn' NotConstant
+
             e' ->
                 throw rgn (TranslationNotSupported (pack (show e')))
 
