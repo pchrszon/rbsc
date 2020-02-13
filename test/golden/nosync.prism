@@ -1,0 +1,19 @@
+mdp
+
+module Nosync
+    ]c[ true -> true;
+    ]n_a[ true -> true;
+    ]n_b[ true -> true;
+endmodule
+
+module coordinator
+    ]c[ true -> true;
+    ]n_a[ true -> true;
+endmodule
+
+module n
+    n_s : [0..1] init 0;
+
+    ]n_a[ n_s = 0 -> (n_s' = 1);
+    ]n_b[ n_s = 0 -> (n_s' = 1);
+endmodule

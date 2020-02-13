@@ -15,11 +15,11 @@ module Rbsc.Translator.Expr
 import Control.Lens
 import Control.Monad.Reader
 
+import           Data.Foldable
 import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict    as Map
 import           Data.Text          (pack)
 import           Data.Traversable
-import Data.Foldable
 
 import qualified Language.Prism as Prism
 
@@ -179,12 +179,12 @@ trnsExpr mComp rgn = go
                     _ -> ScopedName Global name
             in case Map.lookup scName ranges of
                 Just (lower, upper) | lower == upper -> Just lower
-                _ -> Nothing
+                _                                    -> Nothing
 
         Member (Literal _ (TyComponent (toList -> [tyName]))) name _ ->
             case Map.lookup (ScopedName (Local tyName) name) ranges of
                 Just (lower, upper) | lower == upper -> Just lower
-                _ -> Nothing
+                _                                    -> Nothing
 
         Index (trnsConstVar symTable ranges -> Just x) _ _ ->
             Just x

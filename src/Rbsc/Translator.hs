@@ -18,6 +18,7 @@ import           Data.Foldable
 import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.Map.Strict    as Map
 import           Data.Maybe
+import           Data.Set           (Set)
 import qualified Data.Set           as Set
 import           Data.Traversable
 
@@ -82,7 +83,9 @@ translateModel model sys info = do
             <*> getObservedRoles (modelObserve model)
 
     mas <- moduleAlphabets modules
+    cas <- Set.unions <$> traverse coordinatorActions coordinators
     let as = componentAlphabets mas
+        nosyncActs = stripActionInfo (Set.unions (Map.elems as)) `Set.union` cas
     bi <- generateBindingInfo sys as
 
     checkActionIndices mas
@@ -92,7 +95,7 @@ translateModel model sys info = do
     let rgs = rolePlayingGuards sys modules info
 
     runTranslator (rgs :&: obsRoles :&: info) $ do
-        nosync   <- maybeToList <$> genNosyncModule as
+        nosync   <- maybeToList <$> genNosyncModule nosyncActs
         step     <- genStepFormula
         globals' <- trnsGlobalVars (modelGlobals model)
         labels'  <- traverse trnsLabel (modelLabels model)
@@ -126,17 +129,14 @@ getObservedRoles =
     fmap (fmap (view compName)) . traverse eval
 
 
-genNosyncModule :: Alphabets -> Translator (Maybe Prism.Module)
-genNosyncModule as
+genNosyncModule :: Set Action -> Translator (Maybe Prism.Module)
+genNosyncModule acts
     | length acts <= 1 = return Nothing
     | otherwise = do
         ident <- trnsQualified (QlName "Nosync")
-        cmds <- traverse genCommand acts
+        cmds <- traverse genCommand (toList acts)
         return (Just (Prism.Module ident [] cmds))
   where
-    acts = toList (stripActionInfo (Set.unions (Map.elems as)))
-
-    genCommand :: Action -> Translator Prism.Command
     genCommand act = do
         act' <- trnsQualified (trnsAction act)
         return (Prism.Command

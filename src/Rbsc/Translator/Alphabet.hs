@@ -18,6 +18,8 @@ module Rbsc.Translator.Alphabet
     , Alphabets
     , componentAlphabets
 
+    , coordinatorActions
+
     , OverrideActions
     , overrideActions
 
@@ -63,6 +65,20 @@ alphabet = fmap (Set.fromList . catMaybes) . traverse action . bodyCommands
     action (Elem Command {..}) = case cmdAction of
         Just (Loc (SomeExpr (Literal act _) TyAction) rgn) -> return
             (Just (ActionInfo (Loc act rgn) cmdActionKind cmdActionIntent))
+        Just (Loc _ rgn) -> throw rgn NotConstant
+        Nothing          -> return Nothing
+
+
+-- | Get the set of all actions used by a 'Coordinator'. If any of the actions
+-- cannot be evaluated, a 'NotConstant' error is thrown.
+coordinatorActions :: MonadError Error m => TCoordinator Elem -> m (Set Action)
+coordinatorActions =
+    fmap (Set.fromList . catMaybes) . traverse action . coordCommands
+  where
+    action
+        :: MonadError Error m => TElem (TCoordCommand Elem) -> m (Maybe Action)
+    action (Elem CoordCommand {..}) = case coordAction of
+        Just (Loc (SomeExpr (Literal act _) TyAction) _) -> return (Just act)
         Just (Loc _ rgn) -> throw rgn NotConstant
         Nothing          -> return Nothing
 
