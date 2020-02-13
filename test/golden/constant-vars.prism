@@ -1,0 +1,8 @@
+mdp
+
+module n
+    n_x : [0..2] init 0;
+
+    [] n_x = 0 & 0 = 0 -> (n_x' = 0 + 1);
+    [] n_x = 1 & 0 = 0 & 0 = 0 -> true;
+endmodule

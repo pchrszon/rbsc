@@ -1,0 +1,16 @@
+// removal of variables with only one possible value
+
+const MAX = 0;
+
+type N {
+    x : [0 .. 2] init 0;
+    y : [0 .. MAX] init 0;
+    arr : array 2 of [0 .. MAX];
+
+    [] x = 0 & y = 0 -> (x' = y + 1) & (y' = 0);
+    [] x = 1 & forall i : [0 .. 1]. arr[i] = 0 -> (arr' = [0, 0]);
+}
+
+system {
+    n : N;
+}

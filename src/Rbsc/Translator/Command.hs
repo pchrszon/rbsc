@@ -112,9 +112,21 @@ trnsAssignment
     :: Maybe (TypeName, ComponentName)
     -> TAssignment
     -> Translator [(Prism.Ident, Prism.Expr)]
-trnsAssignment mComp (Assignment (Loc name _) idxs e@(Loc (SomeExpr _ ty) _)) = do
+trnsAssignment mComp (Assignment (Loc name _) idxs e) = do
     checkOutOfRange mComp name e
+    isConst <- isConstantVar mComp name
+    if isConst
+        then return []
+        else trnsAssignment' mComp name idxs e
 
+
+trnsAssignment'
+    :: Maybe (TypeName, ComponentName)
+    -> Name
+    -> [LSomeExpr]
+    -> LSomeExpr
+    -> Translator [(Prism.Ident, Prism.Expr)]
+trnsAssignment' mComp name idxs e@(Loc (SomeExpr _ ty) _) = do
     symTable <- view symbolTable
     let (baseName, varTy) = if
             | Just (typeName, comp) <- mComp
@@ -152,7 +164,26 @@ trnsIndices _     _ _  = error "trnsIndices: type error"
 
 checkOutOfRange
     :: Maybe (TypeName, ComponentName) -> Name -> LSomeExpr -> Translator ()
-checkOutOfRange mComp name (Loc (SomeExpr (Literal x TyInt) TyInt) rgn) = do
+checkOutOfRange mComp name (Loc (SomeExpr (Literal x TyInt) TyInt) rgn) =
+    lookupRange mComp name >>= \case
+        Just (lower, upper) | x < lower || x > upper ->
+            lift (lift (warn (OutOfRangeUpdate rgn (lower, upper) x)))
+        _ -> return ()
+checkOutOfRange _ _ _ = return ()
+
+
+-- | Check if the range of the variable allows only one possible value. If so,
+-- the variable is essentially a constant.
+isConstantVar :: Maybe (TypeName, ComponentName) -> Name -> Translator Bool
+isConstantVar mComp name =
+    lookupRange mComp name >>= \case
+        Just (lower, upper) | lower == upper -> return True
+        _ -> return False
+
+
+lookupRange
+    :: Maybe (TypeName, ComponentName) -> Name -> Translator (Maybe (Int, Int))
+lookupRange mComp name = do
     rt <- view rangeTable
 
     let rangeLocal = case mComp of
@@ -161,12 +192,7 @@ checkOutOfRange mComp name (Loc (SomeExpr (Literal x TyInt) TyInt) rgn) = do
             Nothing -> Nothing
         rangeGlobal = Map.lookup (ScopedName Global name) rt
 
-    case rangeLocal <|> rangeGlobal of
-        Just (lower, upper)
-            | x < lower || x > upper ->
-                lift (lift (warn (OutOfRangeUpdate rgn (lower, upper) x)))
-        _ -> return ()
-checkOutOfRange _ _ _ = return ()
+    return (rangeLocal <|> rangeGlobal)
 
 
 appendAssignment

@@ -19,6 +19,7 @@ import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict    as Map
 import           Data.Text          (pack)
 import           Data.Traversable
+import Data.Foldable
 
 import qualified Language.Prism as Prism
 
@@ -27,6 +28,7 @@ import Rbsc.Data.Action
 import Rbsc.Data.Array     (Array)
 import Rbsc.Data.Component
 import Rbsc.Data.Function
+import Rbsc.Data.Scope
 import Rbsc.Data.Some
 import Rbsc.Data.Type
 
@@ -56,9 +58,13 @@ trnsExpr mComp rgn = go
     go :: Expr t -> Translator Prism.Expr
     go e = do
         symTable <- view symbolTable
+        ranges   <- view rangeTable
         case e of
             Index _ (Just size) (Loc (Literal i TyInt) rgn')
                 | i < 0 || i >= size -> throw rgn' (IndexOutOfBounds size i)
+
+            (trnsConstVar symTable ranges -> Just x) ->
+                return (Prism.LitInt (fromIntegral x))
 
             (trnsIdent symTable -> Just qname) ->
                 Prism.Ident <$> trnsQualified qname
@@ -146,6 +152,7 @@ trnsExpr mComp rgn = go
             e' ->
                 throw rgn (TranslationNotSupported (pack (show e')))
 
+
     trnsIdent :: SymbolTable -> Expr t -> Maybe Qualified
     trnsIdent symTable = \case
         Identifier name _ -> case mComp of
@@ -159,6 +166,28 @@ trnsExpr mComp rgn = go
 
         Index (trnsIdent symTable -> Just qname) _ (Loc (Literal i _) _) ->
             Just (QlIndex qname i)
+
+        _ -> Nothing
+
+
+    trnsConstVar :: SymbolTable -> RangeTable -> Expr t -> Maybe Int
+    trnsConstVar symTable ranges = \case
+        Identifier name _ ->
+            let scName = case mComp of
+                    Just (typeName, _) | isLocalSymbol symTable typeName name ->
+                        ScopedName (Local typeName) name
+                    _ -> ScopedName Global name
+            in case Map.lookup scName ranges of
+                Just (lower, upper) | lower == upper -> Just lower
+                _ -> Nothing
+
+        Member (Literal _ (TyComponent (toList -> [tyName]))) name _ ->
+            case Map.lookup (ScopedName (Local tyName) name) ranges of
+                Just (lower, upper) | lower == upper -> Just lower
+                _ -> Nothing
+
+        Index (trnsConstVar symTable ranges -> Just x) _ _ ->
+            Just x
 
         _ -> Nothing
 

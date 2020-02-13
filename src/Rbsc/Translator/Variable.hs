@@ -55,26 +55,28 @@ trnsVarDecl
     -> (Name, Maybe LSomeExpr)
     -> Translator [Prism.Declaration]
 trnsVarDecl mComp (varName, mInit) =
-    view (symbolTable.at scName) >>= \case
-        Just (Some ty) -> do
-            baseTy' <- baseType ty
-            let qnames  = indexedNames baseName ty
-                mInits' = case mInit of
-                    Just e  -> fmap Just (indexedExprs e ty)
-                    Nothing -> repeat Nothing
+    view (rangeTable.at scName) >>= \case
+        Just (lower, upper) | lower == upper -> return []
+        _ -> view (symbolTable.at scName) >>= \case
+            Just (Some ty) -> do
+                baseTy' <- baseType ty
+                let qnames  = indexedNames baseName ty
+                    mInits' = case mInit of
+                        Just e  -> fmap Just (indexedExprs e ty)
+                        Nothing -> repeat Nothing
 
-            for (zip qnames mInits') $ \(qname, mInit') -> do
-                ident <- trnsQualified qname
-                mInit'' <- case mInit' of
-                    Just e -> do
-                        e' <- reduceLSomeExpr e
-                        checkOutOfRange baseTy' e'
-                        Just <$> trnsLSomeExpr mComp e'
-                    Nothing -> return Nothing
-                return (Prism.Declaration ident baseTy' mInit'')
+                for (zip qnames mInits') $ \(qname, mInit') -> do
+                    ident <- trnsQualified qname
+                    mInit'' <- case mInit' of
+                        Just e -> do
+                            e' <- reduceLSomeExpr e
+                            checkOutOfRange baseTy' e'
+                            Just <$> trnsLSomeExpr mComp e'
+                        Nothing -> return Nothing
+                    return (Prism.Declaration ident baseTy' mInit'')
 
-        Nothing -> error $
-            "trnsVarDecl: " ++ show scName ++ "not in symbol table"
+            Nothing -> error $
+                "trnsVarDecl: " ++ show scName ++ "not in symbol table"
   where
     baseName = case mComp of
         Just (_, compName) ->
