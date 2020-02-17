@@ -24,8 +24,7 @@ import qualified Data.Text.IO       as Text
 import System.Directory
 import System.FilePath
 
-import Text.Megaparsec       hiding (parse)
-import Text.Megaparsec.Error (parseErrorTextPretty)
+import Text.Megaparsec hiding (parse)
 
 
 import Rbsc.Parser.ComponentType
@@ -178,6 +177,7 @@ parseIncludeFile path = do
             , pstateTabWidth   = defaultTabWidth
             , pstateLinePrefix = ""
             }
+        , stateParseErrors = []
         }
 
 
@@ -208,6 +208,6 @@ fromParseErrorBundle sourceMap ParseErrorBundle{..} =
 
     start = fromSourcePos pos
     end   = start { Region.column = Region.column start + 1 }
-    pos   = fst (reachOffsetNoLine (errorOffset err) bundlePosState)
+    pos   = pstateSourcePos (reachOffsetNoLine (errorOffset err) bundlePosState)
 
     err = NonEmpty.head bundleErrors

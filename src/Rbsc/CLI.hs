@@ -41,10 +41,8 @@ import Rbsc.Data.System
 import Rbsc.Parser
 
 import           Rbsc.Report
-import           Rbsc.Report.Error   (Error)
 import qualified Rbsc.Report.Error   as Error
 import           Rbsc.Report.Result
-import           Rbsc.Report.Warning (Warning)
 import           Rbsc.Report.Warning as Warning
 
 import Rbsc.Syntax.Typed.Expr (prettyConstants)

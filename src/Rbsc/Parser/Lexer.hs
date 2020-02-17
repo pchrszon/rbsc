@@ -53,7 +53,6 @@ module Rbsc.Parser.Lexer
 
 import Control.Applicative        hiding (many)
 import Control.Lens
-import Control.Monad              (void)
 import Control.Monad.State.Strict
 
 import           Data.List.NonEmpty (NonEmpty (..))

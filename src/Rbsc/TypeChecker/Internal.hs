@@ -48,7 +48,6 @@ import Control.Monad.Except
 import Control.Monad.Reader
 
 import           Data.Foldable
-import           Data.List       (find)
 import qualified Data.Map.Strict as Map
 import           Data.Text       (Text)
 
@@ -67,8 +66,7 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region (Loc (..), Region)
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed.Expr (Constants, SomeExpr (..), constants,
-                                         methods)
+import           Rbsc.Syntax.Typed.Expr (SomeExpr (..))
 import qualified Rbsc.Syntax.Typed.Expr as T
 
 import Rbsc.Util (renderPretty)

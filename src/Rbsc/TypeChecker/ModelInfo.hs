@@ -36,8 +36,7 @@ import Rbsc.Report.Error
 import Rbsc.Report.Region
 import Rbsc.Report.Result
 
-import           Rbsc.Syntax.Typed   (LSomeExpr, SomeExpr (..), constants,
-                                      methods)
+import           Rbsc.Syntax.Typed   (LSomeExpr, SomeExpr (..))
 import qualified Rbsc.Syntax.Typed   as T
 import           Rbsc.Syntax.Untyped (Enumeration (..), LExpr,
                                       ModuleInstance (..), Parameter (..),

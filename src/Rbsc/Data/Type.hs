@@ -55,7 +55,6 @@ import           Data.Map.Strict           (Map)
 import qualified Data.Map.Strict           as Map
 import           Data.Set                  (Set)
 import           Data.Text.Prettyprint.Doc
-import           Data.Type.Equality        ((:~:) (..))
 
 
 import Rbsc.Data.Action

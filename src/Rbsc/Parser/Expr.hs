@@ -17,7 +17,6 @@ import Control.Monad.Combinators.Expr
 import Control.Monad.State.Strict
 
 import           Data.List.NonEmpty (NonEmpty (..))
-import           Data.Semigroup     ((<>))
 import qualified Data.Set           as Set
 import           Data.Text          (Text)
 import           Data.Void

@@ -48,7 +48,6 @@ import Rbsc.Report.Region (Loc (..), Region)
 
 import Rbsc.Syntax.Operators
 import Rbsc.Syntax.Quantification
-import Rbsc.Syntax.Typed.Expr     (Constants, constants)
 import Rbsc.Syntax.Typed.Expr     as T
 
 
