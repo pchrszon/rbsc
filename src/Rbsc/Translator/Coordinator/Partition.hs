@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -21,152 +22,103 @@ module Rbsc.Translator.Coordinator.Partition
     ) where
 
 
-import Control.Lens
 import Control.Monad.Except
 
-import Data.Traversable
 import           Data.Function
-import qualified Data.List       as List
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import           Data.Maybe
 import           Data.Ord
 import           Data.Set        (Set)
 import qualified Data.Set        as Set
 
 
-import Rbsc.Data.Name
-
 import Rbsc.Report.Error
 import Rbsc.Report.Region
 
-import Rbsc.Syntax.Typed hiding (Type (..))
-
 import Rbsc.Translator.Coordinator.Internal
 
-import Rbsc.Util (regions)
+import Rbsc.Syntax.Typed hiding (Type (..))
+
+import Rbsc.Util
 
 
 -- [NOTE] coordinator partitioning
 --
--- 1. The coordinator commands are partitioned into "regions", where each
---    region updates the same set of variables. Since each command can
---    update multiple variables, two regions can be joined by adding
---    a third command. Consider:
+-- 1. Build an undirected graph.
+--      - Nodes are coordinator commands.
+--      - There is an edge between two commands if
+--          (1) their sets of updated variables are overlapping, or
+--          (2) their sets of coordinated roles are overlapping.
 --
---      [][...] ... -> (x' = 0);
---      [][...] ... -> (y' = 1);
---      [][...] ... -> (x' = 2) & (y' = 3);
---
---    If the third command didn't exist, the first two commands would be in
---    separate regions.
---
--- 2. If there is a region with no variables, the commands in this region
---    are further partitioned w.r.t. the roles they coordinate. These
---    commands can be put into different modules without any restrictions,
---    since they update no variables.
---
--- 3. If regions from (1) and partitions of (2) coordinate the same set of
---    roles, they are merged.
---
--- 4. A coordinator for each partition is generated.
+-- 2. Create a new coordinator for each connected component of the graph.
 
 
 partition :: MonadError Error m => TCoordinator Elem -> m [TCoordinator Elem]
-partition coord@Coordinator{..} = do
-    statelessCoords <- fmap concat . for statelessPart $
-        fmap (fmap (over _2 genStatelessCoordinator)) . partitionOnRoleSets . snd
+partition Coordinator {..} = do
+    let iCmds = zipWith (Id . getElem) coordCommands [0 ..]
 
-    statefulCoords <- for statefulParts $ \part -> do
-        let coord' = genStatefulCoordinator coord part
-        roles <- coordinatedRoles coord'
-        return (roles, coord')
+    g <- buildCommandGraph iCmds
+    let parts  = fmap (fmap unId . Set.toList) (connectedComponents g)
+        coords = fmap (genCoordinator coordVars) parts
 
-    let readOnlyVarsCoord =
-            if Set.null readOnlyVars
-                then []
-                else [(Set.empty, genReadOnlyCoordinator coordVars readOnlyVars)]
-
-    return
-        (Map.elems (Map.fromListWith (<>)
-            (readOnlyVarsCoord ++ statelessCoords ++ statefulCoords)))
+    return $ if Set.null readOnlyVars
+        then coords
+        else readOnlyVarsCoord : coords
   where
-    cmdVars =
-        fmap ((\cmd -> (cmd, updatedVariables cmd)) . getElem) coordCommands
+    readOnlyVarsCoord = Coordinator (filterVariables readOnlyVars coordVars) []
 
-    varPartitions = partitionOnVariables cmdVars
+    readOnlyVars = Set.fromList (fmap fst coordVars) `Set.difference` cmdVars
 
-    (statelessPart, statefulParts) =
-        List.partition (Set.null . fst) varPartitions
-
-    readOnlyVars =
-        Set.fromList (fmap fst coordVars)
-        `Set.difference`
-        Set.unions (fmap snd cmdVars)
+    cmdVars = Set.unions (fmap (updatedVariables . getElem) coordCommands)
 
 
-genStatefulCoordinator
-    :: TCoordinator Elem
-    -> (Set Name, [TCoordCommand Elem])
-    -> TCoordinator Elem
-genStatefulCoordinator Coordinator {..} (vars, cmds) = Coordinator
-    { coordVars     = filterVariables vars coordVars
+type ICoordCommand = Id (TCoordCommand Elem)
+
+type CommandGraph = Graph ICoordCommand
+
+
+buildCommandGraph :: MonadError Error m => [ICoordCommand] -> m CommandGraph
+buildCommandGraph cmds = do
+    cmdsRoles <- mapAnnotateA (rolesInCommand . unId) cmds
+    let roleToCmds = inverseIndex cmdsRoles
+        edges      = fmap (genEdges roleToCmds) cmdsRoles ++ nonCoordEdges
+    return (Map.fromListWith Set.union edges)
+  where
+    genEdges
+        :: Map RoleName (Set ICoordCommand)
+        -> (ICoordCommand, Set RoleName)
+        -> (ICoordCommand, Set ICoordCommand)
+    genEdges roleToCmds (cmd, roles) =
+        let connOverVars = findConnected varToCmds (updatedVariables (unId cmd))
+            connOverRoles = findConnected roleToCmds roles
+        in  (cmd, Set.union connOverVars connOverRoles)
+
+    varToCmds :: Map Name (Set ICoordCommand)
+    varToCmds = inverseIndex (mapAnnotate (updatedVariables . unId) cmds)
+
+    -- create edges between non-coordination commands to keep them in the same
+    -- coordinator
+    nonCoordEdges :: [(ICoordCommand, Set ICoordCommand)]
+    nonCoordEdges =
+        concatMap (\cmd -> zip (repeat cmd) (fmap Set.singleton nonCoordCmds))
+        nonCoordCmds
+
+    nonCoordCmds = filter (isNothing .  coordConstraint . unId) cmds
+
+    findConnected invIdx =
+        Set.unions .
+        fmap (\x -> Map.findWithDefault Set.empty x invIdx) .
+        Set.toList
+
+
+genCoordinator :: TInits -> [TCoordCommand Elem] -> TCoordinator Elem
+genCoordinator vars cmds = Coordinator
+    { coordVars     = filterVariables cmdVars vars
     , coordCommands = fmap Elem cmds
     }
-
-
-genStatelessCoordinator :: [TCoordCommand Elem] -> TCoordinator Elem
-genStatelessCoordinator = Coordinator [] . fmap Elem
-
-
--- | Generate a coordinator module containing all coordinator variables that are
--- never updated.
-genReadOnlyCoordinator :: TInits -> Set Name -> TCoordinator Elem
-genReadOnlyCoordinator vars readOnlyVars =
-    Coordinator (filterVariables readOnlyVars vars) []
-
-
-filterVariables :: Set Name -> TInits -> TInits
-filterVariables vars = filter contained
   where
-    contained (name, _) = name `Set.member` vars
-
-
-partitionOnRoleSets
-    :: MonadError Error m
-    => [TCoordCommand Elem]
-    -> m [(Set RoleName, [TCoordCommand Elem])]
-partitionOnRoleSets =
-    fmap (Map.assocs . Map.fromListWith (++)) . traverse addRoleSet
-  where
-    addRoleSet cmd = do
-        roleSet <- roles cmd
-        return (roleSet, [cmd])
-
-    roles cmd = case coordConstraint cmd of
-        Just pc -> rolesInConstraint pc
-        Nothing -> return Set.empty
-
-
-partitionOnVariables
-    :: [(TCoordCommand Elem, Set Name)]
-    -> [(Set Name, [TCoordCommand Elem])]
-partitionOnVariables cmds = over (traverse._2) removeIndices (regions cmds')
-  where
-    cmds' = Map.fromList (fmap addIndex (zip cmds [0 ..]))
-    addIndex ((x, y), i) = (Id (x, i), y)
-    removeIndices = fmap (fst . unId) . Set.toList
-
-
--- Since CoordCommands are not comparable, the 'Id'-type is used to tag
--- each command with an index. Using this wrapper, we can use CoordCommands
--- in Sets and Maps.
-
-newtype Id a = Id { unId :: (a, Integer) }
-
-instance Eq (Id a) where
-    (==) = (==) `on` (snd . unId)
-
-instance Ord (Id a) where
-    compare = comparing (snd . unId)
+    cmdVars = Set.unions (fmap updatedVariables cmds)
 
 
 updatedVariables :: TCoordCommand Elem -> Set Name
@@ -177,3 +129,31 @@ updatedVariables CoordCommand {..} =
         Set.fromList (fmap (fromAssignment . getElem) updAssignments)
 
     fromAssignment (Assignment (Loc name _) _ _) = name
+
+
+filterVariables :: Set Name -> TInits -> TInits
+filterVariables vars = filter contained
+  where
+    contained (name, _) = name `Set.member` vars
+
+
+rolesInCommand :: MonadError Error m => TCoordCommand Elem -> m (Set RoleName)
+rolesInCommand CoordCommand {..} = case coordConstraint of
+    Just c  -> rolesInConstraint c
+    Nothing -> return Set.empty
+
+
+-- Since CoordCommands are not comparable, the 'Id'-type is used to tag
+-- each command with an index. Using this wrapper, we can use CoordCommands
+-- in Sets and Maps.
+
+data Id a = Id
+    { unId  :: a
+    , getId :: Integer
+    } deriving (Show)
+
+instance Eq (Id a) where
+    (==) = (==) `on` getId
+
+instance Ord (Id a) where
+    compare = comparing getId

@@ -10,8 +10,8 @@ module coordinator
 endmodule
 
 module coordinator2
-    ]b, _r[ !x -> true;
     ]a, _r[ x -> true;
+    ]b, _r[ !x -> true;
     ]a, b, _r, _not_r[ false -> true;
 endmodule
 

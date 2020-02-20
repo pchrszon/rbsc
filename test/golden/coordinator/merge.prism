@@ -1,11 +1,11 @@
 mdp
 
 module coordinator
-    y : [0..1] init 0;
     x : [0..1] init 0;
+    y : [0..1] init 0;
 
-    ]r_a, _r[ y = 0 -> (y' = 1);
     ]r_a, _r[ x = 0 -> (x' = 1);
+    ]r_a, _r[ y = 0 -> (y' = 1);
     ]r_a, _r[ true -> true;
     ]_r, _not_r[ false -> true;
 endmodule

@@ -1,15 +1,15 @@
 mdp
 
 module coordinator
-    ]a, _not_inner[ !inner_s = 0 | outer_s = 0 -> true;
-    ]a, _inner[ inner_s = 0 & !outer_s = 0 -> true;
-    ]a, _inner, _not_inner[ false -> true;
+    ]a, _outer[ outer_s = 0 & inner_s = 0 -> true;
+    ]a, _not_outer[ !outer_s = 0 -> true;
+    ]a, _outer, _not_outer[ false -> true;
 endmodule
 
 module coordinator2
-    ]a, _not_outer[ !outer_s = 0 -> true;
-    ]a, _outer[ outer_s = 0 & inner_s = 0 -> true;
-    ]a, _outer, _not_outer[ false -> true;
+    ]a, _inner[ inner_s = 0 & !outer_s = 0 -> true;
+    ]a, _not_inner[ !inner_s = 0 | outer_s = 0 -> true;
+    ]a, _inner, _not_inner[ false -> true;
 endmodule
 
 module inner

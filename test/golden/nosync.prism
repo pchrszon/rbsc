@@ -7,8 +7,8 @@ module Nosync
 endmodule
 
 module coordinator
-    ]c[ true -> true;
     ]n_a[ true -> true;
+    ]c[ true -> true;
 endmodule
 
 module n
