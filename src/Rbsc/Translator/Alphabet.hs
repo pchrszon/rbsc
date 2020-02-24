@@ -155,9 +155,11 @@ numberOfIndices (Loc act rgn) = go 0 act
 
 -- | Check if there are actions that do not synchronize with any other
 -- module.
-checkSynchronizations :: Map ComponentName ModuleAlphabets -> Result ()
-checkSynchronizations mas = for_ (Map.assocs syncs) $ \case
-    (act, [_]) -> warn (UnsynchronizedAction act)
+checkSynchronizations
+    :: Map ComponentName ModuleAlphabets -> Set Action -> Result ()
+checkSynchronizations mas coordActions = for_ (Map.assocs syncs) $ \case
+    (act, [_]) | Set.notMember (unLoc act) coordActions ->
+        warn (UnsynchronizedAction act)
     _ -> return ()
   where
     syncs = Map.fromListWith (++) actions

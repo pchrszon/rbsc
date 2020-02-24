@@ -89,7 +89,7 @@ translateModel model sys info = do
     bi <- generateBindingInfo sys as
 
     checkActionIndices mas
-    checkSynchronizations mas
+    checkSynchronizations mas cas
     checkOverrides bi as
 
     let rgs = rolePlayingGuards sys modules info
