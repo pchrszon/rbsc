@@ -10,16 +10,26 @@ language that extends the input language of the probabilistic model checker
 Installation
 ------------
 
-### Prerequisites
+### Download
+
+Binaries for Linux and macOS are provided on the
+[Releases](https://github.com/pchrszon/rbsc/releases) page. Extract the binary
+from the archive and move it to a suitable location (preferably some location
+that is contained in your `PATH` variable). No further installation steps are
+necessary.
+
+Note that the macOS-binary is not signed. Therefore, you may have to explicitly
+allow the program to run in the security settings.
+
+
+### Building from source
 
 For building rbsc from source, the tool `stack` must be installed. For
 installation instructions, visit the
 [stack website](https://www.haskellstack.org).
 
-To generate the user documentation, [Sphinx](https://www.sphinx-doc.org) must be
-installed.
-
-### Building from source
+**(optional)** To generate the user documentation,
+[Sphinx](https://www.sphinx-doc.org) must be installed.
 
 In the projects root directory, which contains the `package.yaml` file, run
 the following command to build the tool:
