@@ -1,0 +1,441 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Expressions &mdash; rbsc 1.13.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Costs and rewards" href="rewards.html" />
+    <link rel="prev" title="Functions" href="functions.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> rbsc
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Running rbsc</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language.html">Role-based modeling language</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="type-decls.html">Type declarations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="system.html">System instantiation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="behavior.html">Behavior definitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coordination.html">Coordination</a></li>
+<li class="toctree-l2"><a class="reference internal" href="type-system.html">Type system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="globals.html">Global variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Expressions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#operators">Operators</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#arrays">Arrays</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quantification">Quantification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#built-in-functions">Built-in functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#expression-contexts">Expression contexts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rewards.html">Costs and rewards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="labels.html">Labels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="files.html">Model files</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rbsc</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../language.html">Role-based modeling language</a> &raquo;</li>
+        
+      <li>Expressions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/language/expressions.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="expressions">
+<span id="sec-expressions"></span><h1>Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline">¶</a></h1>
+<p>Expressions can contain literal values, identifiers (constants, components,
+local and global variables) and operators.  Literals for Booleans, integers and
+doubles are written in the standard way: <code class="docutils literal notranslate"><span class="pre">true</span></code>, <code class="docutils literal notranslate"><span class="pre">false</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code>, <code class="docutils literal notranslate"><span class="pre">3.14</span></code>.</p>
+<div class="section" id="operators">
+<h2>Operators<a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h2>
+<p>The following operators can be used in expressions, ordered by their precedence
+(most strongly binding operators first):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[...]</span></code>, <code class="docutils literal notranslate"><span class="pre">.</span></code>, <code class="docutils literal notranslate"><span class="pre">(...)</span></code> (array indexing, member access, function call)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-</span></code> (unary minus)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">boundto</span></code>, <code class="docutils literal notranslate"><span class="pre">in</span></code>, <code class="docutils literal notranslate"><span class="pre">:</span></code> (role binding, compartment membership, has type,
+see <a class="reference internal" href="system.html#sec-system"><span class="std std-ref">system instantiation</span></a> for details)</p></li>
+<li><p>infix functions (binary functions written in infix notation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">*</span></code>, <code class="docutils literal notranslate"><span class="pre">/</span></code> (multiplication, division)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code> (addition, subtraction)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> (relational operators)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code> (equality operators)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">!</span></code> (unary negation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&amp;</span></code> (logical and)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">|</span></code> (logical or)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">=&gt;</span></code> (implication)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">...</span> <span class="pre">then</span> <span class="pre">...</span> <span class="pre">else</span> <span class="pre">...</span></code></p></li>
+</ul>
+<p>Infix functions are written in between their operators without parentheses,
+for instance <code class="docutils literal notranslate"><span class="pre">plus(1,</span> <span class="pre">2)</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">plus</span> <span class="pre">2</span></code>.</p>
+<p>The has-type operator <code class="docutils literal notranslate"><span class="pre">:</span></code> also accepts type sets on the right-hand side,
+including the built-in sets <code class="docutils literal notranslate"><span class="pre">natural</span></code>, <code class="docutils literal notranslate"><span class="pre">role</span></code>, and <code class="docutils literal notranslate"><span class="pre">compartment</span></code>.</p>
+</div>
+<div class="section" id="arrays">
+<h2>Arrays<a class="headerlink" href="#arrays" title="Permalink to this headline">¶</a></h2>
+<p>Arrays are written using brackets, e.g., <code class="docutils literal notranslate"><span class="pre">[1,</span> <span class="pre">2,</span> <span class="pre">3]</span></code> represents an array with
+the elements <code class="docutils literal notranslate"><span class="pre">1</span></code>, <code class="docutils literal notranslate"><span class="pre">2</span></code> and <code class="docutils literal notranslate"><span class="pre">3</span></code>. Note that an array can contain any
+expression and is not limited to literals. Array values can also be constructed
+using comprehensions. The following two constant definitions are equivalent:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>const xs = [2, 4, 6];
+const ys = [ i * 2 || i : [1 .. 3] ];
+</pre></div>
+</div>
+</div>
+<div class="section" id="quantification">
+<span id="sec-quantification"></span><h2>Quantification<a class="headerlink" href="#quantification" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">forall</span></code> and <code class="docutils literal notranslate"><span class="pre">exists</span></code> quantifiers can be used to write expressions
+ranging over all or some components in the model. Consider the following
+example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>type N {
+    s : [0..1] init 0;
+    // ...
+}
+
+system {
+    n[2] : N;
+    m : Monitor;
+}
+
+type Monitor {
+    done : bool init false;
+
+    [] forall c : N. c.s = 1 -&gt; (done&#39; = true);
+}
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">forall</span></code> quantifier ranges over all components in the model that have
+type <code class="docutils literal notranslate"><span class="pre">N</span></code>, namely <code class="docutils literal notranslate"><span class="pre">n[0]</span></code> and <code class="docutils literal notranslate"><span class="pre">n[1]</span></code>. Thus, the guard of the monitor’s
+command expands to <code class="docutils literal notranslate"><span class="pre">n[0].s</span> <span class="pre">=</span> <span class="pre">1</span> <span class="pre">&amp;</span> <span class="pre">n[1].s</span> <span class="pre">=</span> <span class="pre">1</span></code>. The type following the
+identifier can also be a type set (see <a class="reference internal" href="type-system.html#sec-type-system"><span class="std std-ref">type system</span></a> for
+details). If no type is given, then the quantifier ranges over all components
+in the model.</p>
+<p>In addition to quantification over components, RBL also supports quantification
+over bounded integers, so the above guard can also be written as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>type Monitor {
+    done : bool init false;
+
+    [] forall i : [0 .. 1]. n[i].s = 1 -&gt; (done&#39; = true);
+}
+</pre></div>
+</div>
+<p>Nested quantifiers of the same kind, e.g., <code class="docutils literal notranslate"><span class="pre">forall</span> <span class="pre">x</span> <span class="pre">:</span> <span class="pre">N.</span> <span class="pre">forall</span> <span class="pre">y</span> <span class="pre">:</span> <span class="pre">M.</span></code>, can
+be written using the shorthand notation <code class="docutils literal notranslate"><span class="pre">forall</span> <span class="pre">x</span> <span class="pre">:</span> <span class="pre">N,</span> <span class="pre">y</span> <span class="pre">:</span> <span class="pre">M.</span></code></p>
+<p>In addition to <code class="docutils literal notranslate"><span class="pre">forall</span></code> and <code class="docutils literal notranslate"><span class="pre">exists</span></code>, there are also the keywords <code class="docutils literal notranslate"><span class="pre">sum</span></code>
+and <code class="docutils literal notranslate"><span class="pre">product</span></code> that are used exactly the same:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>function fact(n : int) : int = product i : [1 .. n]. i;
+</pre></div>
+</div>
+</div>
+<div class="section" id="built-in-functions">
+<h2>Built-in functions<a class="headerlink" href="#built-in-functions" title="Permalink to this headline">¶</a></h2>
+<p>The following built-in functions are provided:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min(x,</span> <span class="pre">y)</span></code> and <code class="docutils literal notranslate"><span class="pre">max(x,</span> <span class="pre">y)</span></code> which select the minimum or maximum of two
+integers, respectively, and their variants <code class="docutils literal notranslate"><span class="pre">minf</span></code> and <code class="docutils literal notranslate"><span class="pre">maxf</span></code> for doubles.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">floor(x)</span></code> and <code class="docutils literal notranslate"><span class="pre">ceil(x)</span></code> which round <code class="docutils literal notranslate"><span class="pre">x</span></code> up and down, respectively, to
+the nearest integer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pow(x,</span> <span class="pre">y)</span></code> which computes <code class="docutils literal notranslate"><span class="pre">x</span></code> to the power of <code class="docutils literal notranslate"><span class="pre">y</span></code>, and its variant
+<code class="docutils literal notranslate"><span class="pre">powf</span></code> for doubles.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mod(i,</span> <span class="pre">n)</span></code> for integer modulo.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">log(x,</span> <span class="pre">b)</span></code> which computes the logarithm of <code class="docutils literal notranslate"><span class="pre">x</span></code> to base <code class="docutils literal notranslate"><span class="pre">b</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">count(R,</span> <span class="pre">c)</span></code> which counts the number of role instances with type <code class="docutils literal notranslate"><span class="pre">R</span></code>
+contained in the compartment instance <code class="docutils literal notranslate"><span class="pre">c</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">length(arr)</span></code> which returns the length of an array.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">player(r)</span></code> returns the component to which <code class="docutils literal notranslate"><span class="pre">r</span></code> is bound. Calling this
+function with a component that is not a role will throw an error during the
+translation of the model. Use <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">:</span> <span class="pre">role</span></code> to check if <code class="docutils literal notranslate"><span class="pre">r</span></code> actually is a
+role.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">playable(r</span> <span class="pre">[,</span> <span class="pre">act])</span></code> returns <code class="docutils literal notranslate"><span class="pre">true</span></code> if the role <code class="docutils literal notranslate"><span class="pre">r</span></code> can be played in
+the current system state, i.e., there is an outgoing transition labeled with
+<code class="docutils literal notranslate"><span class="pre">r</span></code>. If an optional action <code class="docutils literal notranslate"><span class="pre">act</span></code> is given, then <code class="docutils literal notranslate"><span class="pre">playable(r,</span> <span class="pre">act)</span></code>
+returns <code class="docutils literal notranslate"><span class="pre">true</span></code> only if <code class="docutils literal notranslate"><span class="pre">r</span></code> can be played on action <code class="docutils literal notranslate"><span class="pre">act</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">index(c)</span></code> returns the index of a component contained in a component array.
+For example, <code class="docutils literal notranslate"><span class="pre">index(workers[2])</span></code> will return <code class="docutils literal notranslate"><span class="pre">2</span></code>, where <code class="docutils literal notranslate"><span class="pre">workers</span></code> is
+a component array.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">player</span></code> and <code class="docutils literal notranslate"><span class="pre">index</span></code> functions can also be used as a keywords without an
+argument. This is equivalent to writing <code class="docutils literal notranslate"><span class="pre">player(self)</span></code> and <code class="docutils literal notranslate"><span class="pre">index(self)</span></code>,
+respectively.</p>
+</div>
+<div class="section" id="expression-contexts">
+<span id="sec-expression-contexts"></span><h2>Expression contexts<a class="headerlink" href="#expression-contexts" title="Permalink to this headline">¶</a></h2>
+<p>Expressions can appear in different <em>contexts</em> which influences their semantics.</p>
+<dl>
+<dt>action context</dt><dd><p>The action context applies to all expressions that appear in the action-label
+position of a command. All identifiers of an expression in this context which
+are not defined elsewhere are interpreted as actions. Consider the following
+example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>const b = true;
+
+module example {
+    [if b then foo else bar] true -&gt; true;
+}
+</pre></div>
+</div>
+<p>Here, the <code class="docutils literal notranslate"><span class="pre">if</span></code> expression is interpreted in the action context. The
+identifiers <code class="docutils literal notranslate"><span class="pre">foo</span></code> and <code class="docutils literal notranslate"><span class="pre">bar</span></code> are actions, since they are not defined
+elsewhere. However, the identifier <code class="docutils literal notranslate"><span class="pre">b</span></code> is not an action, since it was
+defined as a constant.</p>
+<p>Accessing an otherwise undefined local identifier of a component also creates
+an action:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>type N {
+    [self.a] true -&gt; true;
+}
+
+system {
+    n : N;
+}
+</pre></div>
+</div>
+<p>Here, the component <code class="docutils literal notranslate"><span class="pre">n</span></code> has no local variable named <code class="docutils literal notranslate"><span class="pre">a</span></code>, thus <code class="docutils literal notranslate"><span class="pre">self.a</span></code>
+evaluates to the action <code class="docutils literal notranslate"><span class="pre">n.a</span></code> upon instantiation of <code class="docutils literal notranslate"><span class="pre">N</span></code>.</p>
+<p>Furthermore, actions are automatically converted into action arrays when
+using the index operator on them.</p>
+<p>The action context can be entered explicitly by using the <code class="docutils literal notranslate"><span class="pre">action</span></code> keyword,
+for example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>const act_arr : array 2 of action = [action a, action b];
+</pre></div>
+</div>
+<p>Here, an array containing two actions <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> is defined. An explicit
+action context can also be used to return actions from
+<a class="reference internal" href="functions.html#sec-functions"><span class="std std-ref">functions</span></a>:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>function send(from : int, to : int) : action = action snd[from][to];
+
+module example {
+   [send(1, 2)] true -&gt; true;
+}
+</pre></div>
+</div>
+<p>In the above example, the <code class="docutils literal notranslate"><span class="pre">send</span></code> function returns an action derived from
+its two parameters. The result of the function application is then used as
+action in a command.</p>
+</dd>
+<dt>constraint context</dt><dd><p>The constraint context applies to all expressions that appear as a role guard
+in a coordinator command. All identifiers refering to role components are
+automatically converted to Boolean expressions. Consider the following
+example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>natural type N;
+role type R(N);
+
+system {
+    n : N;
+    a : R; a boundto n;
+    b : R; b boundto n;
+}
+
+coordinator {
+    [] [a &amp; !b] true -&gt; true;
+}
+</pre></div>
+</div>
+<p>Here, the identifiers <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> refer to role components. But since
+they are used in the constraint context in the coordinator command, they
+are used as Booleans.</p>
+<p>Sometimes it is necessary to explicitly force the conversion of a role
+component to a <code class="docutils literal notranslate"><span class="pre">bool</span></code>. For this, the following function can be used:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>function played(r : bool) : bool = r;
+
+coordinator {
+    [] [if cond then played(a) else !played(a)] true -&gt; true;
+}
+</pre></div>
+</div>
+<p>The constraint context can be entered explicitly by using the <code class="docutils literal notranslate"><span class="pre">constraint</span></code>
+keyword. This is especially useful for extracting role-playing constraints
+into functions:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>function a_played(cond : bool) : bool =
+   constraint if cond then played(a) else !a;
+
+coordinator {
+    [] [a_played(true)] true -&gt; true;
+}
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="rewards.html" class="btn btn-neutral float-right" title="Costs and rewards" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="functions.html" class="btn btn-neutral float-left" title="Functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Philipp Chrszon
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

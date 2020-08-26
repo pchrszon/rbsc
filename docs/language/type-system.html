@@ -1,0 +1,302 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Type system &mdash; rbsc 1.13.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Constants" href="constants.html" />
+    <link rel="prev" title="Coordination" href="coordination.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> rbsc
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Running rbsc</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language.html">Role-based modeling language</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="type-decls.html">Type declarations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="system.html">System instantiation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="behavior.html">Behavior definitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coordination.html">Coordination</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Type system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#types">Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#variable-types">Variable types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#implicit-conversions">Implicit conversions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="globals.html">Global variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="expressions.html">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rewards.html">Costs and rewards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="labels.html">Labels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="files.html">Model files</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rbsc</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../language.html">Role-based modeling language</a> &raquo;</li>
+        
+      <li>Type system</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/language/type-system.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="type-system">
+<span id="sec-type-system"></span><h1>Type system<a class="headerlink" href="#type-system" title="Permalink to this headline">¶</a></h1>
+<p>RBL is statically typed, i.e., every constant, variable, parameter and
+expression has a fixed type. During translation, rbsc type checks the whole
+model, such that all generated PRISM models are free from type errors.</p>
+<div class="section" id="types">
+<h2>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<p>The following types are available in RBL:</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">bool</span></code></dt><dd><p>Values of type <code class="docutils literal notranslate"><span class="pre">bool</span></code> can be either <code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">int</span></code></dt><dd><p>Signed integers.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">double</span></code></dt><dd><p>Double-precision floating point values.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">action</span></code></dt><dd><p>The type of action labels which are used for synchronization between
+components.</p>
+</dd>
+<dt>component types</dt><dd><p>Each <a class="reference internal" href="type-decls.html#sec-type-decls"><span class="std std-ref">type declaration</span></a> creates a type. Multiple
+component types can be combined into a type set, for instance
+<code class="docutils literal notranslate"><span class="pre">{Type1,</span> <span class="pre">Type2}</span></code>. The predefined type sets <code class="docutils literal notranslate"><span class="pre">natural</span></code>, <code class="docutils literal notranslate"><span class="pre">role</span></code> and
+<code class="docutils literal notranslate"><span class="pre">compartment</span></code> contain all natural types, role types and compartment types
+defined in the model, respectively. The type set <code class="docutils literal notranslate"><span class="pre">component</span></code> comprises all
+component types defined in the model.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">array</span> <span class="pre">&lt;n&gt;</span> <span class="pre">of</span> <span class="pre">&lt;type&gt;</span></code></dt><dd><p>An array of <code class="docutils literal notranslate"><span class="pre">type</span></code> with size <code class="docutils literal notranslate"><span class="pre">n</span></code>. The size <code class="docutils literal notranslate"><span class="pre">n</span></code> is part of the type,
+i.e., <code class="docutils literal notranslate"><span class="pre">array</span> <span class="pre">2</span> <span class="pre">of</span> <span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">array</span> <span class="pre">3</span> <span class="pre">of</span> <span class="pre">int</span></code> are distinct types. Note
+that <code class="docutils literal notranslate"><span class="pre">type</span></code> can also be an <code class="docutils literal notranslate"><span class="pre">array</span></code> type itself, which allows the
+definition of multi-dimensional arrays:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>const squares : array 3 of array 2 of int = [ [1, 1], [2, 4], [3, 9] ];
+</pre></div>
+</div>
+<p>Component arrays defined in the <a class="reference internal" href="system.html#sec-system"><span class="std std-ref">system</span></a> block also have
+an array type:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>system {
+   w[3] : Worker;
+}
+</pre></div>
+</div>
+<p>Here, <code class="docutils literal notranslate"><span class="pre">w</span></code> has the type <code class="docutils literal notranslate"><span class="pre">array</span> <span class="pre">3</span> <span class="pre">of</span> <span class="pre">Worker</span></code>.</p>
+</dd>
+<dt>function types</dt><dd><p>A one-argument function has type <code class="docutils literal notranslate"><span class="pre">&lt;arg-type&gt;</span> <span class="pre">-&gt;</span> <span class="pre">&lt;return-type&gt;</span></code>.
+Functions with multiple arguments are represented by multiple applications
+of the <code class="docutils literal notranslate"><span class="pre">-&gt;</span></code> type operator (<code class="docutils literal notranslate"><span class="pre">-&gt;</span></code> is left-associative). For example, the
+<code class="docutils literal notranslate"><span class="pre">min</span></code> function has type <code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">-&gt;</span> <span class="pre">int</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="variable-types">
+<span id="sec-variable-types"></span><h2>Variable types<a class="headerlink" href="#variable-types" title="Permalink to this headline">¶</a></h2>
+<p>The type of local and global variables is limited to:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p></li>
+<li><p>bounded integers: <code class="docutils literal notranslate"><span class="pre">[lower</span> <span class="pre">..</span> <span class="pre">upper]</span></code></p></li>
+<li><p>arrays of <code class="docutils literal notranslate"><span class="pre">bool</span></code> or bounded integers, possibly multi-dimensional</p></li>
+</ul>
+<p>Note that the bounded integer type is equivalent to the <code class="docutils literal notranslate"><span class="pre">int</span></code> type.</p>
+</div>
+<div class="section" id="implicit-conversions">
+<h2>Implicit conversions<a class="headerlink" href="#implicit-conversions" title="Permalink to this headline">¶</a></h2>
+<p>Values of some types can be automatically converted into values with a different
+type. The following list contains all implicit conversions allowed in RBL:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">int</span></code> to <code class="docutils literal notranslate"><span class="pre">double</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">array</span> <span class="pre">&lt;n&gt;</span> <span class="pre">of</span> <span class="pre">int</span></code> to <code class="docutils literal notranslate"><span class="pre">array</span> <span class="pre">&lt;n&gt;</span> <span class="pre">of</span> <span class="pre">double</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;type&gt;</span></code> to <code class="docutils literal notranslate"><span class="pre">array</span> <span class="pre">&lt;n&gt;</span> <span class="pre">of</span> <span class="pre">&lt;type&gt;</span></code></p></li>
+</ul>
+<p>The last conversion can be used to initialize all elements of an array with the
+same value, for example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>const ones : array 3 of int = 1;
+</pre></div>
+</div>
+<p>This definition is equivalent to:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>const ones : array 3 of int = [1, 1, 1];
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="constants.html" class="btn btn-neutral float-right" title="Constants" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="coordination.html" class="btn btn-neutral float-left" title="Coordination" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Philipp Chrszon
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

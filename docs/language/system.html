@@ -1,0 +1,379 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>System instantiation &mdash; rbsc 1.13.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Behavior definitions" href="behavior.html" />
+    <link rel="prev" title="Type declarations" href="type-decls.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> rbsc
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Running rbsc</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language.html">Role-based modeling language</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="type-decls.html">Type declarations</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">System instantiation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#component-instantiation">Component instantiation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#role-binding">Role binding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compartment-membership">Compartment membership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multiple-system-instances">Multiple system instances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#constraints">Constraints</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="behavior.html">Behavior definitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coordination.html">Coordination</a></li>
+<li class="toctree-l2"><a class="reference internal" href="type-system.html">Type system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="globals.html">Global variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="expressions.html">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rewards.html">Costs and rewards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="labels.html">Labels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="files.html">Model files</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rbsc</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../language.html">Role-based modeling language</a> &raquo;</li>
+        
+      <li>System instantiation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/language/system.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="system-instantiation">
+<span id="sec-system"></span><h1>System instantiation<a class="headerlink" href="#system-instantiation" title="Permalink to this headline">¶</a></h1>
+<p>A role-based system consists of one or more component instances, which are
+created by instantiating <a class="reference internal" href="type-decls.html#sec-type-decls"><span class="std std-ref">component types</span></a>. These
+instances are then connected by binding roles to players and by assigning roles
+to compartments.</p>
+<div class="section" id="component-instantiation">
+<span id="sec-component-instantiation"></span><h2>Component instantiation<a class="headerlink" href="#component-instantiation" title="Permalink to this headline">¶</a></h2>
+<p>Components are instantiated within <code class="docutils literal notranslate"><span class="pre">system</span></code> blocks. There may be multiple
+<code class="docutils literal notranslate"><span class="pre">system</span></code> blocks in an RBL model, but there must be at least one. A component
+instance is created by specifying its name followed by its type:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>system {
+    w : Worker;
+}
+</pre></div>
+</div>
+<p>In the above example, an instance of the natural type <code class="docutils literal notranslate"><span class="pre">Worker</span></code> with name <code class="docutils literal notranslate"><span class="pre">w</span></code>
+is created.</p>
+<p>Multiple components with the same component type can be instantiated by
+creating a component array. In the following example, three workers are created
+which are all contained in the <code class="docutils literal notranslate"><span class="pre">workers</span></code> array:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>system {
+    workers[3] : Worker;
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="role-binding">
+<h2>Role binding<a class="headerlink" href="#role-binding" title="Permalink to this headline">¶</a></h2>
+<p>For binding roles to players, the operator <code class="docutils literal notranslate"><span class="pre">boundto</span></code> is used. In the following
+example, the <code class="docutils literal notranslate"><span class="pre">c</span></code> role is bound to the <code class="docutils literal notranslate"><span class="pre">w</span></code> component, making <code class="docutils literal notranslate"><span class="pre">w</span></code> the player
+of <code class="docutils literal notranslate"><span class="pre">c</span></code>:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>system {
+    w : Worker;
+    c : Consumer;
+    c boundto w;
+}
+</pre></div>
+</div>
+<p>Note that only role components can appear on the left hand side of the
+<code class="docutils literal notranslate"><span class="pre">boundto</span></code> operator. Furthermore, a role can only be bound once, i.e., it must
+have exactly one player.</p>
+</div>
+<div class="section" id="compartment-membership">
+<h2>Compartment membership<a class="headerlink" href="#compartment-membership" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">in</span></code> operator states that a role instance is part of a compartment
+instance:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>system {
+    c : Consumer;
+    pc : ProducerConsumerProtocol;
+    c in pc;
+}
+</pre></div>
+</div>
+<p>In the system specified above, the <code class="docutils literal notranslate"><span class="pre">c</span></code> role is part of the <code class="docutils literal notranslate"><span class="pre">pc</span></code> compartment.
+Only role instances can appear on the left hand side of an <code class="docutils literal notranslate"><span class="pre">in</span></code> operator and
+the component on the right hand side must be a compartment.</p>
+</div>
+<div class="section" id="multiple-system-instances">
+<h2>Multiple system instances<a class="headerlink" href="#multiple-system-instances" title="Permalink to this headline">¶</a></h2>
+<p>A system instance is fully specified if the following constraints are fulfilled:</p>
+<ol class="arabic simple">
+<li><p>All roles are bound.</p></li>
+<li><p>All compartments are saturated, i.e., the set of contained role instances
+fulfills the occurrence constraints of at least one alternative (see
+<a class="reference internal" href="type-decls.html#sec-compartment-types"><span class="std std-ref">compartment types</span></a> for details).</p></li>
+</ol>
+<p>It is possible to define multiple system instances by means of
+underspecification. Consider the following example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>natural type Worker;
+role type Consumer(Worker);
+role type Producer(Worker);
+compartment type ProducerConsumerProtocol(Producer, Consumer);
+
+system {
+    w : Worker;
+    p : Producer;
+    pc : ProducerConsumerProtocol;
+    p in pc;
+}
+</pre></div>
+</div>
+<p>This system is underspecified. There is a missing role of type <code class="docutils literal notranslate"><span class="pre">Consumer</span></code> in
+the <code class="docutils literal notranslate"><span class="pre">pc</span></code> compartment and the role <code class="docutils literal notranslate"><span class="pre">p</span></code> is not bound to a player.</p>
+<p>Generally speaking, rbsc completes such underspecified system instances by
+creating new instances, by binding roles to players and by assigning roles to
+compartments. In case of unbound roles, rbsc either creates a new instance
+as the player (chosen among the possible player types in the corresponding role
+type declaration) or it binds an existing instance that has the right type.
+The same approach is used to add missing roles to compartments. Then, a system
+instance for each possible combination of these choices is created.</p>
+<p>In the example above, the <code class="docutils literal notranslate"><span class="pre">p</span></code> role may either be bound to the existing <code class="docutils literal notranslate"><span class="pre">w</span></code>
+natural or a new instance of <code class="docutils literal notranslate"><span class="pre">Worker</span></code> may be created. Next, the <code class="docutils literal notranslate"><span class="pre">pc</span></code>
+compartment is missing a role of type <code class="docutils literal notranslate"><span class="pre">Consumer</span></code>. Since there is no existing
+role of that type, a new instance is created. Again, this role instance is
+unbound. It is then bound analogously to <code class="docutils literal notranslate"><span class="pre">p</span></code>. Combining all possible choices,
+the following system instances are created, where <code class="docutils literal notranslate"><span class="pre">c</span></code> is the name of the
+newly created <code class="docutils literal notranslate"><span class="pre">Consumer</span></code> instance and <code class="docutils literal notranslate"><span class="pre">w2</span></code> and <code class="docutils literal notranslate"><span class="pre">w3</span></code> are new instances of
+<code class="docutils literal notranslate"><span class="pre">Worker</span></code>:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">p</span></code> is bound to <code class="docutils literal notranslate"><span class="pre">w2</span></code> and <code class="docutils literal notranslate"><span class="pre">c</span></code> is bound to <code class="docutils literal notranslate"><span class="pre">w3</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">p</span></code> is bound to <code class="docutils literal notranslate"><span class="pre">w2</span></code> and <code class="docutils literal notranslate"><span class="pre">c</span></code> is bound to <code class="docutils literal notranslate"><span class="pre">w</span></code></p></li>
+<li><p>both <code class="docutils literal notranslate"><span class="pre">p</span></code> and <code class="docutils literal notranslate"><span class="pre">c</span></code> are bound to <code class="docutils literal notranslate"><span class="pre">w2</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">p</span></code> is bound to <code class="docutils literal notranslate"><span class="pre">w</span></code> and <code class="docutils literal notranslate"><span class="pre">c</span></code> is bound to <code class="docutils literal notranslate"><span class="pre">w2</span></code></p></li>
+<li><p>both <code class="docutils literal notranslate"><span class="pre">p</span></code> and <code class="docutils literal notranslate"><span class="pre">c</span></code> are bound to <code class="docutils literal notranslate"><span class="pre">w</span></code></p></li>
+</ol>
+</div>
+<div class="section" id="constraints">
+<h2>Constraints<a class="headerlink" href="#constraints" title="Permalink to this headline">¶</a></h2>
+<p>Constraints can be specified to filter out system instances. A constraint is a
+Boolean expression over the component instances of the system. Within
+constraints, the <code class="docutils literal notranslate"><span class="pre">:</span></code>, <code class="docutils literal notranslate"><span class="pre">boundto</span></code> and <code class="docutils literal notranslate"><span class="pre">in</span></code> operators can be used to
+describe the structure of the system. If a system instance created by the
+completion described in the previous section violates one or more constraints,
+no output file for that instance will be generated.</p>
+<p>In the example above, it might be desired that the natural <code class="docutils literal notranslate"><span class="pre">w</span></code> plays some role
+in the <code class="docutils literal notranslate"><span class="pre">pc</span></code> compartment. Then, only the system instances 2, 4 and 5 are
+allowed. This can be achieved by extending the <code class="docutils literal notranslate"><span class="pre">system</span></code> block with a
+constraint:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>system {
+    w : Worker;
+    p : Producer;
+    pc : ProducerConsumerProtocol;
+    p in pc;
+
+    exists r : role. r boundto w &amp; r in pc;
+}
+</pre></div>
+</div>
+<p>Additionally, we can specify that a <code class="docutils literal notranslate"><span class="pre">Worker</span></code> plays at most one role by adding
+the following constraint:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>forall worker : Worker, r1 : role, r2 : role.
+    r1 boundto worker &amp; r2 boundto worker =&gt; r1 = r2;
+</pre></div>
+</div>
+<p>Note that constraints are ordinary Boolean expression, which means that also
+<a class="reference internal" href="functions.html#sec-functions"><span class="std std-ref">functions</span></a> can be used within or as constraints. This
+allows us to abstract commonly used constraints into functions. For example,
+the constraint that <code class="docutils literal notranslate"><span class="pre">w</span></code> should play a role in <code class="docutils literal notranslate"><span class="pre">pc</span></code> can be generalized:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>function player_in(p : component, c : compartment) : bool =
+    exists r : role. r boundto p &amp; r in c;
+</pre></div>
+</div>
+<p>Then, we can use this function to rewrite the constraint to:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>system {
+    // ...
+
+    player_in(w, pc);
+}
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="behavior.html" class="btn btn-neutral float-right" title="Behavior definitions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="type-decls.html" class="btn btn-neutral float-left" title="Type declarations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Philipp Chrszon
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

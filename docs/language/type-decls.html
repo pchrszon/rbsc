@@ -1,0 +1,295 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Type declarations &mdash; rbsc 1.13.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="System instantiation" href="system.html" />
+    <link rel="prev" title="Role-based modeling language" href="../language.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> rbsc
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Running rbsc</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language.html">Role-based modeling language</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Type declarations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#natural-types">Natural types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#role-types">Role types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compartment-types">Compartment types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#type-set-definitions">Type set definitions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="system.html">System instantiation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="behavior.html">Behavior definitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coordination.html">Coordination</a></li>
+<li class="toctree-l2"><a class="reference internal" href="type-system.html">Type system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="globals.html">Global variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="expressions.html">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rewards.html">Costs and rewards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="labels.html">Labels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="files.html">Model files</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rbsc</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../language.html">Role-based modeling language</a> &raquo;</li>
+        
+      <li>Type declarations</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/language/type-decls.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="type-declarations">
+<span id="sec-type-decls"></span><h1>Type declarations<a class="headerlink" href="#type-declarations" title="Permalink to this headline">¶</a></h1>
+<p>Each component (natural, role or compartment) in an RBL model has a component
+type. This allows us to instantiate multiple components of the same type and to
+specify constraints on the level of types (see
+<a class="reference internal" href="system.html#sec-system"><span class="std std-ref">system instantiation</span></a>).</p>
+<div class="section" id="natural-types">
+<h2>Natural types<a class="headerlink" href="#natural-types" title="Permalink to this headline">¶</a></h2>
+<p>The simplest type is the natural type, which only has a name:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>natural type Worker;
+</pre></div>
+</div>
+<p>The keyword <code class="docutils literal notranslate"><span class="pre">natural</span></code> is optional, but can be added to clearly state that
+instances of this type are meant to be role players. In case the type is only
+needed for technical reasons, e.g., to define a counter, omitting the
+<code class="docutils literal notranslate"><span class="pre">natural</span></code> keyword is more appropriate.</p>
+</div>
+<div class="section" id="role-types">
+<h2>Role types<a class="headerlink" href="#role-types" title="Permalink to this headline">¶</a></h2>
+<p>A role type is declared similarly. However, a role type declaration must also
+specify the possible player types. Note that players are not necessarily only
+naturals, but other roles and compartments are allowed as well. In the following
+example, the role type <code class="docutils literal notranslate"><span class="pre">Consumer</span></code> is defined. Instances of this role type can
+be played by components of type <code class="docutils literal notranslate"><span class="pre">Worker</span></code>.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>role type Consumer(Worker);
+</pre></div>
+</div>
+</div>
+<div class="section" id="compartment-types">
+<span id="sec-compartment-types"></span><h2>Compartment types<a class="headerlink" href="#compartment-types" title="Permalink to this headline">¶</a></h2>
+<p>A compartment type declaration must include a list of role types that comprise
+the compartment:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>compartment type ConsumerProducerProtocol(Producer, Consumer);
+</pre></div>
+</div>
+<p>This type declaration states that an instance of <code class="docutils literal notranslate"><span class="pre">ConsumerProducerProtocol</span></code>
+must contain exactly one role instance of type <code class="docutils literal notranslate"><span class="pre">Producer</span></code> and one role
+instance of type <code class="docutils literal notranslate"><span class="pre">Consumer</span></code>.</p>
+<p>It is also possible to define alternatives for the set of roles in a
+compartment. The following declaration specifies that either a <code class="docutils literal notranslate"><span class="pre">Producer</span></code> or
+a <code class="docutils literal notranslate"><span class="pre">Consumer</span></code>, or both must be contained in the compartment:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>compartment type ConsumerProducerProtocol(Producer | Consumer | Producer, Consumer);
+</pre></div>
+</div>
+<p>Furthermore, lower and upper bounds on the occurrence of roles can be
+specified:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>compartment type ConsumerProducerProtocol(Producer, Consumer[1..3]);
+</pre></div>
+</div>
+<p>Here, the compartment must contain at least one and at most three instances with
+role type <code class="docutils literal notranslate"><span class="pre">Consumer</span></code>. If lower and upper bounds are identical, the shorthand
+notation <code class="docutils literal notranslate"><span class="pre">Consumer[3]</span></code> can be used.</p>
+</div>
+<div class="section" id="type-set-definitions">
+<h2>Type set definitions<a class="headerlink" href="#type-set-definitions" title="Permalink to this headline">¶</a></h2>
+<p>If a certain set of component types is often used together, e.g., in
+<a class="reference internal" href="functions.html#sec-functions"><span class="std std-ref">function</span></a> parameter types or in
+<a class="reference internal" href="expressions.html#sec-quantification"><span class="std std-ref">quantification</span></a> over components, it can be useful to
+define an alias for the set of types. For instance, if there are component types
+<code class="docutils literal notranslate"><span class="pre">SlowWorker</span></code> and <code class="docutils literal notranslate"><span class="pre">FastWorker</span></code>, a type name comprising both of them can be
+defined as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>typedef Worker = { SlowWorker, FastWorker };
+</pre></div>
+</div>
+<p>Then, this type can be used, e.g., in a <code class="docutils literal notranslate"><span class="pre">forall</span></code> quantifier:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>forall w : Worker. w.work = 0
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="system.html" class="btn btn-neutral float-right" title="System instantiation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../language.html" class="btn btn-neutral float-left" title="Role-based modeling language" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Philipp Chrszon
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,355 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Coordination &mdash; rbsc 1.13.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Type system" href="type-system.html" />
+    <link rel="prev" title="Behavior definitions" href="behavior.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> rbsc
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Running rbsc</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../language.html">Role-based modeling language</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="type-decls.html">Type declarations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="system.html">System instantiation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="behavior.html">Behavior definitions</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Coordination</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#role-guards">Role guards</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#explicit-role-alphabets">Explicit role alphabets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#coordinator-partitioning">Coordinator partitioning</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="type-system.html">Type system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constants.html">Constants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="globals.html">Global variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="expressions.html">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rewards.html">Costs and rewards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="labels.html">Labels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="files.html">Model files</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">rbsc</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../language.html">Role-based modeling language</a> &raquo;</li>
+        
+      <li>Coordination</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/language/coordination.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="coordination">
+<span id="sec-coordination"></span><h1>Coordination<a class="headerlink" href="#coordination" title="Permalink to this headline">¶</a></h1>
+<p>Usually not all possible role-playing is actually allowed. There may be some
+static constraints, e.g., “role <code class="docutils literal notranslate"><span class="pre">a</span></code> and role <code class="docutils literal notranslate"><span class="pre">b</span></code> must not be played at the
+same time”, or temporal constraints, such as “role <code class="docutils literal notranslate"><span class="pre">a</span></code> must be played before
+role <code class="docutils literal notranslate"><span class="pre">b</span></code> can be played”. In order to monitor and constrain role-playing in the
+model, one or more role-playing coordinators can be defined. A coordinator is
+basically a special component, which can not only synchronize over actions, but
+also over role-playing.</p>
+<div class="section" id="role-guards">
+<h2>Role guards<a class="headerlink" href="#role-guards" title="Permalink to this headline">¶</a></h2>
+<p>Consider the following example containing roles <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code>:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>natural type N {
+    s : [0..2] init 0;
+
+    [act] s &lt; 2 -&gt; (s&#39; = s + 1);
+}
+
+role type R(N) {
+    t : [0..1] init 0;
+
+    [act] t = 0 -&gt; (t&#39; = 1);
+}
+
+system {
+    n : N;
+    a : R; a boundto n;
+    b : R; b boundto n;
+}
+</pre></div>
+</div>
+<p>In order to enforce the first constraint (<code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> must not be played
+together), the following coordinator can be added:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>coordinator {
+    [act] [!(a &amp; b)] true -&gt; true;
+}
+</pre></div>
+</div>
+<p>A coordinator command can contain an additional <em>role guard</em> after the action
+label. A role guard is a Boolean expression over role instances defined in the
+model. Intuitively, the command synchronizes both with the action <code class="docutils literal notranslate"><span class="pre">act</span></code> and
+all role-playings satisfying the role guard. Therefore, the transition where
+both <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code> are played at the same time is blocked.</p>
+<p>The following table lists all forms a coordinator command can have.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">[act]</span> <span class="pre">[role-guard]</span> <span class="pre">...</span></code></p></td>
+<td><p>Synchronize both with <code class="docutils literal notranslate"><span class="pre">act</span></code> and role-playing</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">[]</span> <span class="pre">[role-guard]</span> <span class="pre">...</span></code></p></td>
+<td><p>Synchronize with role-playing for all actions</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">[act]</span> <span class="pre">...</span></code></p></td>
+<td><p>Synchronize only with <code class="docutils literal notranslate"><span class="pre">act</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">[]</span> <span class="pre">...</span></code></p></td>
+<td><p>Internal action, no synchronization</p></td>
+</tr>
+</tbody>
+</table>
+<p>Similar to regular components, a coordinator can have local state. This allows
+us to specify the second constraint (role <code class="docutils literal notranslate"><span class="pre">a</span></code> must be played before role <code class="docutils literal notranslate"><span class="pre">b</span></code>
+can be played):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>coordinator {
+    played_a : bool init false;
+
+    [] [a  &amp; !b] true     -&gt; (played_a&#39; = true);
+    [] [!a &amp; !b] true     -&gt; true;
+    [] [a &amp; b]   played_a -&gt; true;
+    [] [!a &amp; b]  played_a -&gt; true;
+}
+</pre></div>
+</div>
+<p>Here, we set the variable <code class="docutils literal notranslate"><span class="pre">played_a</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code> once the role <code class="docutils literal notranslate"><span class="pre">a</span></code> has been
+played. Then, we only allow playing of <code class="docutils literal notranslate"><span class="pre">b</span></code> if <code class="docutils literal notranslate"><span class="pre">played_a</span></code> has been set. The
+second command is necessary to allow transitions where neither role is played.</p>
+</div>
+<div class="section" id="explicit-role-alphabets">
+<h2>Explicit role alphabets<a class="headerlink" href="#explicit-role-alphabets" title="Permalink to this headline">¶</a></h2>
+<p>The alphabet of a role guard is implicitly defined by the roles it contains. It
+is possible to make the alphabet explicit, which allows us to collapse the last
+two commands into one:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>[] [b over [a, b]] played_a -&gt; true;
+</pre></div>
+</div>
+<p>The alphabet is defined as an array of roles after the <code class="docutils literal notranslate"><span class="pre">over</span></code> keyword. The
+role guard shown above is evaluated over the roles <code class="docutils literal notranslate"><span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span></code>. Since it
+only states that <code class="docutils literal notranslate"><span class="pre">b</span></code> must be <code class="docutils literal notranslate"><span class="pre">true</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code> can be both <code class="docutils literal notranslate"><span class="pre">true</span></code> or
+<code class="docutils literal notranslate"><span class="pre">false</span></code>. Hence, this command has the same effect as the last two commands in
+the original coordinator.</p>
+<p>If all commands of the coordinator should have the same alphabet, the alphabet
+for the whole coordinator can be defined as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>coordinator over [a, b] {
+    // ...
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="coordinator-partitioning">
+<h2>Coordinator partitioning<a class="headerlink" href="#coordinator-partitioning" title="Permalink to this headline">¶</a></h2>
+<p>There is an important difference in the semantics of coordinators and regular
+modules. A coordinator is automatically partitioned into independent parts. Two
+coordinator commands are independent if both their role alphabets and their
+updated variables are disjunct. Independent commands can be executed together,
+i.e., they can synchronize. Consider the following example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>coordinator {
+    [act] [a] true -&gt; true;
+    [act] [b] true -&gt; true;
+}
+</pre></div>
+</div>
+<p>Note that the commands of this coordinator are independent. Their role guards
+have disjunct alphabets and none updates any variables. Since both are labeled
+with the <code class="docutils literal notranslate"><span class="pre">act</span></code> action, they will synchronize. Thus, the above coordinator has
+the same effect as the following coordinator:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>coordinator {
+    [act] [a &amp; b] true -&gt; true;
+}
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="type-system.html" class="btn btn-neutral float-right" title="Type system" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="behavior.html" class="btn btn-neutral float-left" title="Behavior definitions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Philipp Chrszon
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
