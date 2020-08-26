@@ -6,6 +6,12 @@ systems by means of probabilistic model checking. It provides a modeling
 language that extends the input language of the probabilistic model checker
 [PRISM](http://www.prismmodelchecker.org) with role-related concepts.
 
+Documentation
+-------------
+
+The role-based modeling language and the usage of the tool are described in the
+[documentation](https://pchrszon.github.io/rbsc/).
+
 
 Installation
 ------------
