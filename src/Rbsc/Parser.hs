@@ -193,7 +193,7 @@ parseCliConst = run' cliConstantDef "<command line>"
 
 
 fromParseErrorBundle
-    :: (Stream s, ShowErrorComponent e)
+    :: (VisualStream s, TraversableStream s, ShowErrorComponent e)
     => SourceMap
     -> ParseErrorBundle s e
     -> Error
